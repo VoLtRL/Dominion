@@ -1,0 +1,120 @@
+# Fichiers objets et pré-compilés
+*.slo
+*.lo
+*.o
+*.obj
+*.gch
+*.pch
+
+# Bibliothèques compilées dynamiques et statiques
+*.so
+*.so.*
+*.dylib
+*.dll
+*.def
+*.lib
+*.a
+
+# Exécutables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Dossiers de build classiques
+build/
+build-*/
+bin/
+out/
+Release/
+Debug/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+
+# Fichiers générés par Make
+.make.state
+.nse_depinfo
+
+# Outils de gestion de paquets (Conan, Vcpkg)
+vcpkg_installed/
+vcpkg-export-*/
+*.vcpkg-root
+conan.lock
+conanbuildinfo.*
+conanruninfo.*
+
+# IDEs et Éditeurs de texte
+## VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+## Visual Studio
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.ncb
+*.sdf
+*.opensdf
+*.vs/
+*.ipch
+
+## CLion / JetBrains
+.idea/
+cmake-build-*/
+
+## Qt Creator
+*.pro.user
+*.pro.user.*
+*.qbs.user
+*.qbs.user.*
+
+## Xcode
+build/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.xccheckout
+*.moved-aside
+DerivedData/
+*.hmap
+*.ipa
+*.xcuserstate
+
+## Ccls / Clangd / Emacs / Vim
+.ccls-cache/
+.clangd/
+.cache/
+*~
+*.swp
+*.swo
+
+# Fichiers système spécifiques
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
