@@ -23,7 +23,11 @@ class Card {
             return types;
         }
 
-        virtual void use(Game& g, Player& p);
+        virtual void onPlay(Game& g, Player& p);
+        virtual void onDiscard(Game& g, Player& p);
+        virtual void onTrash(Game& g, Player& p);
+        virtual void onGain(Game& g, Player& p);
         bool isA(CardType);
+
 
 };
