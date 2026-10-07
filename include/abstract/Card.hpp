@@ -35,7 +35,7 @@ class Card {
         virtual void onTrash(Game& g, Player& p);
         virtual void onGain(Game& g, Player& p);
         bool isA(CardType);
-        std::string getString();
+        std::string getString(size_t maxWidth = 30) const;
         void display();
 
 };
