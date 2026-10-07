@@ -35,7 +35,7 @@ class Card {
         virtual void onTrash(Game& g, Player& p);
         virtual void onGain(Game& g, Player& p);
         bool isA(CardType);
-        virtual std::string getString();
-        virtual void display();
+        std::string getString();
+        void display();
 
 };
