@@ -1,5 +1,5 @@
 #pragma once
-#include "Cards.hpp"
+#include "Card.hpp"
 
 class Cellar : public Card {
     public:

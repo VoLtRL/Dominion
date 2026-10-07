@@ -1,5 +1,5 @@
 #pragma once
-#include "Cards.hpp"
+#include "Card.hpp"
 
 class Copper : public Card {
     private:
