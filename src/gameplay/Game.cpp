@@ -98,6 +98,121 @@ const GameMode* Game::getCurrentGameMode() const {
     return currentGameMode;
 }
 
+void Game::displaySelection(const std::vector<Card*>& selection) const {
+    const std::string gap = "  ";
+    const size_t cardsPerRow = 4;
+
+    for (size_t start = 0; start < selection.size(); start += cardsPerRow) {
+        const size_t end = std::min(start + cardsPerRow, selection.size());
+
+        std::vector<std::vector<std::string>> cards;
+        std::vector<size_t> widths;
+        size_t maxHeight = 0;
+
+        // Découper chaque carte en lignes
+        for (size_t i = start; i < end; ++i) {
+            std::vector<std::string> lines = parseLines(selection[i]->getString());
+            widths.push_back(lines.empty() ? 0 : lines[0].size());
+            maxHeight = std::max(maxHeight, lines.size());
+            cards.push_back(std::move(lines));
+        }
+
+        // Étirer les cartes trop courtes : lignes vides avant la bordure basse
+        for (size_t c = 0; c < cards.size(); ++c) {
+            auto& lines = cards[c];
+            if (lines.size() >= maxHeight || lines.size() < 2) continue;
+
+            const size_t w = widths[c];
+            // ligne vide : "|" + espaces + "|"
+            const std::string emptyRow = "|" + std::string(w - 2, ' ') + "|";
+
+            const size_t missing = maxHeight - lines.size();
+            lines.insert(lines.end() - 1, missing, emptyRow);
+        }
+
+        // Affichage ligne par ligne
+        for (size_t row = 0; row < maxHeight; ++row) {
+            for (size_t c = 0; c < cards.size(); ++c) {
+                if (row < cards[c].size())
+                    std::cout << cards[c][row];
+                else
+                    std::cout << std::string(widths[c], ' ');
+
+                if (c + 1 < cards.size())
+                    std::cout << gap;
+            }
+            std::cout << '\n';
+        }
+        std::cout << '\n';
+    }
+}
+
+std::vector<Card*> Game::chooseCardsFromSelection(const std::vector<Card*>& selection, size_t numberOfCardsToChoose, const std::string& mode) const {
+    if (mode != "exact" && mode != "less" && mode != "more") {
+        mode = "exact";
+    }
+
+    if (mode != "less") {
+        numberOfCardsToChoose = std::min(numberOfCardsToChoose, selection.size());
+    }
+
+    std::vector<Card*> chosenCards;
+    std::vector<bool> taken(selection.size(), false);
+
+    if (mode == "exact"){
+        std::cout << "Choose exactly " << numberOfCardsToChoose << " card(s):\n";
+    }
+    else if (mode == "less"){
+        std::cout << "Choose at most " << numberOfCardsToChoose << " card(s) (0 to finish):\n";
+    }
+    else{
+        std::cout << "Choose at least " << numberOfCardsToChoose << " card(s) (0 to finish once done):\n";
+    }
+
+    DisplaySelection(selection);
+
+    while (true) {
+        const bool allTaken  = chosenCards.size() == selection.size();
+        const bool reachedN  = chosenCards.size() >= numberOfCardsToChoose;
+
+        // Arrêt automatique
+        if (allTaken || (mode != "more" && reachedN)) break;
+
+        const bool canStop = (mode == "less") || (mode == "more" && reachedN);
+
+        std::cout << "[" << chosenCards.size() << " chosen] Enter a card number"
+                  << (canStop ? " (0 to finish)" : "") << ": ";
+
+        int index;
+        if (!(std::cin >> index)) {
+            if (std::cin.eof()){
+                break;
+            }
+            std::cin.clear();
+            std::cout << "Invalid input. Please try again.\n";
+            continue;
+        }
+
+        if (index == 0 && canStop) break;
+
+        if (index < 1 || index > selection.size()) {
+            std::cout << "Invalid index. Please try again.\n";
+            continue;
+        }
+        if (taken[index - 1]) {
+            taken[index - 1] = false;
+            chosenCards.erase(std::remove(chosenCards.begin(), chosenCards.end(), selection[index - 1]), chosenCards.end());
+            std::cout << "Card deselected.\n";
+            continue;
+        }
+
+        taken[index - 1] = true;
+        chosenCards.push_back(selection[index - 1]);
+    }
+
+    return chosenCards;
+}
+
 void Game::ActionPhase(Player player) {
      while(currentPlayerActions > 0) {
         std::cout << "You have " << currentPlayerActions << " actions left." << std::endl;
