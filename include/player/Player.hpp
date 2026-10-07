@@ -39,7 +39,7 @@ public:
   void playCard(const Card* card, Game& g) {
     hand.removeCard(card);
     g.addCardToPlay(card);
-    card->use(g, *this);
+    card->onPlay(g, *this);
   }
 
   int getScore() const;

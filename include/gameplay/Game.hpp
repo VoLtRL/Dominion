@@ -19,6 +19,8 @@ class Game {
         int currentPlayerBuyChoices = 0;
         std::vector<const Card*> CardsInPlay;
 
+        std::vector<const Card*> trash;
+
     public:
         Game();
 
