@@ -2,6 +2,7 @@
 #include <string>
 #include <set>
 #include "CardType.hpp"
+#include "../gameplay/Game.hpp"
 
 class Player;
 
