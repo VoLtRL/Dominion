@@ -17,7 +17,7 @@ class Game {
         int currentPlayerMoney = 0;
         int currentPlayerActions = 0;
         int currentPlayerBuyChoices = 0;
-        std::vector<Card*> CardsInPlay;
+        std::vector<const Card*> CardsInPlay;
 
     public:
         Game();
@@ -31,10 +31,15 @@ class Game {
         void setCurrentGameMode(const GameMode* gameMode);
         const GameMode* getCurrentGameMode() const;
 
-        const std::vector<Card*>& getCardsInPlay() const { return CardsInPlay; }
-        void addCardToPlay(Card* card) { CardsInPlay.push_back(card); }
+        const std::vector<const Card*>& getCardsInPlay() const { return CardsInPlay; }
+        void addCardToPlay(const Card* card) { CardsInPlay.push_back(card); }
+
+        void ActionPhase(Player player);
+        void BuyPhase(Player player);
 
         void playTurn(Player player);
+
+        Player Game::getWinner();
 
         void launchGame();
 

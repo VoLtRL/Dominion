@@ -17,14 +17,14 @@ class Card {
         :name(cardName),cost(goldCost),description(cardDescription){
             types = cardTypes;
         } 
-        std::string getName(){
+        std::string getName() const{
             return name;
         }
-        std::set<CardType> getTypes(){
+        std::set<CardType> getTypes() const{
             return types;
         }
 
-        virtual void use(Game& g, Player& p);
-        bool isA(CardType);
+        virtual void use(Game& g, Player& p) const;
+        bool isA(CardType) const;
 
 };
