@@ -4,16 +4,16 @@
 
 class CardStack {
 private:
-  std::stack<std::shared_ptr<Card>> stack;
+  std::stack<const Card*> stack;
 
 public:
   CardStack() = default;
 
-  const std::stack<std::shared_ptr<Card>> &getStack() const { return stack; }
+  const std::stack<const Card*> &getStack() const { return stack; }
   int getSize() const { return stack.size(); }
 
-  const std::shared_ptr<Card> drawCard();
-  void putCard(std::shared_ptr<Card> card);
+  const Card* drawCard();
+  void putCard(const Card* card);
 
   void shuffle();
 
