@@ -17,14 +17,26 @@ class Card {
         :name(cardName),cost(goldCost),description(cardDescription){
             types = cardTypes;
         } 
+
         std::string getName(){
             return name;
         }
         std::set<CardType> getTypes(){
             return types;
         }
+        std::string getDescription(){
+            return description;
+        }
+        int getCost(){
+            return cost;
+        }
 
-        virtual void use(Game& g, Player& p);
+        virtual void onPlay(Game& g, Player& p);
+        virtual void onDiscard(Game& g, Player& p);
+        virtual void onTrash(Game& g, Player& p);
+        virtual void onGain(Game& g, Player& p);
         bool isA(CardType);
+        std::string getString(size_t maxWidth = 30) const;
+        void display();
 
 };
