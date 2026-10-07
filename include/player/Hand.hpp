@@ -4,13 +4,15 @@
 
 class Hand {
 private:
-  std::vector<std::shared_ptr<Card>> hand;
+  std::vector<const Card*> hand;
 
 public:
-  Hand(std::vector<std::shared_ptr<Card>> a_hand) : hand(a_hand) {}
-  const std::vector<std::shared_ptr<Card>> &getCards() const { return hand; }
-  const std::vector<std::shared_ptr<Card>> &getSpecificCards(const CardType &type) const;
-  void removeCard(std::shared_ptr<Card> card);
-  void addCard(std::shared_ptr<Card> card);
-  void displayHand();
+  Hand() = default;
+  Hand(std::vector<const Card*> a_hand) : hand(a_hand) {}
+  const std::vector<const Card*> &getCards() const { return hand; }
+  const std::vector<const Card*> &getSpecificCards(const CardType &type) const;
+  void removeCard(const Card* card);
+  void addCard(const Card* card);
+  void displayHand() const;
+  void refillHandFromDrawStack(CardStack& drawStack, CardStack& discardStack);
 };

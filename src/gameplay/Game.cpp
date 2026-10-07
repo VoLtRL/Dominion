@@ -1,4 +1,6 @@
 #include "../../include/gameplay/Game.hpp"
+#include <iostream>
+#include <memory>
 
 const std::vector<GameMode> Game::gameModes = {
     GameMode("Les premières parties", "Configuration recommandée pour découvrir le jeu", {
@@ -96,6 +98,100 @@ const GameMode* Game::getCurrentGameMode() const {
     return currentGameMode;
 }
 
+void Game::ActionPhase(Player player) {
+     while(currentPlayerActions > 0) {
+        std::cout << "You have " << currentPlayerActions << " actions left." << std::endl;
+        std::cout << "Your hand: " << std::endl;
+        player.getHand().displayHand();
+        std::cout << "Enter the index of the card you want to play (or -1 to end your action phase): ";
+        int index;
+        std::cin >> index;
+        if (index == -1)
+            break;
+        if (index < 0 || index >= player.getHand().getCards().size()) {
+            std::cout << "Invalid index. Please try again." << std::endl;
+            continue;
+        }
+        const Card* card = player.getHand().getCards()[index];
+        if (!card->isA(CardType::Action)) {
+            std::cout << "You can only play action cards during the action phase. Please try again." << std::endl;
+            continue;
+        }
+        player.playCard(card, *this);
+        currentPlayerActions--; // je sais pas
+    }
+    std::cout << "Action phase ended." << std::endl;
+
+}
+
+void Game::BuyPhase(Player player) {
+    // to do
+}
+
 void Game::playTurn(Player player) {
     setActivePlayer(&player);
+    player.addTurnPlayed();
+    ActionPhase(player);
+    BuyPhase(player);
+}
+
+Player Game::getWinner() {
+    Player winner = players[0];
+    int maxScore = 0;
+
+    for (const Player& player : players) {
+        if (player.getScore() > maxScore) {
+            maxScore = player.getScore();
+            winner = player;
+        }
+    }
+
+    return winner;
+}
+
+void Game::launchGame() {
+    std::cout << "Welcome to Dominion!" << std::endl;
+    std::cout << "Available game modes:" << std::endl;
+    for (size_t i = 0; i < gameModes.size(); ++i) {
+        std::cout << i + 1 << ". " << gameModes[i].getName() << " - " << gameModes[i].getDescription() << std::endl;
+    }
+    std::cout << "Please select a game mode by entering the corresponding number: ";
+    int choice;
+    std::cin >> choice;
+    if (choice < 1 || choice > gameModes.size()) {
+        std::cout << "Invalid choice." << std::endl;
+        return;
+    }
+    setCurrentGameMode(&gameModes[choice - 1]);
+
+    std::cout << "Will you play alone ? Enter the number of players (4 players max) [default : 1 player]" << std::endl;
+    choice = 1;
+    std::cin >> choice;
+    if (choice < 1 || choice > 4){
+        std::cout << "Invalid choice." << std::endl;
+    }
+    std::cout << "You have chosen to play with " << choice << " players." << std::endl;
+    for (int i = 0; i < choice; ++i) {
+        std::cout << "Enter the name of player " << i + 1 << ": ";
+        std::string playerName;
+        std::cin >> playerName;
+        CardStack drawStack;
+
+        drawStack.shuffle();
+        Hand hand;
+        CardStack discardStack = CardStack();
+        hand.refillHandFromDrawStack(drawStack, discardStack);
+        Player player(hand, drawStack, discardStack);
+        addPlayer(player);
+    }
+
+    while (true) {
+        for (Player& player : players) {
+            playTurn(player);
+        }
+    }
+
+    std::cout << "Game is over!" << std::endl;
+    std::cout << "The winner is:" << getWinner().getString() << std::endl;
+    
 }
