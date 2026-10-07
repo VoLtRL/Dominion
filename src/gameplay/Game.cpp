@@ -147,12 +147,12 @@ void Game::displaySelection(const std::vector<Card*>& selection) const {
     }
 }
 
-std::vector<Card*> Game::chooseCardsFromSelection(const std::vector<Card*>& selection, size_t numberOfCardsToChoose, const std::string& mode) const {
-    if (mode != "exact" && mode != "less" && mode != "more") {
+std::vector<Card*> Game::chooseCardsFromSelection(const std::vector<Card*>& selection, size_t numberOfCardsToChoose,const std::string& action, const std::string& mode) const {
+    if (mode != "exact" && mode != "most" && mode != "least") {
         mode = "exact";
     }
 
-    if (mode != "less") {
+    if (mode != "most") {
         numberOfCardsToChoose = std::min(numberOfCardsToChoose, selection.size());
     }
 
@@ -160,13 +160,13 @@ std::vector<Card*> Game::chooseCardsFromSelection(const std::vector<Card*>& sele
     std::vector<bool> taken(selection.size(), false);
 
     if (mode == "exact"){
-        std::cout << "Choose exactly " << numberOfCardsToChoose << " card(s):\n";
+        std::cout << "Choose exactly " << numberOfCardsToChoose << " card(s) to " << action << ":\n";
     }
-    else if (mode == "less"){
-        std::cout << "Choose at most " << numberOfCardsToChoose << " card(s) (0 to finish):\n";
+    else if (mode == "most"){
+        std::cout << "Choose at most " << numberOfCardsToChoose << " card(s) (0 to finish) to " << action << ":\n";
     }
     else{
-        std::cout << "Choose at least " << numberOfCardsToChoose << " card(s) (0 to finish once done):\n";
+        std::cout << "Choose at least " << numberOfCardsToChoose << " card(s) (0 to finish once done) to " << action << ":\n";
     }
 
     DisplaySelection(selection);
@@ -176,9 +176,9 @@ std::vector<Card*> Game::chooseCardsFromSelection(const std::vector<Card*>& sele
         const bool reachedN  = chosenCards.size() >= numberOfCardsToChoose;
 
         // Arrêt automatique
-        if (allTaken || (mode != "more" && reachedN)) break;
+        if (allTaken || (mode != "least" && reachedN)) break;
 
-        const bool canStop = (mode == "less") || (mode == "more" && reachedN);
+        const bool canStop = (mode == "most") || (mode == "least" && reachedN);
 
         std::cout << "[" << chosenCards.size() << " chosen] Enter a card number"
                   << (canStop ? " (0 to finish)" : "") << ": ";
@@ -232,7 +232,22 @@ void Game::ActionPhase(Player player) {
             std::cout << "You can only play action cards during the action phase. Please try again." << std::endl;
             continue;
         }
-        player.playCard(card, *this);
+        std::vector<Card*> cards = player.getHand().getCards();
+        for (const Card* c : cards) {
+            if (!c->isA(CardType::Action)) {
+                std::remove(cards.begin(), cards.end(), c);
+            }
+        }
+        if (cards.empty()) {
+            std::cout << "You have no action cards to play." << std::endl;
+            break;
+        }
+        std::vector<Card*> card = Game::chooseCardsFromSelection(cards, 1, "play", "exact");
+        if (card.empty()) {
+            std::cout << "No card selected. Please try again." << std::endl;
+            continue;
+        }
+        player.playCard(card[0], *this);
         currentPlayerActions--; // je sais pas
     }
     std::cout << "Action phase ended." << std::endl;
