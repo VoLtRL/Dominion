@@ -23,8 +23,19 @@ class Card {
         std::set<CardType> getTypes() const{
             return types;
         }
+        std::string getDescription() const{
+            return description;
+        }
+        int getCost() const{
+            return cost;
+        }
 
-        virtual void use(Game& g, Player& p) const;
+        virtual void onPlay(Game& g, Player& p) const;
+        virtual void onDiscard(Game& g, Player& p) const;
+        virtual void onTrash(Game& g, Player& p) const;
+        virtual void onGain(Game& g, Player& p) const;
         bool isA(CardType) const;
+        std::string getString(size_t maxWidth = 30) const;
+        void display() const;
 
 };
