@@ -45,4 +45,6 @@ class Game {
 
         void launchGame();
 
+        std::vector<Card*> chooseCardsFromSelection(const std::vector<Card*>& selection, int numberOfCardsToChoose=1, std::string mode="exact") const;
+        void displaySelection(const std::vector<Card*>& selection) const;
 };
