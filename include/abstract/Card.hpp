@@ -1,4 +1,5 @@
 #pragma once
+
 #include <string>
 #include <set>
 #include "CardType.hpp"
@@ -37,5 +38,9 @@ class Card {
         bool isA(CardType) const;
         std::string getString(size_t maxWidth = 30) const;
         void display() const;
+
+        bool empty() const {
+            return name.empty();
+        }
 
 };

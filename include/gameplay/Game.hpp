@@ -1,55 +1,58 @@
 #pragma once
 
-#include <vector>
 #include <memory>
+#include <vector>
 
 #include "../player/Player.hpp"
 #include "GameMode.hpp"
 #include "TableStack.hpp"
+#include "../cards/barrel.hpp"
 
 class Game {
-    private:
-        std::vector<Player> players;
-        const static std::vector<GameMode> gameModes;
-        std::vector<TableStack> KingdomStacks;
-        std::vector<TableStack> BasicStacks;
+private:
+  std::vector<Player> players;
+  const static std::vector<GameMode> gameModes;
+  std::vector<TableStack> KingdomStacks;
+  std::vector<TableStack> BasicStacks;
 
-        Player* activePlayer;
-        const GameMode* currentGameMode;
+  Player *activePlayer;
+  const GameMode *currentGameMode;
 
-        int currentPlayerMoney = 0;
-        int currentPlayerActions = 0;
-        int currentPlayerBuyChoices = 0;
-        std::vector<const Card*> CardsInPlay;
+  int currentPlayerMoney = 0;
+  int currentPlayerActions = 0;
+  int currentPlayerPurchaseLeft = 0;
+  std::vector<const Card *> CardsInPlay;
 
-        std::vector<const Card*> trash;
+  std::vector<const Card *> trash;
 
-    public:
-        Game();
+public:
+  Game();
 
-        const std::vector<TableStack>& getKingdomStacks();
-        const std::vector<TableStack>& getBasicStacks();
+  const std::vector<TableStack> &getKingdomStacks();
+  const std::vector<TableStack> &getBasicStacks();
 
-        void addPlayer(Player player);
-        const std::vector<Player>& getPlayers() const;
+  void addPlayer(Player player);
+  const std::vector<Player> &getPlayers() const;
 
-        const Player& getActivePlayer() const;
-        void setActivePlayer(Player* player);
+  const Player &getActivePlayer() const;
+  void setActivePlayer(Player *player);
 
-        void setCurrentGameMode(const GameMode* gameMode);
-        const GameMode* getCurrentGameMode() const;
+  void setCurrentGameMode(const GameMode *gameMode);
+  const GameMode *getCurrentGameMode() const;
 
-        const std::vector<const Card*>& getCardsInPlay() const { return CardsInPlay; }
-        void addCardToPlay(const Card* card) { CardsInPlay.push_back(card); }
+  const std::vector<const Card *> &getCardsInPlay() const {
+    return CardsInPlay;
+  }
+  void addCardToPlay(const Card *card) { CardsInPlay.push_back(card); }
 
-        void ActionPhase(Player player);
-        void BuyPhase(Player player);
+  void ActionPhase(Player player);
+  void BuyPhase(Player player);
 
-        void playTurn(Player player);
+  void playTurn(Player player);
 
-        Player Game::getWinner();
+  Player Game::getWinner();
 
-        void launchGame();
+  void launchGame();
 
         std::vector<std::string> parseLines(const std::string&) const;
 

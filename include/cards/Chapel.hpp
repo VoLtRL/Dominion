@@ -1,8 +1,8 @@
 #pragma once
-#include "Card.hpp"
+#include "../abstract/Card.hpp"
 
 class Chapel : public Card{
     public:
         Chapel() : Card("Chapel", 2," Trash up to 4 cards from your hand.", {CardType::ACTION}) {}
-        void onPlay(Game& g, Player& p) override;
-}
+        void onPlay(Game& g, Player& p);
+};

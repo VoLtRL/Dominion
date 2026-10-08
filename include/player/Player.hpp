@@ -42,6 +42,14 @@ public:
     card->onPlay(g, *this);
   }
 
+  void addCardToDiscardStack(const Card* card) {
+    discardStack.putCard(card);
+  }
+
+  void addCardToHand(const Card* card) {
+    hand.addCard(card);
+  }
+
   int getScore() const;
 
   void swapAndShuffleStacks();
