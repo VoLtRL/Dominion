@@ -51,8 +51,8 @@ class Game {
 
         void launchGame();
 
-        std::vector<std::string> parseLines(std::string);
+        std::vector<std::string> parseLines(const std::string&) const;
 
-        std::vector<const Card*> chooseCardsFromSelection(const std::vector<const Card*>& selection, size_t numberOfCardsToChoose=1,const std::string &action,std::string mode="exact") const;
+        std::vector<const Card*> chooseCardsFromSelection(const std::vector<const Card*>& selection, size_t numberOfCardsToChoose=1,const std::string &action,std::string mode="exact", std::vector<CardType> allowedTypes) const;
         void displaySelection(const std::vector<const Card*>& selection) const;
 };

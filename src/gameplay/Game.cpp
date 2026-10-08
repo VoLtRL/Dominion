@@ -99,8 +99,22 @@ const GameMode* Game::getCurrentGameMode() const {
     return currentGameMode;
 }
 
-std::vector<std::string> Game::parseLines(const std::string&){
-
+std::vector<std::string> Game::parseLines(const std::string& str) const{
+    std::vector<std::string> lines;
+    std::string line;
+    for(const char c:str){
+        if(c == '\n'){
+            lines.push_back(line);
+            line.clear();
+        }
+        else{
+            line += c;
+        }
+    }
+    if(!line.empty()){
+        lines.push_back(line);
+    }
+    return lines;
 }
 
 void Game::displaySelection(const std::vector<const Card*>& selection) const {
@@ -152,7 +166,7 @@ void Game::displaySelection(const std::vector<const Card*>& selection) const {
     }
 }
 
-std::vector<const Card*> Game::chooseCardsFromSelection(const std::vector<const Card*>& selection, size_t numberOfCardsToChoose,const std::string& action, std::string mode) const {
+std::vector<const Card*> Game::chooseCardsFromSelection(const std::vector<const Card*>& selection, size_t numberOfCardsToChoose,const std::string& action, std::string mode, std::vector<CardType> allowedTypes) const {
     if (mode != "exact" && mode != "most" && mode != "least") {
         mode = "exact";
     }
@@ -164,14 +178,29 @@ std::vector<const Card*> Game::chooseCardsFromSelection(const std::vector<const 
     std::vector<const Card*> chosenCards;
     std::vector<bool> taken(selection.size(), false);
 
+    std::string allowedTypesStr;
+    for (const CardType& t : allowedTypes) {
+        if (!allowedTypesStr.empty()) {
+            allowedTypesStr += ", ";
+        }
+        switch (t) {
+            case CardType::ACTION: allowedTypesStr += "Action"; break;
+            case CardType::TREASURE: allowedTypesStr += "Treasure"; break;
+            case CardType::VICTORY: allowedTypesStr += "Victory"; break;
+            case CardType::CURSE: allowedTypesStr += "Curse"; break;
+            case CardType::ATTACK: allowedTypesStr += "Attack"; break;
+            case CardType::REACTION: allowedTypesStr += "Reaction"; break;
+        }
+    }
+
     if (mode == "exact"){
-        std::cout << "Choose exactly " << numberOfCardsToChoose << " card(s) to " << action << ":\n";
+        std::cout << "Choose exactly " << numberOfCardsToChoose << " card(s) to " << action << " (" << allowedTypesStr << "):\n";
     }
     else if (mode == "most"){
-        std::cout << "Choose at most " << numberOfCardsToChoose << " card(s) (0 to finish) to " << action << ":\n";
+        std::cout << "Choose at most " << numberOfCardsToChoose << " card(s) (0 to finish) to " << action << " (" << allowedTypesStr << "):\n";
     }
     else{
-        std::cout << "Choose at least " << numberOfCardsToChoose << " card(s) (0 to finish once done) to " << action << ":\n";
+        std::cout << "Choose at least " << numberOfCardsToChoose << " card(s) (0 to finish once done) to " << action << " (" << allowedTypesStr << "):\n";
     }
 
     displaySelection(selection);
@@ -214,6 +243,11 @@ std::vector<const Card*> Game::chooseCardsFromSelection(const std::vector<const 
             continue;
         }
 
+        if(selection[index - 1]->getTypes().empty() || std::none_of(allowedTypes.begin(), allowedTypes.end(), [&](CardType t){ return selection[index - 1]->isA(t); })){
+            std::cout << "Invalid card type. Please try again.\n";
+            continue;
+        }
+
         taken[index - 1] = true;
         chosenCards.push_back(selection[index - 1]);
     }
@@ -226,7 +260,7 @@ void Game::ActionPhase(Player player) {
         std::cout << "You have " << currentPlayerActions << " actions left." << std::endl;
         const std::vector<const Card*> cards = player.getHand().getCards();
         for (const Card* c : cards) {
-            if (!c->isA(CardType::Action)) {
+            if (!c->isA(CardType::ACTION)) {
                 std::remove(cards.begin(), cards.end(), c);
             }
         }
@@ -234,8 +268,8 @@ void Game::ActionPhase(Player player) {
             std::cout << "You have no action cards to play." << std::endl;
             break;
         }
-        auto card = chooseCardsFromSelection(cards, 1, "play", "exact")[0]
-        if (card.empty()) {
+        auto card = chooseCardsFromSelection(cards, 1, "play", "exact")[0];
+        if (!card) {
             std::cout << "No card selected. Please try again." << std::endl;
             continue;
         }
