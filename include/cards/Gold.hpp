@@ -1,10 +1,11 @@
 #pragma once
-#include "Card.hpp"
+#include "../abstract/Card.hpp"
+
 
 class Gold : public Card {
     private:
         int value = 3;
     public: 
-        Gold() : Card("Gold", 6, "", {CardType::Treasure}) {}
-        void onPlay(Game& g, Player& p) override;
+        Gold() : Card("Gold", 6, "", {CardType::TREASURE}) {}
+        void onPlay(Game& g, Player& p);
 };

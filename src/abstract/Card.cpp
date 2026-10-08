@@ -1,15 +1,16 @@
 #include "../../include/abstract/Card.hpp"
-#include "CardType.hpp"
+#include "../../include/abstract/CardType.hpp"
 #include <cmath>
 #include <iostream>
+#include <sstream>
 
-void Card::isA(CardType t){
-    std::set<Card> types = this->getTypes();
+bool Card::isA(CardType t) const{
+    std::set<CardType> types = getTypes();
     return types.find(t) != types.end();
 }
 
-std::string wrapString(std::string text, size_t maxWidth){
-    std::string lines;
+std::vector<std::string> wrapString(std::string text, size_t maxWidth){
+    std::vector<std::string> lines;
     std::istringstream words(text);
     std::string line;
     std::string word;
@@ -38,16 +39,23 @@ std::string wrapString(std::string text, size_t maxWidth){
 
 std::string Card::getString(size_t maxWidth = 30) const {
     std::string typesStr;
-    for (auto& t : getTypes){
+    for (CardType t : getTypes()){
         if(!typesStr.empty()){typesStr += "-";}
-        typesStr += tostring(t);
+        switch(t){
+            case CardType::ACTION: typesStr += "Action"; break;
+            case CardType::TREASURE: typesStr += "Treasure"; break;
+            case CardType::VICTORY: typesStr += "Victory"; break;
+            case CardType::CURSE: typesStr += "Curse"; break;
+            case CardType::ATTACK: typesStr += "Attack"; break;
+            case CardType::REACTION: typesStr += "Reaction"; break;
+        }
     }
-    std::vector<std::string> blocks = {
+    std::vector<std::vector<std::string>> blocks = {
         wrapString(name,maxWidth),
         wrapString(description,maxWidth),
-        wrapString("Cost : "+tostring(cost),maxWidth),
+        wrapString("Cost : "+std::to_string(cost),maxWidth),
         wrapString(typesStr,maxWidth)
-    }
+    };
 
     size_t width = 0;
     for(auto& block:blocks){
@@ -76,6 +84,6 @@ std::string Card::getString(size_t maxWidth = 30) const {
 
 }
 
-void Card::display(){
+void Card::display() const{
     std::cout << getString() << std::endl;
 }
