@@ -5,11 +5,14 @@
 
 #include "../player/Player.hpp"
 #include "GameMode.hpp"
+#include "TableStack.hpp"
 
 class Game {
     private:
         std::vector<Player> players;
         const static std::vector<GameMode> gameModes;
+        std::vector<TableStack> KingdomStacks;
+        std::vector<TableStack> BasicStacks;
 
         Player* activePlayer;
         const GameMode* currentGameMode;
@@ -23,6 +26,9 @@ class Game {
 
     public:
         Game();
+
+        const std::vector<TableStack>& getKingdomStacks();
+        const std::vector<TableStack>& getBasicStacks();
 
         void addPlayer(Player player);
         const std::vector<Player>& getPlayers() const;
@@ -45,6 +51,8 @@ class Game {
 
         void launchGame();
 
-        std::vector<Card*> chooseCardsFromSelection(const std::vector<Card*>& selection, int numberOfCardsToChoose=1, std::string mode="exact") const;
-        void displaySelection(const std::vector<Card*>& selection) const;
+        std::vector<std::string> parseLines(std::string);
+
+        std::vector<const Card*> chooseCardsFromSelection(const std::vector<const Card*>& selection, size_t numberOfCardsToChoose=1,const std::string &action,std::string mode="exact") const;
+        void displaySelection(const std::vector<const Card*>& selection) const;
 };

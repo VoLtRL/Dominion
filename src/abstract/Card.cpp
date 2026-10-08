@@ -1,5 +1,5 @@
 #include "../../include/abstract/Card.hpp"
-#include "CardType.hpp"
+#include "../../include/abstract/CardType.hpp"
 #include <cmath>
 #include <iostream>
 

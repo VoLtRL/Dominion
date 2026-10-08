@@ -1,6 +1,7 @@
 #include "../../include/gameplay/Game.hpp"
 #include <iostream>
 #include <memory>
+#include <algorithm>
 
 const std::vector<GameMode> Game::gameModes = {
     GameMode("Les premières parties", "Configuration recommandée pour découvrir le jeu", {
@@ -98,7 +99,11 @@ const GameMode* Game::getCurrentGameMode() const {
     return currentGameMode;
 }
 
-void Game::displaySelection(const std::vector<Card*>& selection) const {
+std::vector<std::string> Game::parseLines(const std::string&){
+
+}
+
+void Game::displaySelection(const std::vector<const Card*>& selection) const {
     const std::string gap = "  ";
     const size_t cardsPerRow = 4;
 
@@ -147,7 +152,7 @@ void Game::displaySelection(const std::vector<Card*>& selection) const {
     }
 }
 
-std::vector<Card*> Game::chooseCardsFromSelection(const std::vector<Card*>& selection, size_t numberOfCardsToChoose,const std::string& action, const std::string& mode) const {
+std::vector<const Card*> Game::chooseCardsFromSelection(const std::vector<const Card*>& selection, size_t numberOfCardsToChoose,const std::string& action, std::string mode) const {
     if (mode != "exact" && mode != "most" && mode != "least") {
         mode = "exact";
     }
@@ -156,7 +161,7 @@ std::vector<Card*> Game::chooseCardsFromSelection(const std::vector<Card*>& sele
         numberOfCardsToChoose = std::min(numberOfCardsToChoose, selection.size());
     }
 
-    std::vector<Card*> chosenCards;
+    std::vector<const Card*> chosenCards;
     std::vector<bool> taken(selection.size(), false);
 
     if (mode == "exact"){
@@ -169,7 +174,7 @@ std::vector<Card*> Game::chooseCardsFromSelection(const std::vector<Card*>& sele
         std::cout << "Choose at least " << numberOfCardsToChoose << " card(s) (0 to finish once done) to " << action << ":\n";
     }
 
-    DisplaySelection(selection);
+    displaySelection(selection);
 
     while (true) {
         const bool allTaken  = chosenCards.size() == selection.size();
@@ -201,7 +206,10 @@ std::vector<Card*> Game::chooseCardsFromSelection(const std::vector<Card*>& sele
         }
         if (taken[index - 1]) {
             taken[index - 1] = false;
-            chosenCards.erase(std::remove(chosenCards.begin(), chosenCards.end(), selection[index - 1]), chosenCards.end());
+            auto chosen = std::find(chosenCards.begin(), chosenCards.end(), selection[index - 1]);
+            if (chosen != chosenCards.end()) {
+                chosenCards.erase(chosen);
+            }
             std::cout << "Card deselected.\n";
             continue;
         }
@@ -216,23 +224,7 @@ std::vector<Card*> Game::chooseCardsFromSelection(const std::vector<Card*>& sele
 void Game::ActionPhase(Player player) {
      while(currentPlayerActions > 0) {
         std::cout << "You have " << currentPlayerActions << " actions left." << std::endl;
-        std::cout << "Your hand: " << std::endl;
-        player.getHand().displayHand();
-        std::cout << "Enter the index of the card you want to play (or -1 to end your action phase): ";
-        int index;
-        std::cin >> index;
-        if (index == -1)
-            break;
-        if (index < 0 || index >= player.getHand().getCards().size()) {
-            std::cout << "Invalid index. Please try again." << std::endl;
-            continue;
-        }
-        const Card* card = player.getHand().getCards()[index];
-        if (!card->isA(CardType::Action)) {
-            std::cout << "You can only play action cards during the action phase. Please try again." << std::endl;
-            continue;
-        }
-        std::vector<Card*> cards = player.getHand().getCards();
+        const std::vector<const Card*> cards = player.getHand().getCards();
         for (const Card* c : cards) {
             if (!c->isA(CardType::Action)) {
                 std::remove(cards.begin(), cards.end(), c);
@@ -242,12 +234,12 @@ void Game::ActionPhase(Player player) {
             std::cout << "You have no action cards to play." << std::endl;
             break;
         }
-        std::vector<Card*> card = Game::chooseCardsFromSelection(cards, 1, "play", "exact");
+        auto card = chooseCardsFromSelection(cards, 1, "play", "exact")[0]
         if (card.empty()) {
             std::cout << "No card selected. Please try again." << std::endl;
             continue;
         }
-        player.playCard(card[0], *this);
+        player.playCard(card, *this);
         currentPlayerActions--; // je sais pas
     }
     std::cout << "Action phase ended." << std::endl;
