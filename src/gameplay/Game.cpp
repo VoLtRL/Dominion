@@ -1,7 +1,6 @@
 #include "../../include/gameplay/Game.hpp"
 #include <algorithm>
 #include <iostream>
-#include <memory>
 
 const std::vector<GameMode> Game::gameModes = {
     GameMode("Les premières parties",
@@ -89,27 +88,26 @@ void Game::setCurrentGameMode(const GameMode *gameMode) {
 
 const GameMode *Game::getCurrentGameMode() const { return currentGameMode; }
 
-std::vector<std::string> Game::parseLines(const std::string& str) const{
-    std::vector<std::string> lines;
-    std::string line;
-    for(const char c:str){
-        if(c == '\n'){
-            lines.push_back(line);
-            line.clear();
-        }
-        else{
-            line += c;
-        }
+std::vector<std::string> Game::parseLines(const std::string &str) const {
+  std::vector<std::string> lines;
+  std::string line;
+  for (const char c : str) {
+    if (c == '\n') {
+      lines.push_back(line);
+      line.clear();
+    } else {
+      line += c;
     }
-    if(!line.empty()){
-        lines.push_back(line);
-    }
-    return lines;
+  }
+  if (!line.empty()) {
+    lines.push_back(line);
+  }
+  return lines;
 }
 
-void Game::displaySelection(const std::vector<const Card*>& selection) const {
-    const std::string gap = "  ";
-    const size_t cardsPerRow = 4;
+void Game::displaySelection(const std::vector<const Card *> &selection) const {
+  const std::string gap = "  ";
+  const size_t cardsPerRow = 4;
 
   for (size_t start = 0; start < selection.size(); start += cardsPerRow) {
     const size_t end = std::min(start + cardsPerRow, selection.size());
@@ -159,7 +157,8 @@ void Game::displaySelection(const std::vector<const Card*>& selection) const {
 
 std::vector<const Card *> Game::chooseCardsFromSelection(
     const std::vector<const Card *> &selection, size_t numberOfCardsToChoose,
-    const std::string &action, std::string mode) const {
+    const std::string &action, std::string mode,
+    const std::set<CardType> &allowedTypes) const {
   if (mode != "exact" && mode != "most" && mode != "least") {
     mode = "exact";
   }
@@ -168,23 +167,35 @@ std::vector<const Card *> Game::chooseCardsFromSelection(
     numberOfCardsToChoose = std::min(numberOfCardsToChoose, selection.size());
   }
 
-    std::vector<const Card*> chosenCards;
-    std::vector<bool> taken(selection.size(), false);
+  std::vector<const Card *> chosenCards;
+  std::vector<bool> taken(selection.size(), false);
 
-    std::string allowedTypesStr;
-    for (const CardType& t : allowedTypes) {
-        if (!allowedTypesStr.empty()) {
-            allowedTypesStr += ", ";
-        }
-        switch (t) {
-            case CardType::ACTION: allowedTypesStr += "Action"; break;
-            case CardType::TREASURE: allowedTypesStr += "Treasure"; break;
-            case CardType::VICTORY: allowedTypesStr += "Victory"; break;
-            case CardType::CURSE: allowedTypesStr += "Curse"; break;
-            case CardType::ATTACK: allowedTypesStr += "Attack"; break;
-            case CardType::REACTION: allowedTypesStr += "Reaction"; break;
-        }
+  std::string allowedTypesStr;
+  for (const CardType &t : allowedTypes) {
+    if (!allowedTypesStr.empty()) {
+      allowedTypesStr += ", ";
     }
+    switch (t) {
+    case CardType::ACTION:
+      allowedTypesStr += "Action";
+      break;
+    case CardType::TREASURE:
+      allowedTypesStr += "Treasure";
+      break;
+    case CardType::VICTORY:
+      allowedTypesStr += "Victory";
+      break;
+    case CardType::CURSE:
+      allowedTypesStr += "Curse";
+      break;
+    case CardType::ATTACK:
+      allowedTypesStr += "Attack";
+      break;
+    case CardType::REACTION:
+      allowedTypesStr += "Reaction";
+      break;
+    }
+  }
 
   if (mode == "exact") {
     std::cout << "Choose exactly " << numberOfCardsToChoose << " card(s) to "
@@ -225,24 +236,28 @@ std::vector<const Card *> Game::chooseCardsFromSelection(
     if (index == 0 && canStop)
       break;
 
-        if (index < 1 || index > selection.size()) {
-            std::cout << "Invalid index. Please try again.\n";
-            continue;
-        }
-        if (taken[index - 1]) {
-            taken[index - 1] = false;
-            auto chosen = std::find(chosenCards.begin(), chosenCards.end(), selection[index - 1]);
-            if (chosen != chosenCards.end()) {
-                chosenCards.erase(chosen);
-            }
-            std::cout << "Card deselected.\n";
-            continue;
-        }
+    if (index < 1 || index > selection.size()) {
+      std::cout << "Invalid index. Please try again.\n";
+      continue;
+    }
+    if (taken[index - 1]) {
+      taken[index - 1] = false;
+      auto chosen = std::find(chosenCards.begin(), chosenCards.end(),
+                              selection[index - 1]);
+      if (chosen != chosenCards.end()) {
+        chosenCards.erase(chosen);
+      }
+      std::cout << "Card deselected.\n";
+      continue;
+    }
 
-        if(selection[index - 1]->getTypes().empty() || std::none_of(allowedTypes.begin(), allowedTypes.end(), [&](CardType t){ return selection[index - 1]->isA(t); })){
-            std::cout << "Invalid card type. Please try again.\n";
-            continue;
-        }
+    if (selection[index - 1]->getTypes().empty() ||
+        std::none_of(allowedTypes.begin(), allowedTypes.end(), [&](CardType t) {
+          return selection[index - 1]->isA(t);
+        })) {
+      std::cout << "Invalid card type. Please try again.\n";
+      continue;
+    }
 
     taken[index - 1] = true;
     chosenCards.push_back(selection[index - 1]);
@@ -252,28 +267,28 @@ std::vector<const Card *> Game::chooseCardsFromSelection(
 }
 
 void Game::ActionPhase(Player player) {
-     while(currentPlayerActions > 0) {
-        std::cout << "You have " << currentPlayerActions << " actions left." << std::endl;
-        const std::vector<const Card*> cards = player.getHand().getCards();
-        for (const Card* c : cards) {
-            if (!c->isA(CardType::ACTION)) {
-                std::remove(cards.begin(), cards.end(), c);
-            }
-        }
-        if (cards.empty()) {
-            std::cout << "You have no action cards to play." << std::endl;
-            break;
-        }
-        auto card = chooseCardsFromSelection(cards, 1, "play", "exact")[0];
-        if (!card) {
-            std::cout << "No card selected. Please try again." << std::endl;
-            continue;
-        }
-        player.playCard(card, *this);
-        currentPlayerActions--; // je sais pas
+  while (currentPlayerActions > 0) {
+    std::cout << "You have " << currentPlayerActions << " actions left."
+              << std::endl;
+    const std::vector<const Card *> cards = player.getHand().getCards();
+    for (const Card *c : cards) {
+      if (!c->isA(CardType::ACTION)) {
+        std::remove(cards.begin(), cards.end(), c);
+      }
     }
-    std::cout << "Action phase ended." << std::endl;
-
+    if (cards.empty()) {
+      std::cout << "You have no action cards to play." << std::endl;
+      break;
+    }
+    auto card = chooseCardsFromSelection(cards, 1, "play", "exact", {CardType::ACTION})[0];
+    if (!card) {
+      std::cout << "No card selected. Please try again." << std::endl;
+      continue;
+    }
+    player.playCard(card, *this);
+    currentPlayerActions--; // je sais pas
+  }
+  std::cout << "Action phase ended." << std::endl;
 }
 
 void Game::BuyPhase(Player player) {
@@ -283,11 +298,11 @@ void Game::BuyPhase(Player player) {
     std::map<int, std::vector<const Card *>> display;
 
     for (TableStack stack : KingdomStacks) {
-      const Card* card = stack.getCard();
+      const Card *card = stack.getCard();
       display[card->getCost()].push_back(card);
     }
     for (TableStack stack : BasicStacks) {
-      const Card* card = stack.getCard();
+      const Card *card = stack.getCard();
       display[card->getCost()].push_back(card);
     }
 
@@ -301,8 +316,8 @@ void Game::BuyPhase(Player player) {
     std::cout << "Which cost would you want to buy ?(-1 to not buy)"
               << std::endl;
     std::cin >> buy_cost;
-  
-  if (buy_cost == -1) {
+
+    if (buy_cost == -1) {
       std::cout << "You chose not to buy any card." << std::endl;
       break;
     }
@@ -315,8 +330,8 @@ void Game::BuyPhase(Player player) {
                 << std::endl;
       continue;
     }
-    const Card *card = chooseCardsFromSelection(display[buy_cost], 1, "buy",
-                                               "exact")[0];
+    const Card *card =
+        chooseCardsFromSelection(display[buy_cost], 1, "buy", "exact", {})[0];
     std::cout << "You bought " << card->getName() << "." << std::endl;
     currentPlayerMoney -= buy_cost;
     player.addCardToDiscardStack(card);

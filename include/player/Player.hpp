@@ -9,6 +9,7 @@ private:
   CardStack discardStack;
 
   int turnsPlayed = 0;
+  int score = 0;
 
 public:
   Player(Hand a_hand, CardStack a_drawStack,CardStack a_discardStack)

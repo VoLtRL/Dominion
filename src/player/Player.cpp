@@ -10,24 +10,6 @@ void Player::swapAndShuffleStacks() {
 }
 
 int Player::getScore() const {
-  int score = 0;
-  for (const Card* card : hand.getCards()) {
-    if (card->isA(CardType::VICTORY)) {
-      score += card->getScore();
-    }
-  }
-  for (int i = 0; i < drawStack.getSize(); ++i) {
-    const Card* card = drawStack.drawCard();
-    if (card->isA(CardType::VICTORY)) {
-      score += card->getScore();
-    }
-  }
-  for (int i = 0; i < discardStack.getSize(); ++i) {
-    const Card* card = discardStack.drawCard();
-    if (card->isA(CardType::VICTORY)) {
-      score += card->getScore();
-    }
-  }
   return score;
 }
 

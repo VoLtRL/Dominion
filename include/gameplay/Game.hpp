@@ -1,12 +1,11 @@
 #pragma once
 
-#include <memory>
 #include <vector>
 
+#include "../cards/barrel.hpp"
 #include "../player/Player.hpp"
 #include "GameMode.hpp"
 #include "TableStack.hpp"
-#include "../cards/barrel.hpp"
 
 class Game {
 private:
@@ -50,12 +49,15 @@ public:
 
   void playTurn(Player player);
 
-  Player Game::getWinner();
+  Player getWinner();
 
   void launchGame();
 
-        std::vector<std::string> parseLines(const std::string&) const;
+  std::vector<std::string> parseLines(const std::string &) const;
 
-        std::vector<const Card*> chooseCardsFromSelection(const std::vector<const Card*>& selection, size_t numberOfCardsToChoose=1,const std::string &action,std::string mode="exact", std::vector<CardType> allowedTypes) const;
-        void displaySelection(const std::vector<const Card*>& selection) const;
+  std::vector<const Card *> chooseCardsFromSelection(const std::vector<const Card *> &selection,
+                           size_t numberOfCardsToChoose,
+                           const std::string &action, std::string mode,
+                           const std::set<CardType> &allowedTypes) const;
+  void displaySelection(const std::vector<const Card *> &selection) const;
 };
