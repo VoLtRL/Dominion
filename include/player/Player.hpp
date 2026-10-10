@@ -53,6 +53,8 @@ public:
 
   int getScore() const;
 
+  void addVictoryPoints(int points) { score += points; }
+
   void swapAndShuffleStacks();
 
   std::string getString() const;

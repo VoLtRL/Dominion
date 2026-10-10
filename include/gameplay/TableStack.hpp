@@ -10,6 +10,5 @@ public:
 
     const Card* getCard() const { return &card; }
     int getQuantity() const { return quantity; }
-
     void decreaseQuantity(int amount);
 };
