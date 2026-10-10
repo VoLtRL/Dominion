@@ -5,72 +5,72 @@
 const std::vector<GameMode> Game::gameModes = {
     GameMode("Les premières parties",
              "Configuration recommandée pour découvrir le jeu",
-             {{new Workshop(), 10},
-              {new Woodcutter(), 10},
-              {new Cellar(), 10},
-              {new Moat(), 10},
-              {new Smithy(), 10},
-              {new Market(), 10},
-              {new Militia(), 10},
-              {new Mine(), 10},
-              {new Remodel(), 10},
-              {new Village(), 10}}),
+             {{Factory::get("Workshop"), 10},
+              {Factory::get("Woodcutter"), 10},
+              {Factory::get("Cellar"), 10},
+              {Factory::get("Moat"), 10},
+              {Factory::get("Smithy"), 10},
+              {Factory::get("Market"), 10},
+              {Factory::get("Militia"), 10},
+              {Factory::get("Mine"), 10},
+              {Factory::get("Remodal"), 10},
+              {Factory::get("Village"), 10}}),
 
     GameMode("Richesses et trésors",
              "Aventurier, Bureaucrate, Chancelier, Chapelle, Festin, "
              "Laboratoire, Marché, Mine, Prêteur sur gages, Salle du Trône",
-             {{new Adventurer(), 10},
-              {new Bureaucrat(), 10},
-              {new Chancellor(), 10},
-              {new Chapel(), 10},
-              {new Feast(), 10},
-              {new Laboratory(), 10},
-              {new Market(), 10},
-              {new Mine(), 10},
-              {new Moneylender(), 10},
-              {new ThroneRoom(), 10}}),
+             {{Factory::get("Adventurer"), 10},
+              {Factory::get("Bureaucrat"), 10},
+              {Factory::get("Chancellor"), 10},
+              {Factory::get("Chapel"), 10},
+              {Factory::get("Feast"), 10},
+              {Factory::get("Laboratory"), 10},
+              {Factory::get("Market"), 10},
+              {Factory::get("Mine"), 10},
+              {Factory::get("MoneyLender"), 10},
+              {Factory::get("ThroneRoom"), 10}}),
 
     GameMode("Interaction",
              "Bibliothèque, Bureaucrate, Chambre du conseil, Chancelier, "
              "Douves, Espion, Festival, Milice, Village, Voleur",
-             {{new Library(), 10},
-              {new Bureaucrat(), 10},
-              {new CouncilRoom(), 10},
-              {new Chancellor(), 10},
-              {new Moat(), 10},
-              {new Spy(), 10},
-              {new Festival(), 10},
-              {new Militia(), 10},
-              {new Village(), 10},
-              {new Thief(), 10}}),
+             {{Factory::get("Library"), 10},
+              {Factory::get("Bureaucrat"), 10},
+              {Factory::get("CouncilRoom"), 10},
+              {Factory::get("Chancellor"), 10},
+              {Factory::get("Moat"), 10},
+              {Factory::get("Spy"), 10},
+              {Factory::get("Festival"), 10},
+              {Factory::get("Militia"), 10},
+              {Factory::get("Village"), 10},
+              {Factory::get("Thief"), 10}}),
 
     GameMode("Changement de taille",
              "Atelier, Bûcheron, Cave, Chapelle, Festin, Jardins, Laboratoire, "
              "Sorcière, Village, Voleur",
-             {{new Workshop(), 10},
-              {new Woodcutter(), 10},
-              {new Cellar(), 10},
-              {new Chapel(), 10},
-              {new Feast(), 10},
-              {new Gardens(), 12},
-              {new Laboratory(), 10},
-              {new Witch(), 10},
-              {new Village(), 10},
-              {new Thief(), 10}}),
+             {{Factory::get("Workshop"), 10},
+              {Factory::get("Woodcutter"), 10},
+              {Factory::get("Cellar"), 10},
+              {Factory::get("Chapel"), 10},
+              {Factory::get("Feast"), 10},
+              {Factory::get("Gardens"), 12},
+              {Factory::get("Laboratory"), 10},
+              {Factory::get("Witch"), 10},
+              {Factory::get("Village"), 10},
+              {Factory::get("Thief"), 10}}),
 
     GameMode("Place du Village",
              "Bibliothèque, Bûcheron, Bureaucrate, Cave, Festival, Forgeron, "
              "Marché, Rénovation, Salle du Trône, Village",
-             {{new Library(), 10},
-              {new Woodcutter(), 10},
-              {new Bureaucrat(), 10},
-              {new Cellar(), 10},
-              {new Festival(), 10},
-              {new Smithy(), 10},
-              {new Market(), 10},
-              {new Remodel(), 10},
-              {new ThroneRoom(), 10},
-              {new Village(), 10}})};
+             {{Factory::get("Library"), 10},
+              {Factory::get("Woodcutter"), 10},
+              {Factory::get("Bureaucrat"), 10},
+              {Factory::get("Cellar"), 10},
+              {Factory::get("Festival"), 10},
+              {Factory::get("Smithy"), 10},
+              {Factory::get("Market"), 10},
+              {Factory::get("Remodel"), 10},
+              {Factory::get("ThroneRoom"), 10},
+              {Factory::get("Village"), 10}})};
 
 Game::Game() { activePlayer = nullptr; }
 
@@ -84,6 +84,15 @@ void Game::setActivePlayer(Player *player) { activePlayer = player; }
 
 void Game::setCurrentGameMode(const GameMode *gameMode) {
   currentGameMode = gameMode;
+}
+void Game::insertCardDistribution(const std::map<const Card *, int> &cardDistribution) {
+  for (const auto &pair : cardDistribution) {
+    currentCardDistribution[pair.first] += pair.second;
+  }
+}
+
+void Game::setCurrentCardDistribution(const std::map<const Card *, int> &cardDistribution) {
+  currentCardDistribution = cardDistribution;
 }
 
 const GameMode *Game::getCurrentGameMode() const { return currentGameMode; }
@@ -286,7 +295,7 @@ void Game::ActionPhase(Player player) {
       continue;
     }
     player.playCard(card, *this);
-    currentPlayerActions--; // je sais pas
+    currentPlayerActions--;
   }
   std::cout << "Action phase ended." << std::endl;
 }
@@ -339,11 +348,43 @@ void Game::BuyPhase(Player player) {
   }
 }
 
+void Game::hasGameEnded() {
+  int emptyStacks = 0;
+  for (const TableStack &stack : KingdomStacks) {
+    if (stack.getQuantity() == 0) {
+      emptyStacks++;
+    }
+  }
+  for (const TableStack &stack : BasicStacks) {
+    if (stack.getQuantity() == 0) {
+      emptyStacks++;
+    }
+    if (stack.getCard()->getName() == "Province" && stack.getQuantity() == 0) {
+      std::cout << "Game over! The game has ended due to the Province stack being empty."
+                << std::endl;
+      std::cout << "The winner is: " << getWinner().getString() << std::endl;
+      exit(0);
+    }
+  }
+
+  if (emptyStacks >= 3) {
+    std::cout << "Game over! The game has ended due to three empty stacks."
+              << std::endl;
+    std::cout << "The winner is: " << getWinner().getString() << std::endl;
+    exit(0);
+  }
+}
+
 void Game::playTurn(Player player) {
   setActivePlayer(&player);
   player.addTurnPlayed();
   ActionPhase(player);
   BuyPhase(player);
+  hasGameEnded();
+}
+
+void Game::addGold(int amount) {
+  currentPlayerMoney += amount;
 }
 
 Player Game::getWinner() {
@@ -387,6 +428,33 @@ void Game::launchGame() {
   }
   std::cout << "You have chosen to play with " << choice << " players."
             << std::endl;
+
+  auto usualDistribution = std::map<const Card*, int>();
+  usualDistribution.insert({{Factory::get("Copper"), 60 - 7 * choice},
+                             {Factory::get("Curse"), 10 * (choice - 1)},});
+  switch (choice) {
+  case 1:
+  case 2:
+    usualDistribution.insert({
+        {Factory::get("Estate"), 8},
+        {Factory::get("Duchy"), 8},
+        {Factory::get("Province"), 8},
+    });
+  case 3:
+  case 4:
+    usualDistribution.insert({
+        {Factory::get("Estate"), 12},
+        {Factory::get("Duchy"), 12},
+        {Factory::get("Province"), 12},
+    });
+    break;
+  }
+
+  auto cardDistribution = gameModes[choice - 1].getCardDistribution();
+  auto combinedDistribution = std::map<const Card*, int>(usualDistribution);
+  combinedDistribution.insert(cardDistribution.begin(), cardDistribution.end());
+  setCurrentCardDistribution(combinedDistribution);
+  
   for (int i = 0; i < choice; ++i) {
     std::cout << "Enter the name of player " << i + 1 << ": ";
     std::string playerName;

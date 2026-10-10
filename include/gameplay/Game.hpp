@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "../cards/barrel.hpp"
+#include "Factory.hpp"
 #include "../player/Player.hpp"
 #include "GameMode.hpp"
 #include "TableStack.hpp"
@@ -16,6 +16,8 @@ private:
 
   Player *activePlayer;
   const GameMode *currentGameMode;
+
+  std::map<const Card *, int> currentCardDistribution;
 
   int currentPlayerMoney = 0;
   int currentPlayerActions = 0;
@@ -39,6 +41,9 @@ public:
   void setCurrentGameMode(const GameMode *gameMode);
   const GameMode *getCurrentGameMode() const;
 
+  void setCurrentCardDistribution(const std::map<const Card *, int> &cardDistribution);
+  void insertCardDistribution(const std::map<const Card *, int> &cardDistribution);
+
   const std::vector<const Card *> &getCardsInPlay() const {
     return CardsInPlay;
   }
@@ -48,6 +53,8 @@ public:
   void BuyPhase(Player player);
 
   void playTurn(Player player);
+
+  void addGold(int amount);
 
   Player getWinner();
 
@@ -60,4 +67,7 @@ public:
                            const std::string &action, std::string mode,
                            const std::set<CardType> &allowedTypes) const;
   void displaySelection(const std::vector<const Card *> &selection) const;
+
+  void hasGameEnded();
+
 };

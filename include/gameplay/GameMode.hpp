@@ -10,7 +10,7 @@ class GameMode {
     private:
         std::string name;
         std::string description;
-        std::map<const Card, int> cardDistribution;
+        std::map<const Card*, int> cardDistribution;
 
     public:
         GameMode(const std::string& name, const std::string& description, const std::map<const Card*, int>& cardDistribution);

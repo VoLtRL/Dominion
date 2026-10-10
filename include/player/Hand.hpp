@@ -14,5 +14,6 @@ public:
   void removeCard(const Card* card);
   void addCard(const Card* card);
   void displayHand() const;
+  size_t getSize() const { return hand.size(); }
   void refillHandFromDrawStack(CardStack& drawStack, CardStack& discardStack);
 };

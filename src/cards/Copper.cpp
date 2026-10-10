@@ -1,5 +1,5 @@
-#include "Copper.hpp"
+#include "../../include/cards/Copper.hpp"
 
-Copper::use(Game& g, Player& p) {
-    g.addGold(value);
+void Copper::onPlay(Game& g, Player& p) {
+    g.addGold(1);
 }
