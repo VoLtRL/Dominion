@@ -1,5 +1,7 @@
-#include "Estate.hpp"
+#include "../../include/cards/Estate.hpp"
+#include "../../include/gameplay/Game.hpp"
+#include "../../include/player/Player.hpp"
 
-Estate::use(Game& g, Player& p) {
-    g.addVictoryPoints(vp);
+void Estate::onGain(Game& g, Player& p) const{
+    p.addVictoryPoints(vp);
 }

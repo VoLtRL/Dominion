@@ -1,8 +1,10 @@
-#include "Village.hpp"
+#include "../../include/cards/Village.hpp"
+#include "../../include/gameplay/Game.hpp"
+#include "../../include/player/Player.hpp"
 
-Village::onPlay(Game& g, Player& p) {
+void Village::onPlay(Game& g, Player& p) const {
     // Draw 1 card
     p.drawCards(1);
     // Add 2 actions
-    p.addActions(2);
+    g.addPlayerActions(2);
 }

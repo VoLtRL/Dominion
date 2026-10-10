@@ -55,6 +55,11 @@ public:
   void playTurn(Player player);
 
   void addGold(int amount);
+  void trashCard(const Card *card) { trash.push_back(card); }
+
+  void addPlayerActions(int amount) { currentPlayerActions += amount; }
+
+  void addPlayerPurchases(int amount) { currentPlayerPurchaseLeft += amount; }
 
   Player getWinner();
 

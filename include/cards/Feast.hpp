@@ -1,9 +1,11 @@
 #pragma once
 #include "../abstract/Card.hpp"
+#include "../abstract/CardType.hpp"
+
 
 
 class Feast : public Card{
     public:
         Feast() : Card("Feast", 4," Trash this card. Gain a card costing up to 5.", {CardType::ACTION}) {}
-        void onPlay(Game& g, Player& p);
+        void onPlay(Game& g, Player& p) const;
 };

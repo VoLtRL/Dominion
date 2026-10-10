@@ -1,5 +1,9 @@
+#pragma once
 #include <string>
 
+/**
+ * @brief Represents the type of a card in the game.
+ */
 enum class CardType {
     ACTION,
     TREASURE,
@@ -9,6 +13,11 @@ enum class CardType {
     REACTION
 };
 
+/**
+ * @brief Converts a CardType to its string representation.
+ * @param t The CardType to convert.
+ * @return A string representing the CardType.
+ */
 inline std::string tostring(CardType t) {
     switch (t) {
         case CardType::ACTION: return "Action";

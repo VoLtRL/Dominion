@@ -1,5 +1,7 @@
 #pragma once
 #include "../abstract/Card.hpp"
+#include "../abstract/CardType.hpp"
+
 
 
 class Province : public Card {
@@ -7,5 +9,5 @@ class Province : public Card {
         int vp = 6;
     public: 
         Province() : Card("Province", 8, "", {CardType::VICTORY}) {}
-        void onPlay(Game& g, Player& p);
+        void onGain(Game& g, Player& p) const;
 };

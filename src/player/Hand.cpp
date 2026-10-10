@@ -1,11 +1,12 @@
 #include "../../include/player/Hand.hpp"
+#include <iostream>
 
 void Hand::addCard(const Card* card) {
   hand.push_back(card);
 }
 
 void Hand::removeCard(const Card* to_rem) {
-  for(int i = 0; i < hand.size(); i++) {
+  for(size_t i = 0; i < hand.size(); i++) {
     if(hand[i] == to_rem) {
       hand.erase(hand.begin() + i);
       break;
@@ -13,7 +14,7 @@ void Hand::removeCard(const Card* to_rem) {
   }
 }
 
-const std::vector<const Card*> &Hand::getSpecificCards(const CardType &type) const {
+std::vector<const Card*> Hand::getSpecificCards(const CardType &type) const {
   std::vector<const Card*> specificCards;
   for (const Card *card : hand) {
     for(const CardType &cardType : card->getTypes()) {
@@ -26,7 +27,11 @@ const std::vector<const Card*> &Hand::getSpecificCards(const CardType &type) con
   return specificCards;
 }
 
-void Hand::displayHand() const{}
+void Hand::displayHand() const {
+  for (size_t i = 0; i < hand.size(); ++i) {
+    std::cout << i + 1 << ". " << hand[i]->getName() << '\n';
+  }
+}
 
 
 void Hand::refillHandFromDrawStack(CardStack& drawStack, CardStack& discardStack) {
@@ -47,4 +52,3 @@ void Hand::refillHandFromDrawStack(CardStack& drawStack, CardStack& discardStack
     }
   }
 }
-

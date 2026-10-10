@@ -13,7 +13,7 @@ const std::vector<GameMode> Game::gameModes = {
               {Factory::get("Market"), 10},
               {Factory::get("Militia"), 10},
               {Factory::get("Mine"), 10},
-              {Factory::get("Remodal"), 10},
+              {Factory::get("Remodel"), 10},
               {Factory::get("Village"), 10}}),
 
     GameMode("Richesses et trésors",
@@ -27,7 +27,7 @@ const std::vector<GameMode> Game::gameModes = {
               {Factory::get("Laboratory"), 10},
               {Factory::get("Market"), 10},
               {Factory::get("Mine"), 10},
-              {Factory::get("MoneyLender"), 10},
+              {Factory::get("Moneylender"), 10},
               {Factory::get("ThroneRoom"), 10}}),
 
     GameMode("Interaction",
@@ -245,7 +245,7 @@ std::vector<const Card *> Game::chooseCardsFromSelection(
     if (index == 0 && canStop)
       break;
 
-    if (index < 1 || index > selection.size()) {
+    if (index < 1 || static_cast<size_t>(index) > selection.size()) {
       std::cout << "Invalid index. Please try again.\n";
       continue;
     }
@@ -279,10 +279,10 @@ void Game::ActionPhase(Player player) {
   while (currentPlayerActions > 0) {
     std::cout << "You have " << currentPlayerActions << " actions left."
               << std::endl;
-    const std::vector<const Card *> cards = player.getHand().getCards();
+    std::vector<const Card *> cards = player.getHand().getCards();
     for (const Card *c : cards) {
       if (!c->isA(CardType::ACTION)) {
-        std::remove(cards.begin(), cards.end(), c);
+        cards.erase(std::remove(cards.begin(), cards.end(), c), cards.end());
       }
     }
     if (cards.empty()) {
@@ -412,7 +412,7 @@ void Game::launchGame() {
       << "Please select a game mode by entering the corresponding number: ";
   int choice;
   std::cin >> choice;
-  if (choice < 1 || choice > gameModes.size()) {
+  if (choice < 1 || static_cast<size_t>(choice) > gameModes.size()) {
     std::cout << "Invalid choice." << std::endl;
     return;
   }
@@ -440,6 +440,7 @@ void Game::launchGame() {
         {Factory::get("Duchy"), 8},
         {Factory::get("Province"), 8},
     });
+    break;
   case 3:
   case 4:
     usualDistribution.insert({

@@ -1,7 +1,10 @@
+#pragma once
 #include "../abstract/Card.hpp"
+#include "../abstract/CardType.hpp"
+
 
 class Militia : public Card {
     public:
         Militia() : Card("Militia", 4, "+2 Coins. Each other player discards down to 3 cards in hand.", {CardType::ACTION}) {}
-        void onPlay(Game& g, Player& p);
+        void onPlay(Game& g, Player& p) const;
 };
