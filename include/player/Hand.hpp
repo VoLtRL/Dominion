@@ -32,12 +32,6 @@ public:
   std::vector<const Card*> getSpecificCards(const CardType &type) const;
 
   /**
-   * @brief Adds a card to the hand.
-   * @param card The card to be added.
-   */
-  void addCard(const Card* card);
-
-  /**
    * @brief Removes a card from the hand.
    * @param card The card to be removed.
    */

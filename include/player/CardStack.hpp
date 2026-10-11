@@ -14,7 +14,11 @@ private:
 
 public:
   CardStack() = default;
-
+  CardStack(std::vector<const Card*> cards) {
+    for (const Card* card : cards) {
+      stack.push(card);
+    }
+  }
   const std::stack<const Card*> &getStack() const { return stack; }
   int getSize() const { return stack.size(); }
 
