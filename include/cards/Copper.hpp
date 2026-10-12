@@ -3,9 +3,8 @@
 #include "../abstract/CardType.hpp"
 
 class Copper : public Card {
-    private:
-        int value = 1;
-    public: 
-        Copper() : Card("Copper", 0, "", {CardType::TREASURE}) {}
-        void onPlay(Game& g, Player& p) const;
+private:
+public:
+  Copper() : Card("Copper", 0, "+1 gold", {CardType::TREASURE}) {}
+  void onPlay(Game &g, Player &p) const;
 };

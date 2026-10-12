@@ -1,8 +1,7 @@
 #include "../../include/gameplay/Game.hpp"
 #include <algorithm>
 #include <iostream>
-
-
+#include <ostream>
 
 const std::vector<Player> &Game::getPlayers() const { return players; }
 
@@ -15,13 +14,15 @@ void Game::setActivePlayer(Player *player) { activePlayer = player; }
 void Game::setCurrentGameMode(const GameMode *gameMode) {
   currentGameMode = gameMode;
 }
-void Game::insertCardDistribution(const std::map<const Card *, int> &cardDistribution) {
+void Game::insertCardDistribution(
+    const std::map<const Card *, int> &cardDistribution) {
   for (const auto &pair : cardDistribution) {
     currentCardDistribution[pair.first] += pair.second;
   }
 }
 
-void Game::setCurrentCardDistribution(const std::map<const Card *, int> &cardDistribution) {
+void Game::setCurrentCardDistribution(
+    const std::map<const Card *, int> &cardDistribution) {
   currentCardDistribution = cardDistribution;
 }
 
@@ -94,10 +95,11 @@ void Game::displaySelection(const std::vector<const Card *> &selection) const {
   }
 }
 
-std::vector<const Card *> Game::chooseCardsFromSelection(
-    const std::vector<const Card *> &selection, size_t numberOfCardsToChoose,
-    const std::string &action, std::string mode,
-    const std::set<CardType> &allowedTypes) const {
+std::vector<const Card *>
+Game::chooseCardsFromSelection(const std::vector<const Card *> &selection,
+                               size_t numberOfCardsToChoose,
+                               const std::string &action, std::string mode,
+                               const std::set<CardType> &allowedTypes) const {
   if (mode != "exact" && mode != "most" && mode != "least") {
     mode = "exact";
   }
@@ -205,11 +207,11 @@ std::vector<const Card *> Game::chooseCardsFromSelection(
   return chosenCards;
 }
 
-void Game::ActionPhase(Player player) {
+void Game::ActionPhase() {
   while (currentPlayerActions > 0) {
     std::cout << "You have " << currentPlayerActions << " actions left."
               << std::endl;
-    std::vector<const Card *> cards = player.getHand().getCards();
+    std::vector<const Card *> cards = activePlayer->getHand().getCards();
     for (const Card *c : cards) {
       if (!c->isA(CardType::ACTION)) {
         cards.erase(std::remove(cards.begin(), cards.end(), c), cards.end());
@@ -219,63 +221,61 @@ void Game::ActionPhase(Player player) {
       std::cout << "You have no action cards to play." << std::endl;
       break;
     }
-    auto card = chooseCardsFromSelection(cards, 1, "play", "exact", {CardType::ACTION})[0];
+    auto card = chooseCardsFromSelection(cards, 1, "play", "exact",
+                                         {CardType::ACTION})[0];
     if (!card) {
       std::cout << "No card selected. Please try again." << std::endl;
       continue;
     }
-    player.playCard(card, *this);
+    std::cout << "You played the " << card->getName() << std::endl;
+    activePlayer->playCard(card, *this);
     currentPlayerActions--;
   }
-  useTreasureCards(player, *this);
+  useTreasureCards();
   std::cout << "Action phase ended." << std::endl;
 }
 
-void Game::useTreasureCards(Player &player, Game &game) {
-  std::vector<const Card *> treasureCards = player.getHand().getSpecificCards(CardType::TREASURE);
+void Game::useTreasureCards() {
+  std::vector<const Card *> treasureCards =
+      activePlayer->getHand().getSpecificCards(CardType::TREASURE);
   if (treasureCards.empty()) {
     std::cout << "You have no treasure cards to use." << std::endl;
     return;
   }
 
-  std::cout << "You have the following treasure cards in your hand:" << std::endl;
-  game.displaySelection(treasureCards);
+  std::cout << "You have the following treasure cards in your hand:"
+            << std::endl;
+  displaySelection(treasureCards);
 
   std::string input;
-  
-  
 
-  while(!treasureCards.empty() && input != "all" && input != "none") {
-    std::cout << "Enter the index of the treasure card you want to use, (all and none accepted): ";
-
+  while (!treasureCards.empty() && input != "all" && input != "none") {
+    std::cout << "Enter the index of the treasure card you want to use, (all "
+                 "and none accepted): ";
 
     std::cin >> input;
     std::cin.ignore();
-  if (input == "all") {
-    for (const Card *card : treasureCards) {
-      game.addGold(card->getCost());
-      player.removeCardFromHand(card);
-      player.addCardToDiscardStack(card);
-      continue;
-    }
-  } else if (input == "none") {
-    return;
-  } else {
-    int index = std::stoi(input);
-    if (index < 1 || static_cast<size_t>(index) > treasureCards.size()) {
-      std::cout << "Invalid index. Please try again." << std::endl;
-      continue;
+    if (input == "all") {
+      for (const Card *card : treasureCards) {
+        activePlayer->playCard(card, *this);
+        continue;
+      }
+    } else if (input == "none") {
+      return;
     } else {
-      const Card *card = treasureCards[index - 1];
-      game.addGold(card->getCost());
-      player.removeCardFromHand(card);
-      player.addCardToDiscardStack(card);
+      int index = std::stoi(input);
+      if (index < 1 || static_cast<size_t>(index) > treasureCards.size()) {
+        std::cout << "Invalid index. Please try again." << std::endl;
+        continue;
+      } else {
+        const Card *card = treasureCards[index - 1];
+        activePlayer->playCard(card, *this);
+      }
     }
   }
 }
-}
 
-void Game::BuyPhase(Player player) {
+void Game::BuyPhase() {
   while (currentPlayerPurchaseLeft) {
     std::cout << "You have " << currentPlayerPurchaseLeft << " purchases left"
               << std::endl;
@@ -288,7 +288,6 @@ void Game::BuyPhase(Player player) {
       if (quantity > 0) {
         display[card->getCost()].push_back(card);
       }
-      
     }
 
     for (auto pair : display) {
@@ -298,7 +297,8 @@ void Game::BuyPhase(Player player) {
 
     std::string card_name;
 
-    std::cout << "Which card do you want to buy ? Enter the name of the card or -1 to skip buying a card"
+    std::cout << "Which card do you want to buy ? Enter the name of the card "
+                 "or -1 to skip buying a card"
               << std::endl;
     std::cout << "You have " << currentPlayerMoney << " coins." << std::endl;
     std::cin >> card_name;
@@ -314,7 +314,9 @@ void Game::BuyPhase(Player player) {
       continue;
     }
     if (card->getCost() > currentPlayerMoney) {
-      std::cout << "You don't have enough money to buy this card. Please try again." << std::endl;
+      std::cout
+          << "You don't have enough money to buy this card. Please try again."
+          << std::endl;
       continue;
     }
     if (currentCardDistribution[card] <= 0) {
@@ -323,8 +325,8 @@ void Game::BuyPhase(Player player) {
     }
     currentCardDistribution[card]--;
     currentPlayerMoney -= card->getCost();
-    player.addCardToDiscardStack(card);
-
+    activePlayer->addCardToDiscardStack(card);
+    addPlayerPurchases(-1);
   }
 }
 
@@ -340,7 +342,8 @@ void Game::hasGameEnded() {
       emptyStacks++;
     }
     if (stack.getCard()->getName() == "Province" && stack.getQuantity() == 0) {
-      std::cout << "Game over! The game has ended due to the Province stack being empty."
+      std::cout << "Game over! The game has ended due to the Province stack "
+                   "being empty."
                 << std::endl;
       std::cout << "The winner is: " << getWinner().getString() << std::endl;
       exit(0);
@@ -355,20 +358,26 @@ void Game::hasGameEnded() {
   }
 }
 
-void Game::playTurn(Player player) {
+void Game::playTurn(Player &player) {
   setActivePlayer(&player);
   player.addTurnPlayed();
-  addPlayerActions(1);
-  addPlayerPurchases(1);
-  displaySelection(player.getHand().getCards());
+  displaySelection(activePlayer->getHand().getCards());
   std::cout << "It is " << player.getString() << "'s turn." << std::endl;
-  ActionPhase(player);
-  BuyPhase(player);
+  ActionPhase();
+  BuyPhase();
+  player.discardHand();
+
+  player.drawCards(5);
   hasGameEnded();
 }
 
-void Game::addGold(int amount) {
-  currentPlayerMoney += amount;
+void Game::addGold(int amount) { currentPlayerMoney += amount; }
+
+void Game::discardCardsInPlay() {
+  for (auto card : CardsInPlay) {
+    activePlayer->addCardToDiscardStack(card);
+  }
+  CardsInPlay.clear();
 }
 
 Player Game::getWinner() {
@@ -413,9 +422,11 @@ void Game::launchGame() {
   std::cout << "You have chosen to play with " << choice << " players."
             << std::endl;
 
-  auto usualDistribution = std::map<const Card*, int>();
-  usualDistribution.insert({{Factory::get("Copper"), 60 - 7 * choice},
-                             {Factory::get("Curse"), 10 * (choice - 1)},});
+  auto usualDistribution = std::map<const Card *, int>();
+  usualDistribution.insert({
+      {Factory::get("Copper"), 60 - 7 * choice},
+      {Factory::get("Curse"), 10 * (choice - 1)},
+  });
   switch (choice) {
   case 1:
   case 2:
@@ -436,20 +447,21 @@ void Game::launchGame() {
   }
 
   auto cardDistribution = gameModes[choice - 1].getCardDistribution();
-  auto combinedDistribution = std::map<const Card*, int>(usualDistribution);
+  auto combinedDistribution = std::map<const Card *, int>(usualDistribution);
   combinedDistribution.insert(cardDistribution.begin(), cardDistribution.end());
   setCurrentCardDistribution(combinedDistribution);
-  
+
   for (int i = 0; i < choice; ++i) {
     std::cout << "Enter the name of player " << i + 1 << ": ";
     std::string playerName;
     std::cin >> playerName;
     std::cin.ignore(); // Ignore the newline character
-    std::cin.sync(); // Clear the input buffer
-    CardStack drawStack = CardStack({
-      Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
-       Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
-       Factory::get("Estate"), Factory::get("Estate"), Factory::get("Estate")});
+    std::cin.sync();   // Clear the input buffer
+    CardStack drawStack = CardStack(
+        {Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
+         Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
+         Factory::get("Estate"), Factory::get("Estate"),
+         Factory::get("Estate")});
 
     drawStack.shuffle();
     Hand hand;
@@ -461,6 +473,9 @@ void Game::launchGame() {
 
   while (true) {
     for (Player &player : players) {
+      currentPlayerActions = 1;
+      currentPlayerPurchaseLeft = 1;
+      currentPlayerMoney = 0;
       playTurn(player);
     }
   }

@@ -1,21 +1,17 @@
 #include "../../include/player/Player.hpp"
 #include "../../include/gameplay/Game.hpp"
 
-
-
 /**
  * @brief Adds a turn to the player's turn count.
  */
-void Player::addTurnPlayed() {
-  turnsPlayed++;
-}
+void Player::addTurnPlayed() { turnsPlayed++; }
 
 /**
  * @brief Plays a card from the player's hand.
  * @param card The card to be played.
  * @param g The game instance.
  */
-void Player::playCard(const Card* card, Game& g) {
+void Player::playCard(const Card *card, Game &g) {
   hand.removeCard(card);
   g.addCardToPlay(card);
   card->onPlay(g, *this);
@@ -33,14 +29,18 @@ void Player::swapAndShuffleStacks() {
  * @brief Gets the player's score.
  * @return The player's score.
  */
-int Player::getScore() const {
-  return score;
-}
+int Player::getScore() const { return score; }
 
+/**
+ * @brief Discard every cards in the hand of the player
+ */
+void Player::discardHand() {
+  for (auto card : hand.getCards()) {
+    discardCard(card);
+  }
+}
 /**
  * @brief Gets a string representation of the player.
  * @return A string representing the player.
  */
-std::string Player::getString() const {
-  return name;
-}
+std::string Player::getString() const { return name; }
