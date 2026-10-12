@@ -1,5 +1,7 @@
-#include "Province.hpp"
+#include "../include/cards/Province.hpp"
+#include "../../include/gameplay/Game.hpp"
+#include "../../include/player/Player.hpp"
 
-Province::use(Game& g, Player& p) {
-    g.addVictoryPoints(vp);
+void Province::onGain(Game& g, Player& p) const {
+    p.addVictoryPoints(vp);
 }

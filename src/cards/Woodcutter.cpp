@@ -1,8 +1,10 @@
-#include "Woodcutter.hpp"
+#include "../../include/cards/Woodcutter.hpp"
+#include "../../include/gameplay/Game.hpp"
+#include "../../include/player/Player.hpp"
 
-Woodcutter::onPlay(Game& g, Player& p) {
+void Woodcutter::onPlay(Game& g, Player& p) const {
     // Add 1 buy
-    p.addBuys(1);
+    g.addPlayerPurchases(1);
     // Add 2 coins
-    p.addCoins(2);
+    g.addGold(2);
 }

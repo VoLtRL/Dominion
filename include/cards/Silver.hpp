@@ -1,5 +1,7 @@
 #pragma once
 #include "../abstract/Card.hpp"
+#include "../abstract/CardType.hpp"
+
 
 
 class Silver : public Card {
@@ -7,5 +9,5 @@ class Silver : public Card {
         int value = 2;
     public: 
         Silver() : Card("Silver", 3, "", {CardType::TREASURE}) {}
-        void onPlay(Game& g, Player& p);
+        void onPlay(Game& g, Player& p) const;
 };

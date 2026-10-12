@@ -1,7 +1,8 @@
+#pragma once
 #include "../abstract/Card.hpp"
 
 class Cellar : public Card {
     public:
         Cellar() : Card("Cellar", 2, "Discard any number of cards. +1 Card per card discarded.", {CardType::ACTION}) {}
-        void onPlay(Game& g, Player& p);
+        void onPlay(Game& g, Player& p) const;
 };

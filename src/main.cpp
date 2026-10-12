@@ -1,4 +1,4 @@
-
+#include "gameplay/Factory.hpp"
 #include "gameplay/Game.hpp"
 
 int main() { 

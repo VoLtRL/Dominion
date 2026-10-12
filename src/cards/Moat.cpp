@@ -1,6 +1,8 @@
-#include "Moat.hpp"
+#include "../../include/cards/Moat.hpp"
+#include "../../include/gameplay/Game.hpp"
+#include "../../include/player/Player.hpp"
 
-Moat::onPlay(Game& g, Player& p) {
+void Moat::onPlay(Game& g, Player& p) const {
     // Draw 2 cards
     p.drawCards(2);
 }

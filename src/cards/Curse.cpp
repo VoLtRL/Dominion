@@ -1,5 +1,8 @@
-#include "Curse.hpp"
+#include "../../include/cards/Curse.hpp"
+#include "../../include/gameplay/Game.hpp"
+#include "../../include/player/Player.hpp"
 
-Curse::use(Game& g, Player& p) {
-    g.addVictoryPoints(vp);
+void Curse::onGain(Game& g, Player& p) const {
+    (void)g;
+    p.addVictoryPoints(vp);
 }

@@ -1,0 +1,83 @@
+/usr/bin/ld: build/gameplay/Factory.o: warning: relocation against `_ZTV10Adventurer' in read-only section `.text._ZN10AdventurerD2Ev[_ZN10AdventurerD5Ev]'
+/usr/bin/ld: build/gameplay/Game.o: in function `Game::launchGame()':
+Game.cpp:(.text+0x2b50): undefined reference to `GameMode::getName[abi:cxx11]() const'
+/usr/bin/ld: Game.cpp:(.text+0x2b94): undefined reference to `GameMode::getDescription[abi:cxx11]() const'
+/usr/bin/ld: Game.cpp:(.text+0x3322): undefined reference to `GameMode::getCardDistribution() const'
+/usr/bin/ld: Game.cpp:(.text+0x3435): undefined reference to `CardStack::shuffle()'
+/usr/bin/ld: build/gameplay/Game.o: in function `__static_initialization_and_destruction_0()':
+Game.cpp:(.text+0x3f35): undefined reference to `GameMode::GameMode(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::map<Card const*, int, std::less<Card const*>, std::allocator<std::pair<Card const* const, int> > > const&)'
+/usr/bin/ld: Game.cpp:(.text+0x43d6): undefined reference to `GameMode::GameMode(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::map<Card const*, int, std::less<Card const*>, std::allocator<std::pair<Card const* const, int> > > const&)'
+/usr/bin/ld: Game.cpp:(.text+0x4878): undefined reference to `GameMode::GameMode(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::map<Card const*, int, std::less<Card const*>, std::allocator<std::pair<Card const* const, int> > > const&)'
+/usr/bin/ld: Game.cpp:(.text+0x4d1a): undefined reference to `GameMode::GameMode(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::map<Card const*, int, std::less<Card const*>, std::allocator<std::pair<Card const* const, int> > > const&)'
+/usr/bin/ld: Game.cpp:(.text+0x51bc): undefined reference to `GameMode::GameMode(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::map<Card const*, int, std::less<Card const*>, std::allocator<std::pair<Card const* const, int> > > const&)'
+/usr/bin/ld: build/gameplay/Game.o: in function `Player::addCardToDiscardStack(Card const*)':
+Game.cpp:(.text._ZN6Player21addCardToDiscardStackEPK4Card[_ZN6Player21addCardToDiscardStackEPK4Card]+0x23): undefined reference to `CardStack::putCard(Card const*)'
+/usr/bin/ld: build/gameplay/Factory.o: in function `Factory::get(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)':
+Factory.cpp:(.text+0x18): undefined reference to `Factory::m_card_map[abi:cxx11]'
+/usr/bin/ld: build/gameplay/Factory.o: in function `Adventurer::Adventurer()':
+Factory.cpp:(.text._ZN10AdventurerC2Ev[_ZN10AdventurerC5Ev]+0x14b): undefined reference to `vtable for Adventurer'
+/usr/bin/ld: build/gameplay/Factory.o: in function `Bureaucrat::Bureaucrat()':
+Factory.cpp:(.text._ZN10BureaucratC2Ev[_ZN10BureaucratC5Ev]+0x152): undefined reference to `vtable for Bureaucrat'
+/usr/bin/ld: build/gameplay/Factory.o: in function `Chancellor::Chancellor()':
+Factory.cpp:(.text._ZN10ChancellorC2Ev[_ZN10ChancellorC5Ev]+0x14b): undefined reference to `vtable for Chancellor'
+/usr/bin/ld: build/gameplay/Factory.o: in function `CouncilRoom::CouncilRoom()':
+Factory.cpp:(.text._ZN11CouncilRoomC2Ev[_ZN11CouncilRoomC5Ev]+0x14b): undefined reference to `vtable for CouncilRoom'
+/usr/bin/ld: build/gameplay/Factory.o: in function `Festival::Festival()':
+Factory.cpp:(.text._ZN8FestivalC2Ev[_ZN8FestivalC5Ev]+0x14b): undefined reference to `vtable for Festival'
+/usr/bin/ld: build/gameplay/Factory.o: in function `Library::Library()':
+Factory.cpp:(.text._ZN7LibraryC2Ev[_ZN7LibraryC5Ev]+0x14b): undefined reference to `vtable for Library'
+/usr/bin/ld: build/gameplay/Factory.o: in function `Market::Market()':
+Factory.cpp:(.text._ZN6MarketC2Ev[_ZN6MarketC5Ev]+0x14b): undefined reference to `vtable for Market'
+/usr/bin/ld: build/gameplay/Factory.o: in function `Militia::Militia()':
+Factory.cpp:(.text._ZN7MilitiaC2Ev[_ZN7MilitiaC5Ev]+0x14b): undefined reference to `vtable for Militia'
+/usr/bin/ld: build/gameplay/Factory.o: in function `Mine::Mine()':
+Factory.cpp:(.text._ZN4MineC2Ev[_ZN4MineC5Ev]+0x14b): undefined reference to `vtable for Mine'
+/usr/bin/ld: build/gameplay/Factory.o: in function `Moneylender::Moneylender()':
+Factory.cpp:(.text._ZN11MoneylenderC2Ev[_ZN11MoneylenderC5Ev]+0x14b): undefined reference to `vtable for Moneylender'
+/usr/bin/ld: build/gameplay/Factory.o: in function `Remodel::Remodel()':
+Factory.cpp:(.text._ZN7RemodelC2Ev[_ZN7RemodelC5Ev]+0x14b): undefined reference to `vtable for Remodel'
+/usr/bin/ld: build/gameplay/Factory.o: in function `Spy::Spy()':
+Factory.cpp:(.text._ZN3SpyC2Ev[_ZN3SpyC5Ev]+0x152): undefined reference to `vtable for Spy'
+/usr/bin/ld: build/gameplay/Factory.o: in function `ThroneRoom::ThroneRoom()':
+Factory.cpp:(.text._ZN10ThroneRoomC2Ev[_ZN10ThroneRoomC5Ev]+0x14b): undefined reference to `vtable for ThroneRoom'
+/usr/bin/ld: build/gameplay/Factory.o: in function `Factory::Factory()':
+Factory.cpp:(.text._ZN7FactoryC2Ev[_ZN7FactoryC5Ev]+0x65): undefined reference to `Factory::m_card_map[abi:cxx11]'
+/usr/bin/ld: Factory.cpp:(.text._ZN7FactoryC2Ev[_ZN7FactoryC5Ev]+0xf7): undefined reference to `Factory::m_card_map[abi:cxx11]'
+/usr/bin/ld: Factory.cpp:(.text._ZN7FactoryC2Ev[_ZN7FactoryC5Ev]+0x189): undefined reference to `Factory::m_card_map[abi:cxx11]'
+/usr/bin/ld: Factory.cpp:(.text._ZN7FactoryC2Ev[_ZN7FactoryC5Ev]+0x21b): undefined reference to `Factory::m_card_map[abi:cxx11]'
+/usr/bin/ld: Factory.cpp:(.text._ZN7FactoryC2Ev[_ZN7FactoryC5Ev]+0x2ad): undefined reference to `Factory::m_card_map[abi:cxx11]'
+/usr/bin/ld: build/gameplay/Factory.o:Factory.cpp:(.text._ZN7FactoryC2Ev[_ZN7FactoryC5Ev]+0x33f): more undefined references to `Factory::m_card_map[abi:cxx11]' follow
+/usr/bin/ld: build/gameplay/Factory.o: in function `Adventurer::~Adventurer()':
+Factory.cpp:(.text._ZN10AdventurerD2Ev[_ZN10AdventurerD5Ev]+0xf): undefined reference to `vtable for Adventurer'
+/usr/bin/ld: build/gameplay/Factory.o: in function `Bureaucrat::~Bureaucrat()':
+Factory.cpp:(.text._ZN10BureaucratD2Ev[_ZN10BureaucratD5Ev]+0xf): undefined reference to `vtable for Bureaucrat'
+/usr/bin/ld: build/gameplay/Factory.o: in function `Chancellor::~Chancellor()':
+Factory.cpp:(.text._ZN10ChancellorD2Ev[_ZN10ChancellorD5Ev]+0xf): undefined reference to `vtable for Chancellor'
+/usr/bin/ld: build/gameplay/Factory.o: in function `CouncilRoom::~CouncilRoom()':
+Factory.cpp:(.text._ZN11CouncilRoomD2Ev[_ZN11CouncilRoomD5Ev]+0xf): undefined reference to `vtable for CouncilRoom'
+/usr/bin/ld: build/gameplay/Factory.o: in function `Festival::~Festival()':
+Factory.cpp:(.text._ZN8FestivalD2Ev[_ZN8FestivalD5Ev]+0xf): undefined reference to `vtable for Festival'
+/usr/bin/ld: build/gameplay/Factory.o: in function `Library::~Library()':
+Factory.cpp:(.text._ZN7LibraryD2Ev[_ZN7LibraryD5Ev]+0xf): undefined reference to `vtable for Library'
+/usr/bin/ld: build/gameplay/Factory.o: in function `Market::~Market()':
+Factory.cpp:(.text._ZN6MarketD2Ev[_ZN6MarketD5Ev]+0xf): undefined reference to `vtable for Market'
+/usr/bin/ld: build/gameplay/Factory.o: in function `Militia::~Militia()':
+Factory.cpp:(.text._ZN7MilitiaD2Ev[_ZN7MilitiaD5Ev]+0xf): undefined reference to `vtable for Militia'
+/usr/bin/ld: build/gameplay/Factory.o: in function `Mine::~Mine()':
+Factory.cpp:(.text._ZN4MineD2Ev[_ZN4MineD5Ev]+0xf): undefined reference to `vtable for Mine'
+/usr/bin/ld: build/gameplay/Factory.o: in function `Moneylender::~Moneylender()':
+Factory.cpp:(.text._ZN11MoneylenderD2Ev[_ZN11MoneylenderD5Ev]+0xf): undefined reference to `vtable for Moneylender'
+/usr/bin/ld: build/gameplay/Factory.o: in function `Remodel::~Remodel()':
+Factory.cpp:(.text._ZN7RemodelD2Ev[_ZN7RemodelD5Ev]+0xf): undefined reference to `vtable for Remodel'
+/usr/bin/ld: build/gameplay/Factory.o: in function `Spy::~Spy()':
+Factory.cpp:(.text._ZN3SpyD2Ev[_ZN3SpyD5Ev]+0xf): undefined reference to `vtable for Spy'
+/usr/bin/ld: build/gameplay/Factory.o: in function `ThroneRoom::~ThroneRoom()':
+Factory.cpp:(.text._ZN10ThroneRoomD2Ev[_ZN10ThroneRoomD5Ev]+0xf): undefined reference to `vtable for ThroneRoom'
+/usr/bin/ld: build/player/Hand.o: in function `Hand::refillHandFromDrawStack(CardStack&, CardStack&)':
+Hand.cpp:(.text+0x306): undefined reference to `CardStack::putCard(Card const*)'
+/usr/bin/ld: Hand.cpp:(.text+0x327): undefined reference to `CardStack::shuffle()'
+/usr/bin/ld: build/player/Player.o: in function `Player::swapAndShuffleStacks()':
+Player.cpp:(.text+0xb1): undefined reference to `CardStack::shuffle()'
+/usr/bin/ld: warning: creating DT_TEXTREL in a PIE
+collect2: error: ld returned 1 exit status
+make: *** [Makefile:29: build/dominion] Error 1

@@ -1,9 +1,10 @@
 #pragma once
 #include "../abstract/Card.hpp"
+#include "../abstract/CardType.hpp"
 
 
 class Workshop : public Card{
     public:
         Workshop() : Card("Workshop", 3," Gain a card costing up to 4.", {CardType::ACTION}) {}
-        void onPlay(Game& g, Player& p);
+        void onPlay(Game& g, Player& p) const;
 };

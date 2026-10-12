@@ -4,12 +4,32 @@
 #include <iostream>
 #include <sstream>
 
+void Card::onPlay(Game& g, Player& p) const {
+    (void)g;
+    (void)p;
+}
+
+void Card::onDiscard(Game& g, Player& p) const {
+    (void)g;
+    (void)p;
+}
+
+void Card::onTrash(Game& g, Player& p) const {
+    (void)g;
+    (void)p;
+}
+
+void Card::onGain(Game& g, Player& p) const {
+    (void)g;
+    (void)p;
+}
+
 bool Card::isA(CardType t) const{
     std::set<CardType> types = getTypes();
     return types.find(t) != types.end();
 }
 
-std::vector<std::string> wrapString(std::string text, size_t maxWidth){
+const std::vector<std::string> wrapString(std::string text, size_t maxWidth){
     std::vector<std::string> lines;
     std::istringstream words(text);
     std::string line;
@@ -37,7 +57,7 @@ std::vector<std::string> wrapString(std::string text, size_t maxWidth){
     return lines;
 }
 
-std::string Card::getString(size_t maxWidth = 30) const {
+const std::string Card::getString(size_t maxWidth) const {
     std::string typesStr;
     for (CardType t : getTypes()){
         if(!typesStr.empty()){typesStr += "-";}
@@ -85,5 +105,5 @@ std::string Card::getString(size_t maxWidth = 30) const {
 }
 
 void Card::display() const{
-    std::cout << getString() << std::endl;
+    std::cout << getString(30) << std::endl;
 }

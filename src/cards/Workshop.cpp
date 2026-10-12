@@ -1,5 +1,8 @@
-#include "Workshop.hpp"
+#include "../../include/cards/Workshop.hpp"
+#include "../../include/gameplay/Game.hpp"
+#include "../../include/player/Player.hpp"
 
-Workshop::onPlay(Game& g, Player& p) {
-    // Prompt the player to gain a card costing up to 4
+void Workshop::onPlay(Game& g, Player& p) const {
+    (void)g;
+    p.addCardToDiscardStack(Factory::get("Copper"));
 }

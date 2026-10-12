@@ -1,5 +1,7 @@
-#include "Gold.hpp"
+#include "../../include/cards/Gold.hpp"
+#include "../../include/gameplay/Game.hpp"
+#include "../../include/player/Player.hpp"
 
-Gold::use(Game& g, Player& p) {
+void Gold::onPlay(Game& g, Player& p) const {
     g.addGold(value);
 }
