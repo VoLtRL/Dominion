@@ -118,7 +118,9 @@ public:
   }
   void addCardToPlay(const Card *card) { CardsInPlay.push_back(card); }
 
+  void useTreasureCards(Player &player, Game &game);
   void ActionPhase(Player player);
+
   void BuyPhase(Player player);
 
   void playTurn(Player player);

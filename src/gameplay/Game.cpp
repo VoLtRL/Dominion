@@ -227,22 +227,68 @@ void Game::ActionPhase(Player player) {
     player.playCard(card, *this);
     currentPlayerActions--;
   }
+  useTreasureCards(player, *this);
   std::cout << "Action phase ended." << std::endl;
+}
+
+void Game::useTreasureCards(Player &player, Game &game) {
+  std::vector<const Card *> treasureCards = player.getHand().getSpecificCards(CardType::TREASURE);
+  if (treasureCards.empty()) {
+    std::cout << "You have no treasure cards to use." << std::endl;
+    return;
+  }
+
+  std::cout << "You have the following treasure cards in your hand:" << std::endl;
+  game.displaySelection(treasureCards);
+
+  std::string input;
+  
+  
+
+  while(!treasureCards.empty() && input != "all" && input != "none") {
+    std::cout << "Enter the index of the treasure card you want to use, (all and none accepted): ";
+
+
+    std::cin >> input;
+    std::cin.ignore();
+  if (input == "all") {
+    for (const Card *card : treasureCards) {
+      game.addGold(card->getCost());
+      player.removeCardFromHand(card);
+      player.addCardToDiscardStack(card);
+      continue;
+    }
+  } else if (input == "none") {
+    return;
+  } else {
+    int index = std::stoi(input);
+    if (index < 1 || static_cast<size_t>(index) > treasureCards.size()) {
+      std::cout << "Invalid index. Please try again." << std::endl;
+      continue;
+    } else {
+      const Card *card = treasureCards[index - 1];
+      game.addGold(card->getCost());
+      player.removeCardFromHand(card);
+      player.addCardToDiscardStack(card);
+    }
+  }
+}
 }
 
 void Game::BuyPhase(Player player) {
   while (currentPlayerPurchaseLeft) {
     std::cout << "You have " << currentPlayerPurchaseLeft << " purchases left"
               << std::endl;
-    std::map<int, std::vector<const Card *>> display;
+    std::map<int, std::vector<const Card *>, std::greater<int>> display;
 
-    for (TableStack stack : KingdomStacks) {
-      const Card *card = stack.getCard();
-      display[card->getCost()].push_back(card);
-    }
-    for (TableStack stack : BasicStacks) {
-      const Card *card = stack.getCard();
-      display[card->getCost()].push_back(card);
+    for (const auto &pair : currentCardDistribution) {
+      const Card *card = pair.first;
+      int quantity = pair.second;
+
+      if (quantity > 0) {
+        display[card->getCost()].push_back(card);
+      }
+      
     }
 
     for (auto pair : display) {
@@ -250,31 +296,35 @@ void Game::BuyPhase(Player player) {
       displaySelection(pair.second);
     }
 
-    int buy_cost;
+    std::string card_name;
 
-    std::cout << "Which cost would you want to buy ?(-1 to not buy)"
+    std::cout << "Which card do you want to buy ? Enter the name of the card or -1 to skip buying a card"
               << std::endl;
-    std::cin >> buy_cost;
+    std::cout << "You have " << currentPlayerMoney << " coins." << std::endl;
+    std::cin >> card_name;
 
-    if (buy_cost == -1) {
+    if (card_name == "-1") {
       std::cout << "You chose not to buy any card." << std::endl;
       break;
     }
-    if (display.find(buy_cost) == display.end()) {
-      std::cout << "Invalid cost. Please try again." << std::endl;
+
+    const Card *card = Factory::get(card_name);
+    if (!card) {
+      std::cout << "Invalid card name. Please try again." << std::endl;
       continue;
     }
-    if (buy_cost > currentPlayerMoney) {
-      std::cout << "You don't have enough money to buy a card of this cost."
-                << std::endl;
+    if (card->getCost() > currentPlayerMoney) {
+      std::cout << "You don't have enough money to buy this card. Please try again." << std::endl;
       continue;
     }
-    const Card *card =
-        chooseCardsFromSelection(display[buy_cost], 1, "buy", "exact", {})[0];
-    std::cout << "You bought " << card->getName() << "." << std::endl;
-    currentPlayerMoney -= buy_cost;
+    if (currentCardDistribution[card] <= 0) {
+      std::cout << "This card is out of stock. Please try again." << std::endl;
+      continue;
+    }
+    currentCardDistribution[card]--;
+    currentPlayerMoney -= card->getCost();
     player.addCardToDiscardStack(card);
-    currentPlayerPurchaseLeft--;
+
   }
 }
 
@@ -311,6 +361,7 @@ void Game::playTurn(Player player) {
   addPlayerActions(1);
   addPlayerPurchases(1);
   displaySelection(player.getHand().getCards());
+  std::cout << "It is " << player.getString() << "'s turn." << std::endl;
   ActionPhase(player);
   BuyPhase(player);
   hasGameEnded();
