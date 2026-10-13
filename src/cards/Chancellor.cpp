@@ -6,7 +6,7 @@ void Chancellor::onPlay(Game &g, Player &p) const
 {
     g.addGold(2);
     while (p.getDrawStack().getSize() > 0) {
-        p.drawCard();
+        p.drawCardToHand();
         p.discardCard(p.getHand().getCards().back());
     }
 }

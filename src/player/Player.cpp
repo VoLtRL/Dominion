@@ -25,6 +25,13 @@ void Player::swapAndShuffleStacks() {
   drawStack.shuffle();
 }
 
+const Card *Player::drawCard() {
+  if (drawStack.getSize() == 0) {
+    swapAndShuffleStacks();
+  }
+  return drawStack.drawCard();
+}
+
 /**
  * @brief Gets the player's score.
  * @return The player's score.

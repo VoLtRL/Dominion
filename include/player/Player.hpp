@@ -74,12 +74,20 @@ public:
    */
   void removeCardFromHand(const Card *card) { hand.removeCard(card); }
 
+
+  /**
+   * @brief Draws a card from the draw stack.
+   * If the draw stack is empty, it swaps and shuffles the discard stack into
+   * the draw stack.
+   * @return A pointer to the drawn card.
+   */
+  const Card *drawCard();
   /**
    * @brief Draws a card from the draw stack to the player's hand.
    * If the draw stack is empty, it swaps and shuffles the discard stack into
    * the draw stack.
    */
-  void drawCard() {
+  void drawCardToHand() {
     if (drawStack.getSize() == 0) {
       swapAndShuffleStacks();
     }
@@ -92,9 +100,9 @@ public:
    * player's hand.
    * @param numberOfCards The number of cards to draw.
    */
-  void drawCards(int numberOfCards) {
+  void drawCardsToHand(int numberOfCards) {
     for (int i = 0; i < numberOfCards; ++i) {
-      drawCard();
+      drawCardToHand();
     }
   }
 

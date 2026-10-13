@@ -4,7 +4,7 @@
 
 void Village::onPlay(Game& g, Player& p) const {
     // Draw 1 card
-    p.drawCards(1);
+    p.drawCardsToHand(1);
     // Add 2 actions
     g.addPlayerActions(2);
 }

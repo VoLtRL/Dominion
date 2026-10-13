@@ -207,6 +207,8 @@ Game::chooseCardsFromSelection(const std::vector<const Card *> &selection,
   return chosenCards;
 }
 
+void Game::clearRevealedCards() { revealedCards.clear(); }
+
 void Game::ActionPhase() {
   while (currentPlayerActions > 0) {
     std::cout << "You have " << currentPlayerActions << " actions left."
@@ -367,7 +369,7 @@ void Game::playTurn(Player &player) {
   BuyPhase();
   player.discardHand();
 
-  player.drawCards(5);
+  player.drawCardsToHand(5);
   hasGameEnded();
 }
 

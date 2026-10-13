@@ -4,6 +4,6 @@
 
 void Witch::onPlay(Game& g, Player& p) const {
     // Draw 2 cards
-    p.drawCards(2);
+    p.drawCardsToHand(2);
     // Each other player gains a Curse
 }

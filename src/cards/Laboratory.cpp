@@ -4,7 +4,7 @@
 
 void Laboratory::onPlay(Game& g, Player& p) const {
     // Draw 2 cards
-    p.drawCards(2);
+    p.drawCardsToHand(2);
     // Add 1 action
     g.addPlayerActions(1);
 }

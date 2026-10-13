@@ -93,6 +93,7 @@ private:
   int currentPlayerActions = 0;
   int currentPlayerPurchaseLeft = 0;
   std::vector<const Card *> CardsInPlay;
+  std::vector<const Card *> revealedCards;
 
   std::vector<const Card *> trash;
 
@@ -150,5 +151,11 @@ public:
                            const std::set<CardType> &allowedTypes) const;
   void displaySelection(const std::vector<const Card *> &selection) const;
 
+  const std::vector<const Card *> &getRevealedCards() const { return revealedCards; }
+  void addRevealedCard(const Card *card) { revealedCards.push_back(card); }
+  void putCardsinDiscardStack(std::vector<const Card *> &cards);
+
   void hasGameEnded();
+
+  void clearRevealedCards();
 };

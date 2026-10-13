@@ -3,6 +3,6 @@
 #include "../../include/player/Player.hpp"
 
 void Spy::onPlay(Game& g, Player& p) const {
-    p.drawCards(1);
+    p.drawCardsToHand(1);
     g.addPlayerActions(1);
 }

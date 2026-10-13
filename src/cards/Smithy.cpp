@@ -3,5 +3,5 @@
 #include "../../include/player/Player.hpp"
 
 void Smithy::onPlay(Game&, Player& p) const {
-    p.drawCards(3);
+    p.drawCardsToHand(3);
 }
