@@ -68,6 +68,7 @@ const std::string Card::getString(size_t maxWidth) const {
             case CardType::CURSE: typesStr += "Curse"; break;
             case CardType::ATTACK: typesStr += "Attack"; break;
             case CardType::REACTION: typesStr += "Reaction"; break;
+            case CardType::ALL : typesStr += "All"; break;
         }
     }
     std::vector<std::vector<std::string>> blocks = {

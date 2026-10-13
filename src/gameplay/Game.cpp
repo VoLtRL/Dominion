@@ -116,7 +116,7 @@ Game::chooseCardsFromSelection(const std::vector<const Card *> &selection,
     if (!allowedTypesStr.empty()) {
       allowedTypesStr += ", ";
     }
-    switch (t) {
+    switch(t) {
     case CardType::ACTION:
       allowedTypesStr += "Action";
       break;
@@ -134,6 +134,9 @@ Game::chooseCardsFromSelection(const std::vector<const Card *> &selection,
       break;
     case CardType::REACTION:
       allowedTypesStr += "Reaction";
+      break;
+    case CardType::ALL:
+      allowedTypesStr += "All";
       break;
     }
   }
