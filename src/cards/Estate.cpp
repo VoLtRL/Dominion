@@ -3,5 +3,9 @@
 #include "../../include/player/Player.hpp"
 
 void Estate::onGain(Game& g, Player& p) const{
-    p.addVictoryPoints(vp);
+    p.addVictoryPoints(1);
+}
+
+void Estate::onTrash(Game& g, Player& p) const{
+    p.addVictoryPoints(-1);
 }

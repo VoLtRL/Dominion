@@ -10,7 +10,8 @@ enum class CardType {
     VICTORY,
     CURSE,
     ATTACK,
-    REACTION
+    REACTION,
+    ALL
 };
 
 /**
@@ -26,6 +27,7 @@ inline std::string tostring(CardType t) {
         case CardType::CURSE: return "Curse";
         case CardType::ATTACK: return "Attack";
         case CardType::REACTION: return "Reaction";
+        case CardType::ALL: return "All";
         default: return "Unknown";
     }
 }

@@ -4,9 +4,8 @@
 
 
 class Estate : public Card {
-    private:
-        int vp = 1;
     public: 
         Estate() : Card("Estate", 2, "", {CardType::VICTORY}) {}
         void onGain(Game& g, Player& p) const;
+        void onTrash(Game& g, Player& p) const;
 };

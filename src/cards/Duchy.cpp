@@ -2,6 +2,10 @@
 #include "../../include/gameplay/Game.hpp"
 #include "../../include/player/Player.hpp"
 
-void Duchy::onPlay(Game& g, Player& p) const {
-    p.addVictoryPoints(vp);
+void Duchy::onGain(Game& g, Player& p) const {
+    p.addVictoryPoints(3);
+}
+
+void Duchy::onTrash(Game& g, Player& p) const{
+    p.addVictoryPoints(-3);
 }

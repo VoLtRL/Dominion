@@ -4,5 +4,10 @@
 
 void Curse::onGain(Game& g, Player& p) const {
     (void)g;
-    p.addVictoryPoints(vp);
+    p.addVictoryPoints(-1);
+}
+
+void Curse::onTrash(Game& g, Player& p) const {
+    (void)g;
+    p.addVictoryPoints(1);
 }

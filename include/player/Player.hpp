@@ -112,6 +112,8 @@ public:
 
   void addCardToHand(const Card *card) { hand.addCard(card); }
 
+  void addCardToDrawStack(const Card *card){ drawStack.putCard(card); }
+
   int getScore() const;
 
   void addVictoryPoints(int points) { score += points; }
@@ -119,4 +121,20 @@ public:
   void swapAndShuffleStacks();
 
   std::string getString() const;
+
+  bool operator==(const Player& other) const{
+    return &*this == &other;
+  }
+
+  bool operator!=(const Player& other) const{
+    return !(*this==other);
+  }
+
+  const std::string getName() const {return name;}
+
+  void discardDrawStack(){
+    while(!drawStack.getStack().empty()){
+      discardStack.putCard(drawStack.drawCard());
+    }
+  }
 };

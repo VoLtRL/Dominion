@@ -22,7 +22,7 @@ private:
 public:
   Card(std::string cardName, int goldCost, 
        std::string cardDescription, std::set<CardType> cardTypes)
-      : name(cardName), cost(goldCost), description(cardDescription), types(cardTypes) {
+      : name(cardName), cost(goldCost), description(cardDescription), types(cardTypes){
   }
   /**
    * @brief Gets the name of the card.

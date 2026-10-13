@@ -485,3 +485,36 @@ void Game::launchGame() {
   std::cout << "Game is over!" << std::endl;
   std::cout << "The winner is:" << getWinner().getString() << std::endl;
 }
+
+const std::vector<TableStack> &Game::getKingdomStacks(){
+  return KingdomStacks;
+}
+
+const std::vector<TableStack> &Game::getBasicStacks(){
+  return BasicStacks;
+}
+
+std::vector<const Card*> Game::getBuyableCardsBelowCost(int cost) const{
+  std::vector<const Card*> validCards;
+  for (const auto &pair : currentCardDistribution) {
+    const Card *card = pair.first;
+    int quantity = pair.second;
+    if(card->getCost() <= cost && quantity > 0){
+      validCards.push_back(card);
+    }
+  }
+  return validCards;
+}
+
+void Game::buyCard(const Card* card){
+  currentCardDistribution[card] = std::max(0, currentCardDistribution[card]-1);
+}
+
+bool Game::isStackEmpty(std::string cardName) const {
+  for (const auto &pair : currentCardDistribution) {
+    const Card *card = pair.first;
+    int quantity = pair.second;
+    if(card->getName() == cardName){return quantity==0;}
+  }
+  return true;
+}

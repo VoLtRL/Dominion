@@ -130,7 +130,9 @@ public:
   void playTurn(Player &player);
 
   void addGold(int amount);
-  void trashCard(const Card *card) { trash.push_back(card); }
+  void trashCard(const Card *card) { 
+    trash.push_back(card); 
+  }
 
   void addPlayerActions(int amount) { currentPlayerActions += amount; }
 
@@ -158,4 +160,7 @@ public:
   void hasGameEnded();
 
   void clearRevealedCards();
+  std::vector<const Card*> getBuyableCardsBelowCost(int cost) const;
+  void buyCard(const Card* card);
+  bool isStackEmpty(std::string cardName) const;
 };
