@@ -30,7 +30,7 @@ void Bureaucrat::onPlay(Game &g, Player &p) const
                 g.displaySelection(cards);
             }
             else{
-                std::vector<const Card *> selection = g.chooseCardsFromSelection(validCards, 1, "display and put on your draw pile", "exact", {CardType::VICTORY});
+                std::vector<const Card *> selection = g.chooseCardsFromSelection(validCards, 1, "display and put on your draw pile", "exact");
                 std::cout << "Putting the following card on top of your draw pile : " << std::endl;
                 g.displaySelection(selection);
                 player.removeCardFromHand(selection[0]);

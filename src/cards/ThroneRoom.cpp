@@ -15,7 +15,7 @@ void ThroneRoom::onPlay(Game& g, Player& p) const {
         std::cout << "You don't have any action card..." << std::endl;
     }
     else{
-        const Card* toPlay = g.chooseCardsFromSelection(actions, 1, "play twice", "exact", {CardType::ACTION})[0];
+        const Card* toPlay = g.chooseCardsFromSelection(actions, 1, "play twice", "exact")[0];
         toPlay->onPlay(g, p);
         std::cout << "One more time !" << std::endl;
         p.playCard(toPlay, g);

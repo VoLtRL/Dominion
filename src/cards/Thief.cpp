@@ -30,7 +30,7 @@ void Thief::onPlay(Game& g, Player& p) const {
                     break;
                 default:
                     std::cout << "Player " << p.getName() << ", choose the one you want to trash !" << std::endl;
-                    selected = g.chooseCardsFromSelection(localTreasures, 1, "trash", "exact", {CardType::TREASURE})[0];
+                    selected = g.chooseCardsFromSelection(localTreasures, 1, "trash", "exact")[0];
                     break;
             }
             if(selected){
@@ -49,7 +49,7 @@ void Thief::onPlay(Game& g, Player& p) const {
     }
     else{
         std::cout << "Now you can keep those treasures!" << std::endl;
-        std::vector<const Card*> toGain = g.chooseCardsFromSelection(treasures, treasures.size(), "gain", "most", {CardType::TREASURE});
+        std::vector<const Card*> toGain = g.chooseCardsFromSelection(treasures, treasures.size(), "gain", "most");
         for(const Card* c : treasures){
             if(std::find(toGain.begin(), toGain.end(), c) != toGain.end()){
                 p.addCardToDiscardStack(c);

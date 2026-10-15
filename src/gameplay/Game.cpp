@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <iostream>
 #include <ostream>
+#include <limits>
 
 const std::vector<Player> &Game::getPlayers() const { return players; }
 
@@ -98,8 +99,7 @@ void Game::displaySelection(const std::vector<const Card *> &selection) const {
 std::vector<const Card *>
 Game::chooseCardsFromSelection(const std::vector<const Card *> &selection,
                                size_t numberOfCardsToChoose,
-                               const std::string &action, std::string mode,
-                               const std::set<CardType> &allowedTypes) const {
+                               const std::string &action, std::string mode, const std::set<CardType> &allowedTypes) const {
   if (mode != "exact" && mode != "most" && mode != "least") {
     mode = "exact";
   }
@@ -131,15 +131,7 @@ Game::chooseCardsFromSelection(const std::vector<const Card *> &selection,
     return "?";
   };
 
-  std::string allowedTypesStr;
-  for (const CardType &t : allowedTypes) {
-    if (!allowedTypesStr.empty()) {
-      allowedTypesStr += ", ";
-    }
-    allowedTypesStr += typeName(t);
-  }
-
-  // Header
+  std::cout << HUDFormat();
   if (mode == "exact") {
     std::cout << "Choose exactly " << numberOfCardsToChoose;
   } else if (mode == "most") {
@@ -148,6 +140,15 @@ Game::chooseCardsFromSelection(const std::vector<const Card *> &selection,
     std::cout << "Choose at least " << numberOfCardsToChoose;
   }
   std::cout << " card(s) to " << action;
+
+  std::string allowedTypesStr;
+  for (const CardType &t : allowedTypes) {
+    if (!allowedTypesStr.empty()) {
+      allowedTypesStr += ", ";
+    }
+    allowedTypesStr += typeName(t);
+  }
+  
   if (!allowedTypesStr.empty()) {
     std::cout << " [" << allowedTypesStr << "]";
   }
@@ -171,14 +172,23 @@ Game::chooseCardsFromSelection(const std::vector<const Card *> &selection,
     std::cout << "[" << chosen.size() << " chosen] Enter a card number"
               << (canStop ? " (0 to finish)" : "") << ": ";
 
-    // Read a full line: no infinite loop on non-numeric input
-    std::string line;
-    if (!std::getline(std::cin, line)) {
-      break; // input stream closed
+    int index;
+    if (!(std::cin >> index)) {
+      if (std::cin.eof()) {
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        break;
+      }
+      std::cout << "Invalid input. Please try again.\n";
+      continue;
     }
 
     int input = -1;
     try {
+      std::string line;
+      if (!std::getline(std::cin, line)) {
+        break; // input stream closed
+      }
       size_t pos = 0;
       input = std::stoi(line, &pos);
       if (pos != line.size()) {
@@ -197,7 +207,7 @@ Game::chooseCardsFromSelection(const std::vector<const Card *> &selection,
       continue;
     }
 
-    const size_t index = static_cast<size_t>(input) - 1;
+    index = static_cast<size_t>(input) - 1;
 
     // Already chosen: deselect it
     if (auto it = std::find(chosen.begin(), chosen.end(), index);
@@ -239,8 +249,7 @@ void Game::ActionPhase() {
       std::cout << "You have no action cards to play." << std::endl;
       break;
     }
-    auto card = chooseCardsFromSelection(cards, 1, "play", "exact",
-                                         {CardType::ACTION})[0];
+    auto card = chooseCardsFromSelection(cards, 1, "play", "exact", {CardType::ACTION})[0];
     if (!card) {
       std::cout << "No card selected. Please try again." << std::endl;
       continue;
@@ -272,7 +281,8 @@ void Game::useTreasureCards() {
                  "and none accepted): ";
 
     std::cin >> input;
-    std::cin.ignore();
+    std::cin.clear();
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     if (input == "all") {
       for (const Card *card : treasureCards) {
         activePlayer->playCard(card, *this);
@@ -319,7 +329,10 @@ void Game::BuyPhase() {
                  "or -1 to skip buying a card"
               << std::endl;
     std::cout << "You have " << currentPlayerMoney << " coins." << std::endl;
+
     std::cin >> card_name;
+    std::cin.clear();
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
     if (card_name == "-1") {
       std::cout << "You chose not to buy any card." << std::endl;
@@ -533,4 +546,9 @@ bool Game::isStackEmpty(std::string cardName) const {
     if(card->getName() == cardName){return quantity==0;}
   }
   return true;
+}
+
+std::string Game::HUDFormat() const {
+  std::string hud = "[" + activePlayer->getString() + std::to_string(currentPlayerMoney) + " coins, " + std::to_string(currentPlayerActions) + " actions, " + std::to_string(currentPlayerPurchaseLeft) + " purchases left] ";
+  return hud;
 }

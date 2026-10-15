@@ -149,8 +149,7 @@ public:
   std::vector<const Card *>
   chooseCardsFromSelection(const std::vector<const Card *> &selection,
                            size_t numberOfCardsToChoose,
-                           const std::string &action, std::string mode,
-                           const std::set<CardType> &allowedTypes) const;
+                           const std::string &action, std::string mode, const std::set<CardType> &allowedTypes) const;
   void displaySelection(const std::vector<const Card *> &selection) const;
 
   const std::vector<const Card *> &getRevealedCards() const { return revealedCards; }
@@ -163,4 +162,6 @@ public:
   std::vector<const Card*> getBuyableCardsBelowCost(int cost) const;
   void buyCard(const Card* card);
   bool isStackEmpty(std::string cardName) const;
+
+  std::string HUDFormat() const;
 };
