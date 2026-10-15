@@ -14,11 +14,11 @@ void Mine::onPlay(Game& g, Player& p) const {
         std::cout << "You don't have any treasures..." << std::endl;
     }
     else{
-        treasures = g.chooseCardsFromSelection(treasures, 1, "trash", "most");
+        treasures = g.chooseCardsFromSelection(treasures, 1, "trash", "most", {CardType::TREASURE});
         if(!treasures.empty()){
             std::vector<const Card*> validCards = g.getBuyableCardsBelowCost(treasures[0]->getCost()+3);
             if(!validCards.empty()){
-                validCards = g.chooseCardsFromSelection(validCards, 1, "gain", "exact");
+                validCards = g.chooseCardsFromSelection(validCards, 1, "gain", "exact", {CardType::ALL});
                 p.addCardToHand(validCards[0]);
                 g.buyCard(validCards[0]);
             }

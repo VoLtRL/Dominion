@@ -7,7 +7,7 @@ void Cellar::onPlay(Game &g, Player &p) const {
   g.addPlayerActions(1);
 
   Hand hand = p.getHand();
-  std::vector<const Card*> selection = g.chooseCardsFromSelection(hand.getCards(), hand.getSize(), "discard", "most");
+  std::vector<const Card*> selection = g.chooseCardsFromSelection(hand.getCards(), hand.getSize(), "discard", "most", {CardType::ALL});
   for(const Card* c : selection){
     p.discardCard(c);
   }
