@@ -3,6 +3,7 @@
 #include <algorithm>
 
 const Card* CardStack::drawCard() {
+  if (stack.empty()){return nullptr;}
   auto card = stack.top();
   stack.pop();
   return card;

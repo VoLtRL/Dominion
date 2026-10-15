@@ -104,109 +104,122 @@ Game::chooseCardsFromSelection(const std::vector<const Card *> &selection,
     mode = "exact";
   }
 
-  if (mode != "most") {
-    numberOfCardsToChoose = std::min(numberOfCardsToChoose, selection.size());
-  }
+  // Cards the player is actually allowed to pick
+  const auto isAllowed = [&](const Card *c) {
+    if (allowedTypes.empty() || allowedTypes.count(CardType::ALL)) {
+      return true;
+    }
+    return std::any_of(allowedTypes.begin(), allowedTypes.end(),
+                       [&](CardType t) { return c->isA(t); });
+  };
 
-  std::vector<const Card *> chosenCards;
-  std::vector<bool> taken(selection.size(), false);
+  // Impossible to choose more cards than there are eligible ones
+  const size_t allowedCount =
+      std::count_if(selection.begin(), selection.end(), isAllowed);
+  numberOfCardsToChoose = std::min(numberOfCardsToChoose, allowedCount);
+
+  const auto typeName = [](CardType t) -> const char * {
+    switch (t) {
+    case CardType::ACTION:   return "Action";
+    case CardType::TREASURE: return "Treasure";
+    case CardType::VICTORY:  return "Victory";
+    case CardType::CURSE:    return "Curse";
+    case CardType::ATTACK:   return "Attack";
+    case CardType::REACTION: return "Reaction";
+    case CardType::ALL:      return "All";
+    }
+    return "?";
+  };
 
   std::string allowedTypesStr;
   for (const CardType &t : allowedTypes) {
     if (!allowedTypesStr.empty()) {
       allowedTypesStr += ", ";
     }
-    switch(t) {
-    case CardType::ACTION:
-      allowedTypesStr += "Action";
-      break;
-    case CardType::TREASURE:
-      allowedTypesStr += "Treasure";
-      break;
-    case CardType::VICTORY:
-      allowedTypesStr += "Victory";
-      break;
-    case CardType::CURSE:
-      allowedTypesStr += "Curse";
-      break;
-    case CardType::ATTACK:
-      allowedTypesStr += "Attack";
-      break;
-    case CardType::REACTION:
-      allowedTypesStr += "Reaction";
-      break;
-    case CardType::ALL:
-      allowedTypesStr += "All";
-      break;
-    }
+    allowedTypesStr += typeName(t);
   }
 
+  // Header
   if (mode == "exact") {
-    std::cout << "Choose exactly " << numberOfCardsToChoose << " card(s) to "
-              << action << ":\n";
+    std::cout << "Choose exactly " << numberOfCardsToChoose;
   } else if (mode == "most") {
-    std::cout << "Choose at most " << numberOfCardsToChoose
-              << " card(s) (0 to finish) to " << action << ":\n";
+    std::cout << "Choose at most " << numberOfCardsToChoose;
   } else {
-    std::cout << "Choose at least " << numberOfCardsToChoose
-              << " card(s) (0 to finish once done) to " << action << ":\n";
+    std::cout << "Choose at least " << numberOfCardsToChoose;
   }
+  std::cout << " card(s) to " << action;
+  if (!allowedTypesStr.empty()) {
+    std::cout << " [" << allowedTypesStr << "]";
+  }
+  std::cout << (mode == "exact" ? ":\n" : " (0 to finish):\n");
 
   displaySelection(selection);
 
-  while (true) {
-    const bool allTaken = chosenCards.size() == selection.size();
-    const bool reachedN = chosenCards.size() >= numberOfCardsToChoose;
+  // Indices into `selection`, in order of choice
+  std::vector<size_t> chosen;
 
-    // Arrêt automatique
-    if (allTaken || (mode != "least" && reachedN))
+  while (true) {
+    const bool reachedN = chosen.size() >= numberOfCardsToChoose;
+
+    // Automatic stop
+    if (chosen.size() == allowedCount || (mode != "least" && reachedN)) {
       break;
+    }
 
     const bool canStop = (mode == "most") || (mode == "least" && reachedN);
 
-    std::cout << "[" << chosenCards.size() << " chosen] Enter a card number"
+    std::cout << "[" << chosen.size() << " chosen] Enter a card number"
               << (canStop ? " (0 to finish)" : "") << ": ";
 
-    int index;
-    if (!(std::cin >> index)) {
-      if (std::cin.eof()) {
-        break;
-      }
-      std::cin.clear();
-      std::cout << "Invalid input. Please try again.\n";
-      continue;
+    // Read a full line: no infinite loop on non-numeric input
+    std::string line;
+    if (!std::getline(std::cin, line)) {
+      break; // input stream closed
     }
 
-    if (index == 0 && canStop)
-      break;
+    int input = -1;
+    try {
+      size_t pos = 0;
+      input = std::stoi(line, &pos);
+      if (pos != line.size()) {
+        input = -1; // reject things like "12abc"
+      }
+    } catch (const std::exception &) {
+      input = -1;
+    }
 
-    if (index < 1 || static_cast<size_t>(index) > selection.size()) {
+    if (input == 0 && canStop) {
+      break;
+    }
+
+    if (input < 1 || static_cast<size_t>(input) > selection.size()) {
       std::cout << "Invalid index. Please try again.\n";
       continue;
     }
-    if (taken[index - 1]) {
-      taken[index - 1] = false;
-      auto chosen = std::find(chosenCards.begin(), chosenCards.end(),
-                              selection[index - 1]);
-      if (chosen != chosenCards.end()) {
-        chosenCards.erase(chosen);
-      }
+
+    const size_t index = static_cast<size_t>(input) - 1;
+
+    // Already chosen: deselect it
+    if (auto it = std::find(chosen.begin(), chosen.end(), index);
+        it != chosen.end()) {
+      chosen.erase(it);
       std::cout << "Card deselected.\n";
       continue;
     }
 
-    if (selection[index - 1]->getTypes().empty() ||
-        std::none_of(allowedTypes.begin(), allowedTypes.end(), [&](CardType t) {
-          return selection[index - 1]->isA(t);
-        })) {
+    if (!isAllowed(selection[index])) {
       std::cout << "Invalid card type. Please try again.\n";
       continue;
     }
 
-    taken[index - 1] = true;
-    chosenCards.push_back(selection[index - 1]);
+    chosen.push_back(index);
   }
 
+  std::vector<const Card *> chosenCards;
+  chosenCards.reserve(chosen.size());
+  for (size_t i : chosen) {
+    chosenCards.push_back(selection[i]);
+  }
   return chosenCards;
 }
 
