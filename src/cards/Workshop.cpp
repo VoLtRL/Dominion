@@ -4,7 +4,8 @@
 
 void Workshop::onPlay(Game& g, Player& p) const {
     std::cout << "You get a card costing up to 4 coins!" << std::endl;
-    const Card* c = g.chooseCardsFromSelection(g.getBuyableCardsBelowCost(4), 1, "gain", "exact", {CardType::ALL})[0];
-    p.addCardToDiscardStack(c);
-    g.buyCard(c);
+    std::vector<const Card*> cards = g.chooseCardsFromSelection(g.getBuyableCardsBelowCost(4), 1, "gain", "exact", {CardType::ALL});
+    if(!cards.empty()){
+        p.addCardToDiscardStack(g.getCardFromCardDistrib(cards[0]->getName()));
+    }
 }

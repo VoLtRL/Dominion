@@ -14,9 +14,7 @@ void Witch::onPlay(Game& g, Player& p) const {
             }
             else{
                 std::cout << "Player " << player.getName() << " gets cursed!" << std::endl;
-                const Card* curse = Factory::get("Curse");
-                p.addCardToDiscardStack(curse);
-                g.buyCard(curse);
+                p.addCardToDiscardStack(g.getCardFromCardDistrib("Curse"));
             }
         }
     }

@@ -113,7 +113,7 @@ Game::chooseCardsFromSelection(const std::vector<const Card *> &selection,
     for(const Card* card : selection){
       std::set<CardType> types = card->getTypes();
       for(CardType t : types){
-        if(allowedTypes.find(t) == allowedTypes.end()){
+        if(allowedTypes.find(t) != allowedTypes.end()){
           validSelection.push_back(card);
         }
       }
@@ -224,6 +224,10 @@ Game::chooseCardsFromSelection(const std::vector<const Card *> &selection,
     }
   }
 
+  if(chosen.empty()){
+    std::cout << "There are no chosen cards to " << action << std::endl;
+    return {};
+  }
   std::vector<const Card*> res;
   for(auto index : chosen){
     res.push_back(validSelection[index-1]);
@@ -488,8 +492,19 @@ std::vector<const Card*> Game::getBuyableCardsBelowCost(int cost) const{
   return validCards;
 }
 
-void Game::buyCard(const Card* card){
-  currentCardDistribution[card] = std::max(0, currentCardDistribution[card]-1);
+
+const Card* Game::getCardFromCardDistrib(std::string cardName){
+  for (const auto &pair : currentCardDistribution) {
+    const Card *card = pair.first;
+    int quantity = pair.second;
+    if(card->getName() == cardName){
+      if (quantity>0){
+        return Factory::get(card->getName());
+      }
+      return nullptr;
+    }
+  }
+  return nullptr;
 }
 
 bool Game::isStackEmpty(std::string cardName) const {

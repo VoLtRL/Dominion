@@ -165,5 +165,5 @@ public:
 
   std::string HUDFormat() const;
 
-  void onReact();
+  const Card* getCardFromCardDistrib(std::string cardName);
 };

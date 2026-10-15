@@ -12,7 +12,8 @@ void Feast::onPlay(Game& g, Player& p) const {
     std::vector<const Card*> selection = g.getBuyableCardsBelowCost(5);
     if(!selection.empty()){
         selection = g.chooseCardsFromSelection(selection, 1, "gain", "exact", {CardType::ALL});
-        p.addCardToDiscardStack(selection[0]);
-        g.buyCard(selection[0]);
+        if(!selection.empty()){
+            p.addCardToDiscardStack(g.getCardFromCardDistrib(selection[0]->getName()));
+        }
     }
 }
