@@ -164,4 +164,6 @@ public:
   bool isStackEmpty(std::string cardName) const;
 
   std::string HUDFormat() const;
+
+  void onReact();
 };

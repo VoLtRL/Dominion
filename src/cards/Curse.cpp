@@ -2,12 +2,7 @@
 #include "../../include/gameplay/Game.hpp"
 #include "../../include/player/Player.hpp"
 
-void Curse::onGain(Game& g, Player& p) const {
-    (void)g;
-    p.addVictoryPoints(-1);
-}
-
-void Curse::onTrash(Game& g, Player& p) const {
-    (void)g;
-    p.addVictoryPoints(1);
+int Curse::getVictoryPoints(const Player& p) const {
+    (void)p;
+    return -1;
 }

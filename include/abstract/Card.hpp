@@ -70,6 +70,13 @@ public:
    */
   virtual void onGain(Game &g, Player &p) const;
   /**
+   * @brief Gets the victory points provided by the card.
+   * @param p The player for whom the victory points are calculated.
+   * @return The victory points provided by the card.
+   */
+  virtual int getVictoryPoints(const Player& p) const;
+
+  /**
    * @brief Checks if the card is of a specific type.
    * @param t The type to check.
    * @return true if the card is of the specified type, false otherwise.

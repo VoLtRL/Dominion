@@ -5,6 +5,5 @@
 class Curse : public Card {
     public: 
         Curse() : Card("Curse", 0, "", {CardType::CURSE}) {}
-        void onGain(Game& g, Player& p) const;
-        void onTrash(Game& g, Player& p) const;
+        int getVictoryPoints(const Player& p) const override;
 };

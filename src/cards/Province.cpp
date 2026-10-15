@@ -2,10 +2,7 @@
 #include "../../include/gameplay/Game.hpp"
 #include "../../include/player/Player.hpp"
 
-void Province::onGain(Game& g, Player& p) const {
-    p.addVictoryPoints(6);
-}
-
-void Province::onTrash(Game& g, Player& p) const{
-    p.addVictoryPoints(-6);
+int Province::getVictoryPoints(const Player& p) const {
+    (void)p;
+    return 6;
 }

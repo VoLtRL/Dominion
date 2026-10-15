@@ -416,8 +416,8 @@ Player Game::getWinner() {
   int maxScore = 0;
 
   for (const Player &player : players) {
-    if (player.getScore() > maxScore) {
-      maxScore = player.getScore();
+    if (player.getVictoryPoints() > maxScore) {
+      maxScore = player.getVictoryPoints();
       winner = player;
     }
   }

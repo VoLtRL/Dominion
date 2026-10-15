@@ -6,6 +6,5 @@
 class Estate : public Card {
     public: 
         Estate() : Card("Estate", 2, "", {CardType::VICTORY}) {}
-        void onGain(Game& g, Player& p) const;
-        void onTrash(Game& g, Player& p) const;
+        int getVictoryPoints(const Player& p) const override;
 };

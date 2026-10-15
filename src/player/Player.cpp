@@ -33,10 +33,22 @@ const Card *Player::drawCard() {
 }
 
 /**
- * @brief Gets the player's score.
- * @return The player's score.
+ * @brief Gets the player's victory points.
+ * @return The player's victory points.
  */
-int Player::getScore() const { return score; }
+int Player::getVictoryPoints() const {
+  int totalVictoryPoints = 0;
+  for (const Card *card : hand.getCards()) {
+    totalVictoryPoints += card->getVictoryPoints(*this);
+  }
+  for (std::stack<const Card*> tempStack = drawStack.getStack(); !tempStack.empty(); tempStack.pop()) {
+    totalVictoryPoints += tempStack.top()->getVictoryPoints(*this);
+  }
+  for (std::stack<const Card*> tempStack = discardStack.getStack(); !tempStack.empty(); tempStack.pop()) {
+    totalVictoryPoints += tempStack.top()->getVictoryPoints(*this);
+  }
+  return totalVictoryPoints;
+}
 
 /**
  * @brief Discard every cards in the hand of the player
@@ -51,3 +63,8 @@ void Player::discardHand() {
  * @return A string representing the player.
  */
 std::string Player::getString() const { return name; }
+
+int Player::getTotalCardCount() const {
+  return hand.getSize() + drawStack.getSize() + discardStack.getSize();
+}
+

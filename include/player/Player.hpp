@@ -19,7 +19,6 @@ private:
   CardStack discardStack;
 
   int turnsPlayed = 0;
-  int score = 0;
 
 public:
   Player(Hand a_hand, CardStack a_drawStack, CardStack a_discardStack)
@@ -114,9 +113,7 @@ public:
 
   void addCardToDrawStack(const Card *card){ drawStack.putCard(card); }
 
-  int getScore() const;
-
-  void addVictoryPoints(int points) { score += points; }
+  int getVictoryPoints() const;
 
   void swapAndShuffleStacks();
 
@@ -137,4 +134,7 @@ public:
       discardStack.putCard(drawStack.drawCard());
     }
   }
+
+  int getTotalCardCount() const;
+
 };

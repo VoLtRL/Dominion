@@ -24,6 +24,11 @@ void Card::onGain(Game& g, Player& p) const {
     (void)p;
 }
 
+
+int Card::getVictoryPoints(const Player& p) const {
+    return 0;
+}
+
 bool Card::isA(CardType t) const{
     std::set<CardType> types = getTypes();
     return types.find(t) != types.end();
