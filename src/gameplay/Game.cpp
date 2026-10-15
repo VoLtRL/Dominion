@@ -96,6 +96,7 @@ void Game::displaySelection(const std::vector<const Card *> &selection) const {
   }
 }
 
+
 std::vector<const Card *>
 Game::chooseCardsFromSelection(const std::vector<const Card *> &selection,
                                size_t numberOfCardsToChoose,
@@ -103,64 +104,54 @@ Game::chooseCardsFromSelection(const std::vector<const Card *> &selection,
   if (mode != "exact" && mode != "most" && mode != "least") {
     mode = "exact";
   }
-
-  // Cards the player is actually allowed to pick
-  const auto isAllowed = [&](const Card *c) {
-    if (allowedTypes.empty() || allowedTypes.count(CardType::ALL)) {
-      return true;
+  
+  std::vector<const Card*> validSelection;
+  if(allowedTypes.find(CardType::ALL) != allowedTypes.end()){
+    validSelection = selection;
+  }
+  else{
+    for(const Card* card : selection){
+      std::set<CardType> types = card->getTypes();
+      for(CardType t : types){
+        if(allowedTypes.find(t) == allowedTypes.end()){
+          validSelection.push_back(card);
+        }
+      }
     }
-    return std::any_of(allowedTypes.begin(), allowedTypes.end(),
-                       [&](CardType t) { return c->isA(t); });
-  };
-
-  // Impossible to choose more cards than there are eligible ones
-  const size_t allowedCount =
-      std::count_if(selection.begin(), selection.end(), isAllowed);
-  numberOfCardsToChoose = std::min(numberOfCardsToChoose, allowedCount);
-
-  const auto typeName = [](CardType t) -> const char * {
-    switch (t) {
-    case CardType::ACTION:   return "Action";
-    case CardType::TREASURE: return "Treasure";
-    case CardType::VICTORY:  return "Victory";
-    case CardType::CURSE:    return "Curse";
-    case CardType::ATTACK:   return "Attack";
-    case CardType::REACTION: return "Reaction";
-    case CardType::ALL:      return "All";
-    }
-    return "?";
-  };
+  }
 
   std::cout << HUDFormat();
+
+  if(validSelection.empty()){
+    std::cout << "There are no valid cards in this selection." << std::endl;
+    return {};
+  }
+
+  size_t allowedCount = std::min(numberOfCardsToChoose, validSelection.size());
+
+  if((mode == "exact" && allowedCount==validSelection.size()) || (mode == "least" && allowedCount >= validSelection.size())){
+    std::cout << "You need to choose all cards" << std::endl;
+    return validSelection;
+  }
+
   if (mode == "exact") {
-    std::cout << "Choose exactly " << numberOfCardsToChoose;
+    std::cout << "Choose exactly " << allowedCount;
   } else if (mode == "most") {
-    std::cout << "Choose at most " << numberOfCardsToChoose;
+    std::cout << "Choose at most " << allowedCount;
   } else {
-    std::cout << "Choose at least " << numberOfCardsToChoose;
+    std::cout << "Choose at least " << allowedCount;
   }
   std::cout << " card(s) to " << action;
 
-  std::string allowedTypesStr;
-  for (const CardType &t : allowedTypes) {
-    if (!allowedTypesStr.empty()) {
-      allowedTypesStr += ", ";
-    }
-    allowedTypesStr += typeName(t);
-  }
-  
-  if (!allowedTypesStr.empty()) {
-    std::cout << " [" << allowedTypesStr << "]";
-  }
   std::cout << (mode == "exact" ? ":\n" : " (0 to finish):\n");
 
-  displaySelection(selection);
+  displaySelection(validSelection);
 
   // Indices into `selection`, in order of choice
   std::vector<size_t> chosen;
 
   while (true) {
-    const bool reachedN = chosen.size() >= numberOfCardsToChoose;
+    const bool reachedN = chosen.size() >= allowedCount;
 
     // Automatic stop
     if (chosen.size() == allowedCount || (mode != "least" && reachedN)) {
@@ -172,65 +163,72 @@ Game::chooseCardsFromSelection(const std::vector<const Card *> &selection,
     std::cout << "[" << chosen.size() << " chosen] Enter a card number"
               << (canStop ? " (0 to finish)" : "") << ": ";
 
-    int index;
-    if (!(std::cin >> index)) {
-      if (std::cin.eof()) {
-        std::cin.clear();
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        break;
-      }
-      std::cout << "Invalid input. Please try again.\n";
-      continue;
-    }
-
-    int input = -1;
+    std::string input = "";
     try {
-      std::string line;
-      if (!std::getline(std::cin, line)) {
+      if (!std::getline(std::cin, input)) {
+        input = -1;
         break; // input stream closed
-      }
-      size_t pos = 0;
-      input = std::stoi(line, &pos);
-      if (pos != line.size()) {
-        input = -1; // reject things like "12abc"
       }
     } catch (const std::exception &) {
       input = -1;
     }
 
-    if (input == 0 && canStop) {
+    if (allowedTypes.find(CardType::TREASURE) != allowedTypes.end()){
+      if (input == "all"){
+        if (validSelection.size() > allowedCount && mode!="least"){
+          std::cout << "Too many cards!" << std::endl;
+          continue;
+        }
+        for(size_t i = 0; i < validSelection.size() ; i++){
+          chosen[i] = i+1;
+        }
+        continue;
+      }
+      if (input == "none"){
+        if (mode != "most" && allowedCount>0){
+          std::cout << "Too few cards chosen!" << std::endl;
+          continue;
+        }
+      }
+    }
+
+    int index = -1;
+    try{
+      size_t pos = 0;
+      index = std::stoi(input, &pos);
+      if (pos != input.size()) {
+        input = -1; // reject things like "12abc"
+      }
+    } catch(const std::exception &){
+      std::cout << "Invalid index." << std::endl;
+      continue;
+    }
+
+    if (index == 0 && canStop) {
       break;
     }
 
-    if (input < 1 || static_cast<size_t>(input) > selection.size()) {
+    if (index < 1 || static_cast<size_t>(index) > validSelection.size()) {
       std::cout << "Invalid index. Please try again.\n";
       continue;
     }
 
-    index = static_cast<size_t>(input) - 1;
-
-    // Already chosen: deselect it
-    if (auto it = std::find(chosen.begin(), chosen.end(), index);
-        it != chosen.end()) {
-      chosen.erase(it);
-      std::cout << "Card deselected.\n";
-      continue;
+    auto posi = std::find(chosen.begin(), chosen.end(), index);
+    if(posi != chosen.end()){
+      std::cout << "Deselecting card number " << index << std::endl;
+      chosen.erase(posi);
     }
-
-    if (!isAllowed(selection[index])) {
-      std::cout << "Invalid card type. Please try again.\n";
-      continue;
+    else{
+      std::cout << "Selecting card number " << index << std::endl;
+      chosen.push_back(index);
     }
-
-    chosen.push_back(index);
   }
 
-  std::vector<const Card *> chosenCards;
-  chosenCards.reserve(chosen.size());
-  for (size_t i : chosen) {
-    chosenCards.push_back(selection[i]);
+  std::vector<const Card*> res;
+  for(auto index : chosen){
+    res.push_back(validSelection[index-1]);
   }
-  return chosenCards;
+  return res;
 }
 
 void Game::clearRevealedCards() { revealedCards.clear(); }
@@ -416,8 +414,8 @@ Player Game::getWinner() {
   int maxScore = 0;
 
   for (const Player &player : players) {
-    if (player.getVictoryPoints() > maxScore) {
-      maxScore = player.getVictoryPoints();
+    if (player.getScore() > maxScore) {
+      maxScore = player.getScore();
       winner = player;
     }
   }
