@@ -237,23 +237,12 @@ void Game::ActionPhase() {
   while (currentPlayerActions > 0) {
     std::cout << "You have " << currentPlayerActions << " actions left."
               << std::endl;
-    std::vector<const Card *> cards = activePlayer->getHand().getCards();
-    for (const Card *c : cards) {
-      if (!c->isA(CardType::ACTION)) {
-        cards.erase(std::remove(cards.begin(), cards.end(), c), cards.end());
-      }
-    }
-    if (cards.empty()) {
-      std::cout << "You have no action cards to play." << std::endl;
+    auto card = chooseCardsFromSelection(activePlayer->getHand().getCards(), 1, "play", "exact", {CardType::ACTION});
+    if(card.empty()){
       break;
     }
-    auto card = chooseCardsFromSelection(cards, 1, "play", "exact", {CardType::ACTION})[0];
-    if (!card) {
-      std::cout << "No card selected. Please try again." << std::endl;
-      continue;
-    }
-    std::cout << "You played the " << card->getName() << std::endl;
-    activePlayer->playCard(card, *this);
+    std::cout << "You played the " << card[0]->getName() << std::endl;
+    activePlayer->playCard(card[0], *this);
     currentPlayerActions--;
   }
   useTreasureCards();
@@ -261,43 +250,9 @@ void Game::ActionPhase() {
 }
 
 void Game::useTreasureCards() {
-  std::vector<const Card *> treasureCards =
-      activePlayer->getHand().getSpecificCards(CardType::TREASURE);
-  if (treasureCards.empty()) {
-    std::cout << "You have no treasure cards to use." << std::endl;
-    return;
-  }
-
-  std::cout << "You have the following treasure cards in your hand:"
-            << std::endl;
-  displaySelection(treasureCards);
-
-  std::string input;
-
-  while (!treasureCards.empty() && input != "all" && input != "none") {
-    std::cout << "Enter the index of the treasure card you want to use, (all "
-                 "and none accepted): ";
-
-    std::cin >> input;
-    std::cin.clear();
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    if (input == "all") {
-      for (const Card *card : treasureCards) {
-        activePlayer->playCard(card, *this);
-        continue;
-      }
-    } else if (input == "none") {
-      return;
-    } else {
-      int index = std::stoi(input);
-      if (index < 1 || static_cast<size_t>(index) > treasureCards.size()) {
-        std::cout << "Invalid index. Please try again." << std::endl;
-        continue;
-      } else {
-        const Card *card = treasureCards[index - 1];
-        activePlayer->playCard(card, *this);
-      }
-    }
+  std::vector<const Card *> treasureCards = chooseCardsFromSelection(activePlayer->getHand().getCards(), activePlayer->getHand().getSize(), "play", "most", {CardType::TREASURE});
+  for (const Card *card : treasureCards) {
+    activePlayer->playCard(card, *this);
   }
 }
 
@@ -414,8 +369,8 @@ Player Game::getWinner() {
   int maxScore = 0;
 
   for (const Player &player : players) {
-    if (player.getScore() > maxScore) {
-      maxScore = player.getScore();
+    if (player.getVictoryPoints() > maxScore) {
+      maxScore = player.getVictoryPoints();
       winner = player;
     }
   }
