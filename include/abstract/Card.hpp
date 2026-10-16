@@ -98,4 +98,6 @@ public:
    * @return true if the card is empty, false otherwise.
    */
   bool empty() const { return name.empty(); }
+
+  virtual void onAttack(Game& g, Player& p, std::set<Player*> targets) const;
 };

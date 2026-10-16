@@ -7,17 +7,6 @@
 void Player::addTurnPlayed() { turnsPlayed++; }
 
 /**
- * @brief Plays a card from the player's hand.
- * @param card The card to be played.
- * @param g The game instance.
- */
-void Player::playCard(const Card *card, Game &g) {
-  hand.removeCard(card);
-  g.addCardToPlay(card);
-  card->onPlay(g, *this);
-}
-
-/**
  * @brief Swaps and shuffles the player's draw and discard stacks.
  */
 void Player::swapAndShuffleStacks() {
@@ -68,3 +57,21 @@ int Player::getTotalCardCount() const {
   return hand.getSize() + drawStack.getSize() + discardStack.getSize();
 }
 
+bool Player::hasCardInHand(const Card* card) const{
+  for(const Card* c : getHand().getCards()){
+    if (card == c){
+      return true;
+    }
+  }
+  return false;
+}
+
+std::vector<const Reaction*> Player::getAvailableReactions() const{
+  std::vector<const Reaction*> reactions;
+  for(const Card* card : hand.getCards()){
+    if(card->isA(CardType::REACTION)){
+      reactions.push_back(dynamic_cast<const Reaction*>(card));
+    }
+  }
+  return reactions;
+}

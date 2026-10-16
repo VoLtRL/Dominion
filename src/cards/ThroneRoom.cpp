@@ -18,6 +18,6 @@ void ThroneRoom::onPlay(Game& g, Player& p) const {
         const Card* toPlay = g.chooseCardsFromSelection(actions, 1, "play twice", "exact", {CardType::ACTION})[0];
         toPlay->onPlay(g, p);
         std::cout << "One more time !" << std::endl;
-        p.playCard(toPlay, g);
+        g.playCard(p, toPlay);
     }
 }

@@ -113,3 +113,9 @@ const std::string Card::getString(size_t maxWidth) const {
 void Card::display() const{
     std::cout << getString(30) << std::endl;
 }
+
+void Card::onAttack(Game& g, Player& p, std::set<Player*> targets) const {
+    (void)g;
+    (void)p;
+    (void)targets;
+}

@@ -246,7 +246,10 @@ void Game::ActionPhase() {
       break;
     }
     std::cout << "You played the " << card[0]->getName() << std::endl;
-    activePlayer->playCard(card[0], *this);
+    playCard(*activePlayer, card[0]);
+    if(card[0]->isA(CardType::ATTACK)){
+      playAttackCard(card[0]);
+    }
     currentPlayerActions--;
   }
   useTreasureCards();
@@ -254,9 +257,11 @@ void Game::ActionPhase() {
 }
 
 void Game::useTreasureCards() {
+
   std::vector<const Card *> treasureCards = chooseCardsFromSelection(activePlayer->getHand().getCards(), activePlayer->getHand().getSize(), "play", "most", {CardType::TREASURE});
   for (const Card *card : treasureCards) {
-    activePlayer->playCard(card, *this);
+    playCard(*activePlayer, card);
+    continue;
   }
 }
 
@@ -350,7 +355,7 @@ void Game::playTurn(Player &player) {
   setActivePlayer(&player);
   player.addTurnPlayed();
   displaySelection(activePlayer->getHand().getCards());
-  std::cout << "It is " << player.getString() << "'s turn." << std::endl;
+  std::cout << "It is " << activePlayer->getName() << "'s turn." << std::endl;
   ActionPhase();
   BuyPhase();
   player.discardHand();
@@ -519,4 +524,49 @@ bool Game::isStackEmpty(std::string cardName) const {
 std::string Game::HUDFormat() const {
   std::string hud = "[" + activePlayer->getString() + std::to_string(currentPlayerMoney) + " coins, " + std::to_string(currentPlayerActions) + " actions, " + std::to_string(currentPlayerPurchaseLeft) + " purchases left] ";
   return hud;
+}
+
+void Game::activateReactions(GameEvent* event){
+  for (Player player : players){
+    auto possibleReactions = player.getAvailableReactions();
+    
+    for (const Reaction* reactionCard : possibleReactions){
+      if ( reactionCard->canReact(event, this, &player)) {
+        reactionCard->react(event,this,&player);
+        }
+    }
+  }
+}
+
+std::vector<Player*> Game::getOtherPlayers(Player& p) const{
+  std::vector<Player*> res;
+  for(Player player : players){
+    if(p != player){
+      res.push_back(&player);
+    }
+  }
+  return res;
+}
+
+void Game::playAttackCard(const Card* card){
+  std::vector<Player*> others = getOtherPlayers(*activePlayer);
+  AttackEvent event(card, *activePlayer, std::set(others.begin(), others.end()));
+  activateReactions(&event);
+
+  std::set<Player*> newTargets;
+
+  for(Player* p : event.getTargets()){
+    if(!event.isIgnoredFor(*p)){
+      newTargets.insert(p);
+    }
+  }
+
+  card->onAttack(*this,*activePlayer, newTargets);
+
+}
+
+void Game::playCard(Player& p, const Card* card){
+  p.removeCardFromHand(card);
+  addCardToPlay(card);
+  card->onPlay(*this, p);
 }

@@ -6,6 +6,7 @@
 #include "Factory.hpp"
 #include "GameMode.hpp"
 #include "TableStack.hpp"
+#include "../events/AttackEvent.hpp"
 
 class Game {
 private:
@@ -166,4 +167,12 @@ public:
   std::string HUDFormat() const;
 
   const Card* getCardFromCardDistrib(std::string cardName);
+
+  void activateReactions(GameEvent* event);
+
+  void playAttackCard(const Card* card);
+
+  std::vector<Player*> getOtherPlayers(Player& p) const;
+
+  void playCard(Player& p, const Card* card);
 };

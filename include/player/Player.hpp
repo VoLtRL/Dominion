@@ -3,6 +3,11 @@
 #include "Hand.hpp"
 #include <iostream>
 
+#include "../events/AttackEvent.hpp"
+#include "../abstract/Reaction.hpp"
+
+class Reaction;
+
 class Game;
 
 /**
@@ -105,8 +110,6 @@ public:
     }
   }
 
-  void playCard(const Card *card, Game &g);
-
   void addCardToDiscardStack(const Card *card) { discardStack.putCard(card); }
 
   void addCardToHand(const Card *card) { hand.addCard(card); }
@@ -136,5 +139,9 @@ public:
   }
 
   int getTotalCardCount() const;
+
+  bool hasCardInHand(const Card*) const;
+
+  std::vector<const Reaction*> getAvailableReactions() const;
 
 };

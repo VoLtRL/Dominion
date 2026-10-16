@@ -5,11 +5,15 @@
 #include <algorithm>
 
 void Thief::onPlay(Game& g, Player& p) const {
+    
+}
+
+void Thief::onAttack(Game& g, Player& p, std::set<Player*> targets) const {
     std::cout << "Each other player reveals the top 2 cards of their deck. If there are Treasure Cards, you choose one of them to trash. You may gain any or all trashed Treasures, and the non-treasure cards revealed are discarded." << std::endl;
     std::vector<const Card*> treasures;
-    for(Player player : g.getPlayers()){
-        if(player!=p){
-            std::vector<const Card*> revealed = {player.drawCard(), player.drawCard()};
+    for(Player* player : targets){
+        if(player!=&p){
+            std::vector<const Card*> revealed = {player->drawCard(), player->drawCard()};
             std::cout << "Revealed cards : " << std::endl;
             g.displaySelection(revealed);
 
@@ -39,7 +43,7 @@ void Thief::onPlay(Game& g, Player& p) const {
             }
 
             for(const Card* c : revealed){
-                player.addCardToDiscardStack(c);
+                player->addCardToDiscardStack(c);
             }
         }
     }
