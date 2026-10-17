@@ -3,8 +3,8 @@
 #include "Hand.hpp"
 #include <iostream>
 
-#include "../events/AttackEvent.hpp"
 #include "../abstract/Reaction.hpp"
+#include "../events/AttackEvent.hpp"
 
 class Reaction;
 
@@ -26,8 +26,10 @@ private:
   int turnsPlayed = 0;
 
 public:
-  Player(Hand a_hand, CardStack a_drawStack, CardStack a_discardStack)
-      : hand(std::move(a_hand)), drawStack(std::move(a_drawStack)),
+  Player(Hand a_hand, CardStack a_drawStack, CardStack a_discardStack,
+         std::string playerName)
+      : name(playerName), hand(std::move(a_hand)),
+        drawStack(std::move(a_drawStack)),
         discardStack(std::move(a_discardStack)) {
 
         };
@@ -78,7 +80,6 @@ public:
    */
   void removeCardFromHand(const Card *card) { hand.removeCard(card); }
 
-
   /**
    * @brief Draws a card from the draw stack.
    * If the draw stack is empty, it swaps and shuffles the discard stack into
@@ -114,7 +115,7 @@ public:
 
   void addCardToHand(const Card *card) { hand.addCard(card); }
 
-  void addCardToDrawStack(const Card *card){ drawStack.putCard(card); }
+  void addCardToDrawStack(const Card *card) { drawStack.putCard(card); }
 
   int getVictoryPoints() const;
 
@@ -122,26 +123,21 @@ public:
 
   std::string getString() const;
 
-  bool operator==(const Player& other) const{
-    return &*this == &other;
-  }
+  bool operator==(const Player &other) const { return &*this == &other; }
 
-  bool operator!=(const Player& other) const{
-    return !(*this==other);
-  }
+  bool operator!=(const Player &other) const { return !(*this == other); }
 
-  const std::string getName() const {return name;}
+  const std::string getName() const { return name; }
 
-  void discardDrawStack(){
-    while(!drawStack.getStack().empty()){
+  void discardDrawStack() {
+    while (!drawStack.getStack().empty()) {
       discardStack.putCard(drawStack.drawCard());
     }
   }
 
   int getTotalCardCount() const;
 
-  bool hasCardInHand(const Card*) const;
+  bool hasCardInHand(const Card *) const;
 
-  std::vector<const Reaction*> getAvailableReactions() const;
-
+  std::vector<const Reaction *> getAvailableReactions() const;
 };

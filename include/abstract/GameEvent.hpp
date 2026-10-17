@@ -3,27 +3,25 @@
 #include "EventType.hpp"
 #include <set>
 
-class GameEvent{
-    private:
-        EventType type;
-        Player& source;
-        std::set<Player*> ignored;
-    
-    public:
-        GameEvent(EventType t, Player& s):type(t),source(s){};
-        virtual ~GameEvent() = default;
+class GameEvent {
+private:
+  EventType type;
+  Player &source;
+  std::set<Player *> ignored;
 
-        bool isIgnoredFor(Player& p) const{
-            return ignored.find(&p) == ignored.end();
-        }
-        
-        void ignorePlayer(Player& p){
-            if(!isIgnoredFor(p)){
-                ignored.insert(&p);
-            }
-        }
+public:
+  GameEvent(EventType t, Player &s) : type(t), source(s) {};
+  virtual ~GameEvent() = default;
 
-        EventType getType() const{
-            return type;
-        };
+  bool isIgnoredFor(Player &p) const {
+    return ignored.find(&p) == ignored.end();
+  }
+
+  void ignorePlayer(Player &p) {
+    if (!isIgnoredFor(p)) {
+      ignored.insert(&p);
+    }
+  }
+
+  EventType getType() const { return type; };
 };
