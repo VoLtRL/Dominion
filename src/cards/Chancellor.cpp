@@ -2,7 +2,7 @@
 #include "../../include/cards/Chancellor.hpp"
 #include "../../include/player/Player.hpp"
 
-void Chancellor::onPlay(Game &g, Player &p) const
+void Chancellor::play(Game &g, Player &p) const
 {
     std::cout << "You gain 2 coins for this turn and you may immediately discard your entire draw pile." << std::endl;
     g.addGold(2);

@@ -2,18 +2,15 @@
 #include "../../include/gameplay/Game.hpp"
 #include "../../include/player/Player.hpp"
 
-void Library::onPlay(Game &, Player &p) const {
-  std::cout
-      << "You draw cards until your hand holds at least 7, and you may skip "
-         "any action card drawn this way, discarding them afterwards."
-      << std::endl;
-  std::vector<const Card *> actionCardsDrawn;
-  while (p.getHand().getSize() < 7) {
-    const Card *c = p.drawCard();
-    bool skipped = false;
-    std::cout << "You drew this card : " << std::endl;
-    c->display();
-    if (c->isA(CardType::ACTION)) {
+void Library::play(Game&, Player& p) const {
+    std::cout << "You draw cards until your hand holds at least 7, and you may skip any action card drawn this way, discarding them afterwards." << std::endl;
+    std::vector<const Card*> actionCardsDrawn;
+    while(p.getHand().getSize() < 7){
+        const Card* c = p.drawCard();
+        bool skipped = false;
+        std::cout << "You drew this card : " << std::endl;
+        c->display();
+        if(c->isA(CardType::ACTION)){
 
       std::string input;
 

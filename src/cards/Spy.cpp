@@ -2,21 +2,20 @@
 #include "../../include/gameplay/Game.hpp"
 #include "../../include/player/Player.hpp"
 
-void Spy::onPlay(Game &g, Player &p) const {
-  std::cout << "You draw 1 card and get 1 action this turn!" << std::endl;
-  p.drawCardsToHand(1);
-  g.addPlayerActions(1);
+void Spy::play(Game& g, Player& p) const {
+    std::cout << "You draw 1 card and get 1 action this turn!" << std::endl;
+    p.drawCardsToHand(1);
+    g.addPlayerActions(1);
+
+
 }
 
-void Spy::onAttack(Game &g, Player &p, std::set<Player *> targets) const {
-  std::cout
-      << "Everyone (including you) reveals the top card of their draw pile and "
-         "YOU choose if it goes in the draw pile or the discard pile."
-      << std::endl;
-
-  if (targets.find(&p) == targets.end()) {
-    targets.insert(&p);
-  }
+void Spy::attack(Game& g, Player& p, std::set<Player*> targets) const {
+    std::cout << "Everyone (including you) reveals the top card of their draw pile and YOU choose if it goes in the draw pile or the discard pile." << std::endl;
+    
+    if(targets.find(&p) == targets.end()){
+        targets.insert(&p);
+    }
 
   for (Player *player : targets) {
     std::cout << "Player " << player->getName()

@@ -28,15 +28,36 @@ const Card *Player::drawCard() {
 int Player::getVictoryPoints() const {
   int totalVictoryPoints = 0;
   for (const Card *card : hand.getCards()) {
-    totalVictoryPoints += card->getVictoryPoints(*this);
+    if(card->isA(CardType::VICTORY)){
+      const Victory* v = dynamic_cast<const Victory*>(card);
+      totalVictoryPoints += v->getVictoryPoints(*this);
+    }
+    else if(card->isA(CardType::CURSE)){
+      const Cursed* c = dynamic_cast<const Cursed*>(card);
+      totalVictoryPoints += c->getCursePoints(*this);
+    }
   }
-  for (std::stack<const Card *> tempStack = drawStack.getStack();
-       !tempStack.empty(); tempStack.pop()) {
-    totalVictoryPoints += tempStack.top()->getVictoryPoints(*this);
+  for (std::stack<const Card*> tempStack = drawStack.getStack(); !tempStack.empty(); tempStack.pop()) {
+    const Card* card = tempStack.top();
+    if(card->isA(CardType::VICTORY)){
+      const Victory* v = dynamic_cast<const Victory*>(card);
+      totalVictoryPoints += v->getVictoryPoints(*this);
+    }
+    else if(card->isA(CardType::CURSE)){
+      const Cursed* c = dynamic_cast<const Cursed*>(card);
+      totalVictoryPoints += c->getCursePoints(*this);
+    }
   }
-  for (std::stack<const Card *> tempStack = discardStack.getStack();
-       !tempStack.empty(); tempStack.pop()) {
-    totalVictoryPoints += tempStack.top()->getVictoryPoints(*this);
+  for (std::stack<const Card*> tempStack = discardStack.getStack(); !tempStack.empty(); tempStack.pop()) {
+    const Card* card = tempStack.top();
+    if(card->isA(CardType::VICTORY)){
+      const Victory* v = dynamic_cast<const Victory*>(card);
+      totalVictoryPoints += v->getVictoryPoints(*this);
+    }
+    else if(card->isA(CardType::CURSE)){
+      const Cursed* c = dynamic_cast<const Cursed*>(card);
+      totalVictoryPoints += c->getCursePoints(*this);
+    }
   }
   return totalVictoryPoints;
 }

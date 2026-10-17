@@ -2,7 +2,7 @@
 #include "../../include/gameplay/Game.hpp"
 #include "../../include/player/Player.hpp"
 
-void Moneylender::onPlay(Game& g, Player& p) const {
+void Moneylender::play(Game& g, Player& p) const {
     std::cout << "You may trash a Copper from your hand to gain 3 coins this turn." << std::endl;
     bool found = false;
     for(const Card* c : p.getHand().getCards()){

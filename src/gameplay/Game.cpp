@@ -250,7 +250,7 @@ void Game::ActionPhase() {
       break;
     }
     std::cout << "You played the " << card[0]->getName() << std::endl;
-    playCard(*activePlayer, card[0]);
+    playAction(*activePlayer, card[0]);
     if (card[0]->isA(CardType::ATTACK)) {
       std::cout << "Attacking other players";
       playAttackCard(card[0]);
@@ -269,7 +269,7 @@ void Game::useTreasureCards() {
       activePlayer->getHand().getCards(), activePlayer->getHand().getSize(),
       "play", "most", {CardType::TREASURE});
   for (const Card *card : treasureCards) {
-    playCard(*activePlayer, card);
+    playTreasure(*activePlayer, card);
     continue;
   }
 }
@@ -578,12 +578,18 @@ void Game::playAttackCard(const Card *card) {
       newTargets.insert(p);
     }
   }
-
-  card->onAttack(*this, *activePlayer, newTargets);
+  const Attack* attack = dynamic_cast<const Attack*>(card);
+  attack->attack(*this, *activePlayer, newTargets);
 }
 
-void Game::playCard(Player &p, const Card *card) {
+void Game::playAction(Player &p, const Card *card) {
   p.removeCardFromHand(card);
   addCardToPlay(card);
-  card->onPlay(*this, p);
+  const Action* action = dynamic_cast<const Action*>(card);
+  action->play(*this, p);
+}
+
+void Game::playTreasure(Player&p, const Card* card){
+  const Treasure* treasure = dynamic_cast<const Treasure*>(card);
+  addGold(treasure->getCoins());
 }

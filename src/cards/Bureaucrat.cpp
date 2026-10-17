@@ -2,7 +2,7 @@
 #include "../../include/cards/Bureaucrat.hpp"
 #include "../../include/player/Player.hpp"
 
-void Bureaucrat::onPlay(Game &g, Player &p) const
+void Bureaucrat::play(Game &g, Player &p) const
 {
     std::cout << "A silver is added to your draw pile !" << std::endl;
     const Card* silver = g.getCardFromCardDistrib("Silver");
@@ -15,7 +15,7 @@ void Bureaucrat::onPlay(Game &g, Player &p) const
     
 }
 
-void Bureaucrat::onAttack(Game& g, Player& p, std::set<Player*> targets) const{
+void Bureaucrat::attack(Game& g, Player& p, std::set<Player*> targets) const{
     std::cout << "Every opponents must show and put on their draw pile a victory card from their hand." << std::endl;
     for (Player* player : targets){
         std::cout << "Player " << player->getName() << " : show a victory card in your hand to put on top of your draw pile." << std::endl;

@@ -4,9 +4,19 @@
 #include <iostream>
 
 #include "../abstract/Reaction.hpp"
+#include "../abstract/Attack.hpp"
+#include "../abstract/Action.hpp"
+#include "../abstract/Treasure.hpp"
+#include "../abstract/Victory.hpp"
+#include "../abstract/Cursed.hpp"
 #include "../events/AttackEvent.hpp"
 
 class Reaction;
+class Attack;
+class Action;
+class Treasure;
+class Victory;
+class Cursed;
 
 class GameEvent;
 

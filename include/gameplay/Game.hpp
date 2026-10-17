@@ -175,5 +175,7 @@ public:
 
   std::vector<Player *> getOtherPlayers();
 
-  void playCard(Player &p, const Card *card);
+  void playAction(Player& p, const Card* card);
+
+  void playTreasure(Player& p, const Card* card);
 };

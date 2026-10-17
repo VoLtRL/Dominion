@@ -1,11 +1,11 @@
 #pragma once
 #include "../abstract/Card.hpp"
 #include "../abstract/CardType.hpp"
+#include "../abstract/Treasure.hpp"
 
 
-
-class Silver : public Card {
+class Silver : public Card, public Treasure {
     public: 
         Silver() : Card("Silver", 3, "", {CardType::TREASURE}) {}
-        void onPlay(Game& g, Player& p) const;
+        int getCoins() const;
 };

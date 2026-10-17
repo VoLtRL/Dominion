@@ -2,7 +2,7 @@
 #include "../../include/gameplay/Game.hpp"
 #include "../../include/player/Player.hpp"
 
-void Remodel::onPlay(Game& g, Player& p) const {
+void Remodel::play(Game& g, Player& p) const {
     std::cout << "Trash a card from your hand and gain a card costing up to 2 more than it." << std::endl;
     std::vector<const Card*> selection = g.chooseCardsFromSelection(p.getHand().getCards(), 1, "trash", "exact", {CardType::ALL});
     if(!selection.empty()){

@@ -24,4 +24,8 @@ public:
   }
 
   EventType getType() const { return type; };
-};
+
+  Player& getSource() const{
+    return source;
+  }
+}; 

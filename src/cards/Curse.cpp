@@ -2,7 +2,7 @@
 #include "../../include/gameplay/Game.hpp"
 #include "../../include/player/Player.hpp"
 
-int Curse::getVictoryPoints(const Player& p) const {
+int Curse::getCursePoints(const Player& p) const {
     (void)p;
     return -1;
 }
