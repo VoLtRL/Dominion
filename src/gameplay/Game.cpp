@@ -402,7 +402,8 @@ void Game::launchGame() {
   int choice;
   std::cin >> choice;
 
-  std::cout << choice;
+  std::cin.ignore();
+
   if (choice < 1 || static_cast<size_t>(choice) > gameModes.size()) {
     std::cout << "Invalid choice." << std::endl;
     return;
@@ -415,6 +416,7 @@ void Game::launchGame() {
             << std::endl;
   choice = 1;
   std::cin >> choice;
+  std::cin.ignore();
   if (choice < 1 || choice > 4) {
     std::cout << "Invalid choice." << std::endl;
   }
@@ -422,10 +424,10 @@ void Game::launchGame() {
             << std::endl;
 
   auto usualDistribution = std::map<const Card *, int>();
-  usualDistribution.insert({
-      {Factory::get("Copper"), 60 - 7 * choice},
-      {Factory::get("Curse"), 10 * (choice - 1)},
-  });
+  usualDistribution.insert({{Factory::get("Copper"), 60 - 7 * choice},
+                            {Factory::get("Curse"), 10 * (choice - 1)},
+                            {Factory::get("Silver"), 40},
+                            {Factory::get("Gold"), 30}});
   switch (choice) {
   case 1:
   case 2:
@@ -453,9 +455,8 @@ void Game::launchGame() {
   for (int i = 0; i < choice; ++i) {
     std::cout << "Enter the name of player " << i + 1 << ": ";
     std::string playerName;
-    std::cin.clear();
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     std::cin >> playerName;
+    std::cin.ignore();
     CardStack drawStack = CardStack(
         {Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
          Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
@@ -527,10 +528,11 @@ bool Game::isStackEmpty(std::string cardName) const {
 }
 
 std::string Game::HUDFormat() const {
-  std::string hud =
-      "[" + activePlayer->getString() + std::to_string(currentPlayerMoney) +
-      " coins, " + std::to_string(currentPlayerActions) + " actions, " +
-      std::to_string(currentPlayerPurchaseLeft) + " purchases left] ";
+  std::string hud = "[" + activePlayer->getString() + " | " +
+                    std::to_string(currentPlayerMoney) + " coins | " +
+                    std::to_string(currentPlayerActions) + " actions | " +
+                    std::to_string(currentPlayerPurchaseLeft) +
+                    " purchases left] ";
   return hud;
 }
 
