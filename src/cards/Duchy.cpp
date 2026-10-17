@@ -2,6 +2,7 @@
 #include "../../include/gameplay/Game.hpp"
 #include "../../include/player/Player.hpp"
 
-void Duchy::onPlay(Game& g, Player& p) const {
-    p.addVictoryPoints(vp);
+int Duchy::getVictoryPoints(const Player& p) const {
+    (void)p;
+    return 3;
 }

@@ -22,7 +22,7 @@ private:
 public:
   Card(std::string cardName, int goldCost, 
        std::string cardDescription, std::set<CardType> cardTypes)
-      : name(cardName), cost(goldCost), description(cardDescription), types(cardTypes) {
+      : name(cardName), cost(goldCost), description(cardDescription), types(cardTypes){
   }
   /**
    * @brief Gets the name of the card.
@@ -70,6 +70,13 @@ public:
    */
   virtual void onGain(Game &g, Player &p) const;
   /**
+   * @brief Gets the victory points provided by the card.
+   * @param p The player for whom the victory points are calculated.
+   * @return The victory points provided by the card.
+   */
+  virtual int getVictoryPoints(const Player& p) const;
+
+  /**
    * @brief Checks if the card is of a specific type.
    * @param t The type to check.
    * @return true if the card is of the specified type, false otherwise.
@@ -91,4 +98,6 @@ public:
    * @return true if the card is empty, false otherwise.
    */
   bool empty() const { return name.empty(); }
+
+  virtual void onAttack(Game& g, Player& p, std::set<Player*> targets) const;
 };

@@ -3,14 +3,19 @@
 #include "Hand.hpp"
 #include <iostream>
 
+#include "../abstract/Reaction.hpp"
+#include "../events/AttackEvent.hpp"
+
+class Reaction;
+
 class Game;
 
 /**
  * @brief Represents a player in the game.
- * This class provides functionality to manage a player's hand, draw stack, and discard stack.
+ * This class provides functionality to manage a player's hand, draw stack, and
+ * discard stack.
  */
-class Player
-{
+class Player {
 private:
   std::string name;
 
@@ -19,11 +24,13 @@ private:
   CardStack discardStack;
 
   int turnsPlayed = 0;
-  int score = 0;
 
 public:
-  Player(Hand a_hand, CardStack a_drawStack, CardStack a_discardStack)
-      : hand(std::move(a_hand)), drawStack(std::move(a_drawStack)), discardStack(std::move(a_discardStack)) {
+  Player(Hand a_hand, CardStack a_drawStack, CardStack a_discardStack,
+         std::string playerName)
+      : name(playerName), hand(std::move(a_hand)),
+        drawStack(std::move(a_drawStack)),
+        discardStack(std::move(a_discardStack)) {
 
         };
 
@@ -60,11 +67,12 @@ public:
    * @brief Discards a card from the player's hand to the discard stack.
    * @param card The card to be discarded.
    */
-  void discardCard(const Card *card)
-  {
+  void discardCard(const Card *card) {
     hand.removeCard(card);
     discardStack.putCard(card);
   }
+
+  void discardHand();
 
   /**
    * @brief Removes a card from the player's hand.
@@ -72,15 +80,20 @@ public:
    */
   void removeCardFromHand(const Card *card) { hand.removeCard(card); }
 
-
+  /**
+   * @brief Draws a card from the draw stack.
+   * If the draw stack is empty, it swaps and shuffles the discard stack into
+   * the draw stack.
+   * @return A pointer to the drawn card.
+   */
+  const Card *drawCard();
   /**
    * @brief Draws a card from the draw stack to the player's hand.
-   * If the draw stack is empty, it swaps and shuffles the discard stack into the draw stack.
+   * If the draw stack is empty, it swaps and shuffles the discard stack into
+   * the draw stack.
    */
-  void drawCard()
-  {
-    if (drawStack.getSize() == 0)
-    {
+  void drawCardToHand() {
+    if (drawStack.getSize() == 0) {
       swapAndShuffleStacks();
     }
     const Card *drawnCard = drawStack.drawCard();
@@ -88,34 +101,43 @@ public:
   }
 
   /**
-   * @brief Draws a specified number of cards from the draw stack to the player's hand.
+   * @brief Draws a specified number of cards from the draw stack to the
+   * player's hand.
    * @param numberOfCards The number of cards to draw.
    */
-  void drawCards(int numberOfCards)
-  {
-    for (int i = 0; i < numberOfCards; ++i)
-    {
-      drawCard();
+  void drawCardsToHand(int numberOfCards) {
+    for (int i = 0; i < numberOfCards; ++i) {
+      drawCardToHand();
     }
   }
 
-  void playCard(const Card *card, Game &g);
+  void addCardToDiscardStack(const Card *card) { discardStack.putCard(card); }
 
-  void addCardToDiscardStack(const Card *card)
-  {
-    discardStack.putCard(card);
-  }
+  void addCardToHand(const Card *card) { hand.addCard(card); }
 
-  void addCardToHand(const Card *card)
-  {
-    hand.addCard(card);
-  }
+  void addCardToDrawStack(const Card *card) { drawStack.putCard(card); }
 
-  int getScore() const;
-
-  void addVictoryPoints(int points) { score += points; }
+  int getVictoryPoints() const;
 
   void swapAndShuffleStacks();
 
   std::string getString() const;
+
+  bool operator==(const Player &other) const { return &*this == &other; }
+
+  bool operator!=(const Player &other) const { return !(*this == other); }
+
+  const std::string getName() const { return name; }
+
+  void discardDrawStack() {
+    while (!drawStack.getStack().empty()) {
+      discardStack.putCard(drawStack.drawCard());
+    }
+  }
+
+  int getTotalCardCount() const;
+
+  bool hasCardInHand(const Card *) const;
+
+  std::vector<const Reaction *> getAvailableReactions() const;
 };

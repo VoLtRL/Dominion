@@ -4,6 +4,27 @@
 
 void Bureaucrat::onPlay(Game &g, Player &p) const
 {
-    (void)g;
-    p.addCardToDiscardStack(Factory::get("Silver"));
+    std::cout << "A silver is added to your draw pile !" << std::endl;
+    const Card* silver = g.getCardFromCardDistrib("Silver");
+    if (silver == nullptr){
+        std::cout << "There aren't any silver left..." << std::endl;
+    }
+    else{
+        p.addCardToDrawStack(silver);
+    }
+    
+}
+
+void Bureaucrat::onAttack(Game& g, Player& p, std::set<Player*> targets) const{
+    std::cout << "Every opponents must show and put on their draw pile a victory card from their hand." << std::endl;
+    for (Player* player : targets){
+        std::cout << "Player " << player->getName() << " : show a victory card in your hand to put on top of your draw pile." << std::endl;
+        std::vector<const Card *> selection = g.chooseCardsFromSelection(player->getHand().getCards(), 1, "display and put on your draw pile", "exact", {CardType::VICTORY});
+        if(!selection.empty()){
+            std::cout << "Putting the following card on top of your draw pile : " << std::endl;
+            g.displaySelection(selection);
+            player->removeCardFromHand(selection[0]);
+            player->addCardToDrawStack(selection[0]);
+        }
+    }
 }

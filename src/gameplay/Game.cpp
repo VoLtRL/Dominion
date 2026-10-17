@@ -1,8 +1,8 @@
 #include "../../include/gameplay/Game.hpp"
 #include <algorithm>
 #include <iostream>
-
-
+#include <limits>
+#include <ostream>
 
 const std::vector<Player> &Game::getPlayers() const { return players; }
 
@@ -15,13 +15,15 @@ void Game::setActivePlayer(Player *player) { activePlayer = player; }
 void Game::setCurrentGameMode(const GameMode *gameMode) {
   currentGameMode = gameMode;
 }
-void Game::insertCardDistribution(const std::map<const Card *, int> &cardDistribution) {
+void Game::insertCardDistribution(
+    const std::map<const Card *, int> &cardDistribution) {
   for (const auto &pair : cardDistribution) {
     currentCardDistribution[pair.first] += pair.second;
   }
 }
 
-void Game::setCurrentCardDistribution(const std::map<const Card *, int> &cardDistribution) {
+void Game::setCurrentCardDistribution(
+    const std::map<const Card *, int> &cardDistribution) {
   currentCardDistribution = cardDistribution;
 }
 
@@ -94,188 +96,179 @@ void Game::displaySelection(const std::vector<const Card *> &selection) const {
   }
 }
 
-std::vector<const Card *> Game::chooseCardsFromSelection(
-    const std::vector<const Card *> &selection, size_t numberOfCardsToChoose,
-    const std::string &action, std::string mode,
-    const std::set<CardType> &allowedTypes) const {
+std::vector<const Card *>
+Game::chooseCardsFromSelection(const std::vector<const Card *> &selection,
+                               size_t numberOfCardsToChoose,
+                               const std::string &action, std::string mode,
+                               const std::set<CardType> &allowedTypes) const {
   if (mode != "exact" && mode != "most" && mode != "least") {
     mode = "exact";
   }
 
-  if (mode != "most") {
-    numberOfCardsToChoose = std::min(numberOfCardsToChoose, selection.size());
+  std::vector<const Card *> validSelection;
+  if (allowedTypes.find(CardType::ALL) != allowedTypes.end()) {
+    validSelection = selection;
+  } else {
+    for (const Card *card : selection) {
+      std::set<CardType> types = card->getTypes();
+      for (CardType t : types) {
+        if (allowedTypes.find(t) != allowedTypes.end()) {
+          validSelection.push_back(card);
+        }
+      }
+    }
   }
 
-  std::vector<const Card *> chosenCards;
-  std::vector<bool> taken(selection.size(), false);
+  std::cout << HUDFormat();
 
-  std::string allowedTypesStr;
-  for (const CardType &t : allowedTypes) {
-    if (!allowedTypesStr.empty()) {
-      allowedTypesStr += ", ";
-    }
-    switch (t) {
-    case CardType::ACTION:
-      allowedTypesStr += "Action";
-      break;
-    case CardType::TREASURE:
-      allowedTypesStr += "Treasure";
-      break;
-    case CardType::VICTORY:
-      allowedTypesStr += "Victory";
-      break;
-    case CardType::CURSE:
-      allowedTypesStr += "Curse";
-      break;
-    case CardType::ATTACK:
-      allowedTypesStr += "Attack";
-      break;
-    case CardType::REACTION:
-      allowedTypesStr += "Reaction";
-      break;
-    }
+  if (validSelection.empty()) {
+    std::cout << "There are no valid cards in this selection." << std::endl;
+    return {};
+  }
+
+  size_t allowedCount = std::min(numberOfCardsToChoose, validSelection.size());
+
+  if ((mode == "exact" && allowedCount == validSelection.size()) ||
+      (mode == "least" && allowedCount >= validSelection.size())) {
+    std::cout << "You need to choose all cards" << std::endl;
+    return validSelection;
   }
 
   if (mode == "exact") {
-    std::cout << "Choose exactly " << numberOfCardsToChoose << " card(s) to "
-              << action << ":\n";
+    std::cout << "Choose exactly " << allowedCount;
   } else if (mode == "most") {
-    std::cout << "Choose at most " << numberOfCardsToChoose
-              << " card(s) (0 to finish) to " << action << ":\n";
+    std::cout << "Choose at most " << allowedCount;
   } else {
-    std::cout << "Choose at least " << numberOfCardsToChoose
-              << " card(s) (0 to finish once done) to " << action << ":\n";
+    std::cout << "Choose at least " << allowedCount;
   }
+  std::cout << " card(s) to " << action;
 
-  displaySelection(selection);
+  std::cout << (mode == "exact" ? ":\n" : " (0 to finish):\n");
+
+  displaySelection(validSelection);
+
+  // Indices into `selection`, in order of choice
+  std::vector<size_t> chosen;
 
   while (true) {
-    const bool allTaken = chosenCards.size() == selection.size();
-    const bool reachedN = chosenCards.size() >= numberOfCardsToChoose;
+    const bool reachedN = chosen.size() >= allowedCount;
 
-    // Arrêt automatique
-    if (allTaken || (mode != "least" && reachedN))
+    // Automatic stop
+    if (chosen.size() == allowedCount || (mode != "least" && reachedN)) {
       break;
+    }
 
     const bool canStop = (mode == "most") || (mode == "least" && reachedN);
 
-    std::cout << "[" << chosenCards.size() << " chosen] Enter a card number"
+    std::cout << "[" << chosen.size() << " chosen] Enter a card number"
               << (canStop ? " (0 to finish)" : "") << ": ";
 
-    int index;
-    if (!(std::cin >> index)) {
-      if (std::cin.eof()) {
-        break;
+    std::string input = "";
+    try {
+      if (!std::getline(std::cin, input)) {
+        input = -1;
+        break; // input stream closed
       }
-      std::cin.clear();
-      std::cout << "Invalid input. Please try again.\n";
+    } catch (const std::exception &) {
+      input = -1;
+    }
+
+    if (allowedTypes.find(CardType::TREASURE) != allowedTypes.end()) {
+      if (input == "all") {
+        if (validSelection.size() > allowedCount && mode != "least") {
+          std::cout << "Too many cards!" << std::endl;
+          continue;
+        }
+        chosen.clear();
+        for (size_t i = 0; i < validSelection.size(); i++) {
+          chosen.push_back(i + 1);
+        }
+        continue;
+      }
+      if (input == "none") {
+        if (mode != "most" && allowedCount > 0) {
+          std::cout << "Too few cards chosen!" << std::endl;
+          continue;
+        }
+      }
+    }
+
+    int index = -1;
+    try {
+      size_t pos = 0;
+      index = std::stoi(input, &pos);
+      if (pos != input.size()) {
+        input = -1; // reject things like "12abc"
+      }
+    } catch (const std::exception &) {
+      std::cout << "Invalid index." << std::endl;
       continue;
     }
 
-    if (index == 0 && canStop)
+    if (index == 0 && canStop) {
       break;
+    }
 
-    if (index < 1 || static_cast<size_t>(index) > selection.size()) {
+    if (index < 1 || static_cast<size_t>(index) > validSelection.size()) {
       std::cout << "Invalid index. Please try again.\n";
       continue;
     }
-    if (taken[index - 1]) {
-      taken[index - 1] = false;
-      auto chosen = std::find(chosenCards.begin(), chosenCards.end(),
-                              selection[index - 1]);
-      if (chosen != chosenCards.end()) {
-        chosenCards.erase(chosen);
-      }
-      std::cout << "Card deselected.\n";
-      continue;
-    }
 
-    if (selection[index - 1]->getTypes().empty() ||
-        std::none_of(allowedTypes.begin(), allowedTypes.end(), [&](CardType t) {
-          return selection[index - 1]->isA(t);
-        })) {
-      std::cout << "Invalid card type. Please try again.\n";
-      continue;
+    auto posi = std::find(chosen.begin(), chosen.end(), index);
+    if (posi != chosen.end()) {
+      std::cout << "Deselecting card number " << index << std::endl;
+      chosen.erase(posi);
+    } else {
+      std::cout << "Selecting card number " << index << std::endl;
+      chosen.push_back(index);
     }
-
-    taken[index - 1] = true;
-    chosenCards.push_back(selection[index - 1]);
   }
 
-  return chosenCards;
+  if (chosen.empty()) {
+    std::cout << "There are no chosen cards to " << action << std::endl;
+    return {};
+  }
+  std::vector<const Card *> res;
+  for (auto index : chosen) {
+    res.push_back(validSelection[index - 1]);
+  }
+  return res;
 }
 
-void Game::ActionPhase(Player player) {
+void Game::clearRevealedCards() { revealedCards.clear(); }
+
+void Game::ActionPhase() {
   while (currentPlayerActions > 0) {
     std::cout << "You have " << currentPlayerActions << " actions left."
               << std::endl;
-    std::vector<const Card *> cards = player.getHand().getCards();
-    for (const Card *c : cards) {
-      if (!c->isA(CardType::ACTION)) {
-        cards.erase(std::remove(cards.begin(), cards.end(), c), cards.end());
-      }
-    }
-    if (cards.empty()) {
-      std::cout << "You have no action cards to play." << std::endl;
+    auto card = chooseCardsFromSelection(activePlayer->getHand().getCards(), 1,
+                                         "play", "exact", {CardType::ACTION});
+    if (card.empty()) {
       break;
     }
-    auto card = chooseCardsFromSelection(cards, 1, "play", "exact", {CardType::ACTION})[0];
-    if (!card) {
-      std::cout << "No card selected. Please try again." << std::endl;
-      continue;
+    std::cout << "You played the " << card[0]->getName() << std::endl;
+    playCard(*activePlayer, card[0]);
+    if (card[0]->isA(CardType::ATTACK)) {
+      playAttackCard(card[0]);
     }
-    player.playCard(card, *this);
     currentPlayerActions--;
   }
-  useTreasureCards(player, *this);
+  useTreasureCards();
   std::cout << "Action phase ended." << std::endl;
 }
 
-void Game::useTreasureCards(Player &player, Game &game) {
-  std::vector<const Card *> treasureCards = player.getHand().getSpecificCards(CardType::TREASURE);
-  if (treasureCards.empty()) {
-    std::cout << "You have no treasure cards to use." << std::endl;
-    return;
-  }
+void Game::useTreasureCards() {
 
-  std::cout << "You have the following treasure cards in your hand:" << std::endl;
-  game.displaySelection(treasureCards);
-
-  std::string input;
-  
-  
-
-  while(!treasureCards.empty() && input != "all" && input != "none") {
-    std::cout << "Enter the index of the treasure card you want to use, (all and none accepted): ";
-
-
-    std::cin >> input;
-    std::cin.ignore();
-  if (input == "all") {
-    for (const Card *card : treasureCards) {
-      game.addGold(card->getCost());
-      player.removeCardFromHand(card);
-      player.addCardToDiscardStack(card);
-      continue;
-    }
-  } else if (input == "none") {
-    return;
-  } else {
-    int index = std::stoi(input);
-    if (index < 1 || static_cast<size_t>(index) > treasureCards.size()) {
-      std::cout << "Invalid index. Please try again." << std::endl;
-      continue;
-    } else {
-      const Card *card = treasureCards[index - 1];
-      game.addGold(card->getCost());
-      player.removeCardFromHand(card);
-      player.addCardToDiscardStack(card);
-    }
+  std::vector<const Card *> treasureCards = chooseCardsFromSelection(
+      activePlayer->getHand().getCards(), activePlayer->getHand().getSize(),
+      "play", "most", {CardType::TREASURE});
+  for (const Card *card : treasureCards) {
+    playCard(*activePlayer, card);
+    continue;
   }
 }
-}
 
-void Game::BuyPhase(Player player) {
+void Game::BuyPhase() {
   while (currentPlayerPurchaseLeft) {
     std::cout << "You have " << currentPlayerPurchaseLeft << " purchases left"
               << std::endl;
@@ -288,7 +281,6 @@ void Game::BuyPhase(Player player) {
       if (quantity > 0) {
         display[card->getCost()].push_back(card);
       }
-      
     }
 
     for (auto pair : display) {
@@ -298,10 +290,14 @@ void Game::BuyPhase(Player player) {
 
     std::string card_name;
 
-    std::cout << "Which card do you want to buy ? Enter the name of the card or -1 to skip buying a card"
+    std::cout << "Which card do you want to buy ? Enter the name of the card "
+                 "or -1 to skip buying a card"
               << std::endl;
     std::cout << "You have " << currentPlayerMoney << " coins." << std::endl;
+
     std::cin >> card_name;
+    std::cin.clear();
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
     if (card_name == "-1") {
       std::cout << "You chose not to buy any card." << std::endl;
@@ -314,7 +310,9 @@ void Game::BuyPhase(Player player) {
       continue;
     }
     if (card->getCost() > currentPlayerMoney) {
-      std::cout << "You don't have enough money to buy this card. Please try again." << std::endl;
+      std::cout
+          << "You don't have enough money to buy this card. Please try again."
+          << std::endl;
       continue;
     }
     if (currentCardDistribution[card] <= 0) {
@@ -323,8 +321,8 @@ void Game::BuyPhase(Player player) {
     }
     currentCardDistribution[card]--;
     currentPlayerMoney -= card->getCost();
-    player.addCardToDiscardStack(card);
-
+    activePlayer->addCardToDiscardStack(card);
+    addPlayerPurchases(-1);
   }
 }
 
@@ -340,7 +338,8 @@ void Game::hasGameEnded() {
       emptyStacks++;
     }
     if (stack.getCard()->getName() == "Province" && stack.getQuantity() == 0) {
-      std::cout << "Game over! The game has ended due to the Province stack being empty."
+      std::cout << "Game over! The game has ended due to the Province stack "
+                   "being empty."
                 << std::endl;
       std::cout << "The winner is: " << getWinner().getString() << std::endl;
       exit(0);
@@ -355,20 +354,26 @@ void Game::hasGameEnded() {
   }
 }
 
-void Game::playTurn(Player player) {
+void Game::playTurn(Player &player) {
   setActivePlayer(&player);
   player.addTurnPlayed();
-  addPlayerActions(1);
-  addPlayerPurchases(1);
-  displaySelection(player.getHand().getCards());
-  std::cout << "It is " << player.getString() << "'s turn." << std::endl;
-  ActionPhase(player);
-  BuyPhase(player);
+  displaySelection(activePlayer->getHand().getCards());
+  std::cout << "It is " << activePlayer->getName() << "'s turn." << std::endl;
+  ActionPhase();
+  BuyPhase();
+  player.discardHand();
+
+  player.drawCardsToHand(5);
   hasGameEnded();
 }
 
-void Game::addGold(int amount) {
-  currentPlayerMoney += amount;
+void Game::addGold(int amount) { currentPlayerMoney += amount; }
+
+void Game::discardCardsInPlay() {
+  for (auto card : CardsInPlay) {
+    activePlayer->addCardToDiscardStack(card);
+  }
+  CardsInPlay.clear();
 }
 
 Player Game::getWinner() {
@@ -376,8 +381,8 @@ Player Game::getWinner() {
   int maxScore = 0;
 
   for (const Player &player : players) {
-    if (player.getScore() > maxScore) {
-      maxScore = player.getScore();
+    if (player.getVictoryPoints() > maxScore) {
+      maxScore = player.getVictoryPoints();
       winner = player;
     }
   }
@@ -396,11 +401,14 @@ void Game::launchGame() {
       << "Please select a game mode by entering the corresponding number: ";
   int choice;
   std::cin >> choice;
+
+  std::cout << choice;
   if (choice < 1 || static_cast<size_t>(choice) > gameModes.size()) {
     std::cout << "Invalid choice." << std::endl;
     return;
   }
   setCurrentGameMode(&gameModes[choice - 1]);
+  std::cout << "selected " << currentGameMode->getName() << std::endl;
 
   std::cout << "Will you play alone ? Enter the number of players (4 players "
                "max) [default : 1 player]"
@@ -413,9 +421,11 @@ void Game::launchGame() {
   std::cout << "You have chosen to play with " << choice << " players."
             << std::endl;
 
-  auto usualDistribution = std::map<const Card*, int>();
-  usualDistribution.insert({{Factory::get("Copper"), 60 - 7 * choice},
-                             {Factory::get("Curse"), 10 * (choice - 1)},});
+  auto usualDistribution = std::map<const Card *, int>();
+  usualDistribution.insert({
+      {Factory::get("Copper"), 60 - 7 * choice},
+      {Factory::get("Curse"), 10 * (choice - 1)},
+  });
   switch (choice) {
   case 1:
   case 2:
@@ -435,36 +445,136 @@ void Game::launchGame() {
     break;
   }
 
-  auto cardDistribution = gameModes[choice - 1].getCardDistribution();
-  auto combinedDistribution = std::map<const Card*, int>(usualDistribution);
+  auto cardDistribution = currentGameMode->getCardDistribution();
+  auto combinedDistribution = std::map<const Card *, int>(usualDistribution);
   combinedDistribution.insert(cardDistribution.begin(), cardDistribution.end());
   setCurrentCardDistribution(combinedDistribution);
-  
+
   for (int i = 0; i < choice; ++i) {
     std::cout << "Enter the name of player " << i + 1 << ": ";
     std::string playerName;
+    std::cin.clear();
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     std::cin >> playerName;
-    std::cin.ignore(); // Ignore the newline character
-    std::cin.sync(); // Clear the input buffer
-    CardStack drawStack = CardStack({
-      Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
-       Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
-       Factory::get("Estate"), Factory::get("Estate"), Factory::get("Estate")});
+    CardStack drawStack = CardStack(
+        {Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
+         Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
+         Factory::get("Estate"), Factory::get("Estate"),
+         Factory::get("Estate")});
 
     drawStack.shuffle();
     Hand hand;
     CardStack discardStack = CardStack();
     hand.refillHandFromDrawStack(drawStack, discardStack);
-    Player player(hand, drawStack, discardStack);
+    Player player(hand, drawStack, discardStack, playerName);
     addPlayer(player);
   }
 
   while (true) {
     for (Player &player : players) {
+      currentPlayerActions = 1;
+      currentPlayerPurchaseLeft = 1;
+      currentPlayerMoney = 0;
       playTurn(player);
     }
   }
 
   std::cout << "Game is over!" << std::endl;
   std::cout << "The winner is:" << getWinner().getString() << std::endl;
+}
+
+const std::vector<TableStack> &Game::getKingdomStacks() {
+  return KingdomStacks;
+}
+
+const std::vector<TableStack> &Game::getBasicStacks() { return BasicStacks; }
+
+std::vector<const Card *> Game::getBuyableCardsBelowCost(int cost) const {
+  std::vector<const Card *> validCards;
+  for (const auto &pair : currentCardDistribution) {
+    const Card *card = pair.first;
+    int quantity = pair.second;
+    if (card->getCost() <= cost && quantity > 0) {
+      validCards.push_back(card);
+    }
+  }
+  return validCards;
+}
+
+const Card *Game::getCardFromCardDistrib(std::string cardName) {
+  for (const auto &pair : currentCardDistribution) {
+    const Card *card = pair.first;
+    int quantity = pair.second;
+    if (card->getName() == cardName) {
+      if (quantity > 0) {
+        return Factory::get(card->getName());
+      }
+      return nullptr;
+    }
+  }
+  return nullptr;
+}
+
+bool Game::isStackEmpty(std::string cardName) const {
+  for (const auto &pair : currentCardDistribution) {
+    const Card *card = pair.first;
+    int quantity = pair.second;
+    if (card->getName() == cardName) {
+      return quantity == 0;
+    }
+  }
+  return true;
+}
+
+std::string Game::HUDFormat() const {
+  std::string hud =
+      "[" + activePlayer->getString() + std::to_string(currentPlayerMoney) +
+      " coins, " + std::to_string(currentPlayerActions) + " actions, " +
+      std::to_string(currentPlayerPurchaseLeft) + " purchases left] ";
+  return hud;
+}
+
+void Game::activateReactions(GameEvent *event) {
+  for (Player player : players) {
+    auto possibleReactions = player.getAvailableReactions();
+
+    for (const Reaction *reactionCard : possibleReactions) {
+      if (reactionCard->canReact(event, this, &player)) {
+        reactionCard->react(event, this, &player);
+      }
+    }
+  }
+}
+
+std::vector<Player *> Game::getOtherPlayers(Player &p) const {
+  std::vector<Player *> res;
+  for (Player player : players) {
+    if (p != player) {
+      res.push_back(&player);
+    }
+  }
+  return res;
+}
+
+void Game::playAttackCard(const Card *card) {
+  std::vector<Player *> others = getOtherPlayers(*activePlayer);
+  AttackEvent event(card, *activePlayer,
+                    std::set(others.begin(), others.end()));
+  activateReactions(&event);
+
+  std::set<Player *> newTargets;
+
+  for (Player *p : event.getTargets()) {
+    if (!event.isIgnoredFor(*p)) {
+      newTargets.insert(p);
+    }
+  }
+
+  card->onAttack(*this, *activePlayer, newTargets);
+}
+
+void Game::playCard(Player &p, const Card *card) {
+  p.removeCardFromHand(card);
+  addCardToPlay(card);
+  card->onPlay(*this, p);
 }

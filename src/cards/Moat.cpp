@@ -4,12 +4,13 @@
 
 void Moat::onPlay(Game& g, Player& p) const {
     // Draw 2 cards
-    p.drawCards(2);
+    p.drawCardsToHand(2);
 }
 
-/*
-Moat::onReaction(Game& g, Player& p) {
-    // When another player plays an Attack card, you may reveal this from your hand to be unaffected by it.
-    // This would require interaction with the game state to check for attacks and handle the reaction.
+bool Moat::canReact(GameEvent* event, Game* game, Player* owner) const { 
+    return event->getType() == EventType::AttackPlayed;
 }
-*/
+
+void Moat::react(GameEvent* event, Game* game, Player* owner) const {
+    event->ignorePlayer(*owner);
+}

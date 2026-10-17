@@ -6,5 +6,5 @@
 class Gardens : public Card {
     public:
         Gardens() : Card("Gardens", 4, "Worth 1 Victory Point per 10 cards you have (rounded down).", {CardType::VICTORY}) {}
-        void onGain(Game& g, Player& p) const;
+        int getVictoryPoints(const Player& p) const override;
 };

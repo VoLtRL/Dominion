@@ -1,9 +1,11 @@
 #include "../../include/player/CardStack.hpp"
 #include <random>
 #include <algorithm>
-
+#include <iostream>
 const Card* CardStack::drawCard() {
+  if (stack.empty()){return nullptr;}
   auto card = stack.top();
+  std::cout << "Drawing card: " << card->getName() << std::endl;
   stack.pop();
   return card;
 }

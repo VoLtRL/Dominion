@@ -3,5 +3,5 @@
 #include "../../include/player/Player.hpp"
 
 void Silver::onPlay(Game& g, Player& p) const {
-    g.addGold(value);
+    g.addGold(2);
 }
