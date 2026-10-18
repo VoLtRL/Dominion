@@ -2,6 +2,7 @@
 #include "CardStack.hpp"
 #include "Hand.hpp"
 #include <iostream>
+#include <set>
 
 #include "../abstract/Reaction.hpp"
 #include "../abstract/Attack.hpp"
@@ -153,5 +154,5 @@ public:
 
   bool hasCardInHand(const Card *) const;
 
-  std::vector<const Reaction *> getAvailableReactions() const;
+  std::set<const Reaction *> getAvailableReactions() const;
 };

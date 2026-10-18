@@ -66,7 +66,8 @@ int Player::getVictoryPoints() const {
  * @brief Discard every cards in the hand of the player
  */
 void Player::discardHand() {
-  for (auto card : hand.getCards()) {
+  std::vector<const Card*> cardsToDiscard = hand.getCards();
+  for (auto card : cardsToDiscard) {
     discardCard(card);
   }
 }
@@ -89,11 +90,11 @@ bool Player::hasCardInHand(const Card *card) const {
   return false;
 }
 
-std::vector<const Reaction *> Player::getAvailableReactions() const {
-  std::vector<const Reaction *> reactions;
+std::set<const Reaction *> Player::getAvailableReactions() const {
+  std::set<const Reaction *> reactions;
   for (const Card *card : hand.getCards()) {
     if (card->isA(CardType::REACTION)) {
-      reactions.push_back(dynamic_cast<const Reaction *>(card));
+      reactions.insert(dynamic_cast<const Reaction *>(card));
     }
   }
   return reactions;
