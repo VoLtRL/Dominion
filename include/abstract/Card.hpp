@@ -20,25 +20,25 @@ private:
   std::set<CardType> types;
 
 public:
-  Card(std::string cardName, int goldCost, 
-       std::string cardDescription, std::set<CardType> cardTypes)
-      : name(cardName), cost(goldCost), description(cardDescription), types(cardTypes){
-  }
+  Card(std::string cardName, int goldCost, std::string cardDescription,
+       std::set<CardType> cardTypes)
+      : name(cardName), cost(goldCost), description(cardDescription),
+        types(cardTypes) {}
   /**
    * @brief Gets the name of the card.
    * @return The name of the card.
    */
-  const std::string& getName() const { return name; }
+  const std::string &getName() const { return name; }
   /**
    * @brief Gets the types of the card.
    * @return A set of CardType representing the types of the card.
    */
-  const std::set<CardType>& getTypes() const { return types; }
+  const std::set<CardType> &getTypes() const { return types; }
   /**
    * @brief Gets the description of the card.
    * @return The description of the card.
    */
-  const std::string& getDescription() const { return description; }
+  const std::string &getDescription() const { return description; }
   /**
    * @brief Gets the cost of the card.
    * @return The cost of the card.
@@ -74,7 +74,7 @@ public:
    * @param p The player for whom the victory points are calculated.
    * @return The victory points provided by the card.
    */
-  virtual int getVictoryPoints(const Player& p) const;
+  virtual int getVictoryPoints(const Player &p) const;
 
   /**
    * @brief Checks if the card is of a specific type.
@@ -99,5 +99,5 @@ public:
    */
   bool empty() const { return name.empty(); }
 
-  virtual void onAttack(Game& g, Player& p, std::set<Player*> targets) const;
+  virtual void onAttack(Game &g, Player &p, std::set<Player *> targets) const;
 };

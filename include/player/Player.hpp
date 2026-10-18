@@ -8,6 +8,8 @@
 
 class Reaction;
 
+class GameEvent;
+
 class Game;
 
 /**
@@ -97,7 +99,9 @@ public:
       swapAndShuffleStacks();
     }
     const Card *drawnCard = drawStack.drawCard();
-    hand.addCard(drawnCard);
+    if (drawnCard != nullptr) {
+      hand.addCard(drawnCard);
+    }
   }
 
   /**

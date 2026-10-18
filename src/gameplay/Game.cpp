@@ -59,6 +59,9 @@ void Game::displaySelection(const std::vector<const Card *> &selection) const {
 
     // Découper chaque carte en lignes
     for (size_t i = start; i < end; ++i) {
+      if (selection[i] == nullptr) {
+        continue;
+      }
       std::vector<std::string> lines = parseLines(selection[i]->getString());
       widths.push_back(lines.empty() ? 0 : lines[0].size());
       maxHeight = std::max(maxHeight, lines.size());
@@ -242,7 +245,7 @@ void Game::ActionPhase() {
     std::cout << "You have " << currentPlayerActions << " actions left."
               << std::endl;
     auto card = chooseCardsFromSelection(activePlayer->getHand().getCards(), 1,
-                                         "play", "exact", {CardType::ACTION});
+                                         "play", "most", {CardType::ACTION});
     if (card.empty()) {
       break;
     }
@@ -252,6 +255,8 @@ void Game::ActionPhase() {
       playAttackCard(card[0]);
     }
     currentPlayerActions--;
+    std::cout << "Your current hand is : " << std::endl;
+    displaySelection(activePlayer->getHand().getCards());
   }
   useTreasureCards();
   std::cout << "Action phase ended." << std::endl;
@@ -361,8 +366,8 @@ void Game::playTurn(Player &player) {
   std::cout << "It is " << activePlayer->getName() << "'s turn." << std::endl;
   ActionPhase();
   BuyPhase();
+  discardCardsInPlay();
   player.discardHand();
-
   player.drawCardsToHand(5);
   hasGameEnded();
 }
@@ -537,7 +542,7 @@ std::string Game::HUDFormat() const {
 }
 
 void Game::activateReactions(GameEvent *event) {
-  for (Player player : players) {
+  for (Player &player : players) {
     auto possibleReactions = player.getAvailableReactions();
 
     for (const Reaction *reactionCard : possibleReactions) {
@@ -548,9 +553,9 @@ void Game::activateReactions(GameEvent *event) {
   }
 }
 
-std::vector<Player *> Game::getOtherPlayers(Player &p) const {
+std::vector<Player *> Game::getOtherPlayers(Player &p) {
   std::vector<Player *> res;
-  for (Player player : players) {
+  for (Player &player : players) {
     if (p != player) {
       res.push_back(&player);
     }
