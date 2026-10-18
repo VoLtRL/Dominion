@@ -252,7 +252,7 @@ void Game::ActionPhase() {
     std::cout << "You played the " << card[0]->getName() << std::endl;
     playAction(*activePlayer, card[0]);
     if (card[0]->isA(CardType::ATTACK)) {
-      std::cout << "Attacking other players";
+      std::cout << "Attacking other players" << std::endl;
       playAttackCard(card[0]);
     }
     currentPlayerActions--;

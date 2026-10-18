@@ -14,7 +14,8 @@ bool Moat::canReact(GameEvent *event, Game *game, Player *owner) const {
 
 void Moat::react(GameEvent* event, Game* game, Player* owner) const {
   if (event->getSource() == *owner){
-    std::cout << "Player " << owner->getName() << " is the source of the attack !" << std::endl;
+    std::cout << "Player " << owner->getName() << " is the source of the attack, so he won't be ignored !" << std::endl;
+    return;
   }
   std::cout << "Player " << owner->getName() << " is immuned to this attack !" << std::endl;
   event->ignorePlayer(*owner);
