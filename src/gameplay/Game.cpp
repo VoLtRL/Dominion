@@ -252,6 +252,7 @@ void Game::ActionPhase() {
     std::cout << "You played the " << card[0]->getName() << std::endl;
     playCard(*activePlayer, card[0]);
     if (card[0]->isA(CardType::ATTACK)) {
+      std::cout << "Attacking other players";
       playAttackCard(card[0]);
     }
     currentPlayerActions--;
@@ -553,10 +554,10 @@ void Game::activateReactions(GameEvent *event) {
   }
 }
 
-std::vector<Player *> Game::getOtherPlayers(Player &p) {
+std::vector<Player *> Game::getOtherPlayers() {
   std::vector<Player *> res;
   for (Player &player : players) {
-    if (p != player) {
+    if (player != *activePlayer) {
       res.push_back(&player);
     }
   }
@@ -564,7 +565,7 @@ std::vector<Player *> Game::getOtherPlayers(Player &p) {
 }
 
 void Game::playAttackCard(const Card *card) {
-  std::vector<Player *> others = getOtherPlayers(*activePlayer);
+  std::vector<Player *> others = getOtherPlayers();
   AttackEvent event(card, *activePlayer,
                     std::set(others.begin(), others.end()));
   activateReactions(&event);
@@ -572,6 +573,7 @@ void Game::playAttackCard(const Card *card) {
   std::set<Player *> newTargets;
 
   for (Player *p : event.getTargets()) {
+    std::cout << p->getName() << std::endl;
     if (!event.isIgnoredFor(*p)) {
       newTargets.insert(p);
     }

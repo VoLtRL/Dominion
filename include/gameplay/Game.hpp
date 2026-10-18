@@ -173,7 +173,7 @@ public:
 
   void playAttackCard(const Card *card);
 
-  std::vector<Player *> getOtherPlayers(Player &p);
+  std::vector<Player *> getOtherPlayers();
 
   void playCard(Player &p, const Card *card);
 };
