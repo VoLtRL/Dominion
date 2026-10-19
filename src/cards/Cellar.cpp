@@ -2,7 +2,7 @@
 #include "../../include/gameplay/Game.hpp"
 #include "../../include/player/Player.hpp"
 
-void Cellar::onPlay(Game &g, Player &p) const {
+void Cellar::play(Game &g, Player &p) const {
   std::cout << "You get one additional action and you may discard any number of cards from your hand and draw one for every card discarded this way." << std::endl;
   g.addPlayerActions(1);
 

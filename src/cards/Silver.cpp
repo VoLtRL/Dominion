@@ -2,6 +2,6 @@
 #include "../../include/gameplay/Game.hpp"
 #include "../../include/player/Player.hpp"
 
-void Silver::onPlay(Game& g, Player& p) const {
-    g.addGold(2);
+int Silver::getCoins() const{
+    return 2;
 }

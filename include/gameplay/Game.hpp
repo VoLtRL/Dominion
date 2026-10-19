@@ -2,11 +2,11 @@
 
 #include <vector>
 
+#include "../events/AttackEvent.hpp"
 #include "../player/Player.hpp"
 #include "Factory.hpp"
 #include "GameMode.hpp"
 #include "TableStack.hpp"
-#include "../events/AttackEvent.hpp"
 
 class Game {
 private:
@@ -131,9 +131,7 @@ public:
   void playTurn(Player &player);
 
   void addGold(int amount);
-  void trashCard(const Card *card) { 
-    trash.push_back(card); 
-  }
+  void trashCard(const Card *card) { trash.push_back(card); }
 
   void addPlayerActions(int amount) { currentPlayerActions += amount; }
 
@@ -150,29 +148,34 @@ public:
   std::vector<const Card *>
   chooseCardsFromSelection(const std::vector<const Card *> &selection,
                            size_t numberOfCardsToChoose,
-                           const std::string &action, std::string mode, const std::set<CardType> &allowedTypes) const;
+                           const std::string &action, std::string mode,
+                           const std::set<CardType> &allowedTypes) const;
   void displaySelection(const std::vector<const Card *> &selection) const;
 
-  const std::vector<const Card *> &getRevealedCards() const { return revealedCards; }
+  const std::vector<const Card *> &getRevealedCards() const {
+    return revealedCards;
+  }
   void addRevealedCard(const Card *card) { revealedCards.push_back(card); }
   void putCardsinDiscardStack(std::vector<const Card *> &cards);
 
   void hasGameEnded();
 
   void clearRevealedCards();
-  std::vector<const Card*> getBuyableCardsBelowCost(int cost) const;
-  void buyCard(const Card* card);
+  std::vector<const Card *> getBuyableCardsBelowCost(int cost) const;
+  void buyCard(const Card *card);
   bool isStackEmpty(std::string cardName) const;
 
   std::string HUDFormat() const;
 
-  const Card* getCardFromCardDistrib(std::string cardName);
+  const Card *getCardFromCardDistrib(std::string cardName);
 
-  void activateReactions(GameEvent* event);
+  void activateReactions(GameEvent *event);
 
-  void playAttackCard(const Card* card);
+  void playAttackCard(const Card *card);
 
-  std::vector<Player*> getOtherPlayers(Player& p) const;
+  std::vector<Player *> getOtherPlayers();
 
-  void playCard(Player& p, const Card* card);
+  void playAction(Player& p, const Card* card);
+
+  void playTreasure(Player& p, const Card* card);
 };

@@ -5,6 +5,9 @@
 #include <memory>
 #include <vector>
 
+class Card;
+class CardStack;
+
 /**
  * @brief Represents a player's hand.
  * This class provides functionality to manage a player's hand of cards.

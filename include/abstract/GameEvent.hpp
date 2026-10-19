@@ -14,7 +14,7 @@ public:
   virtual ~GameEvent() = default;
 
   bool isIgnoredFor(Player &p) const {
-    return ignored.find(&p) == ignored.end();
+    return ignored.find(&p) != ignored.end();
   }
 
   void ignorePlayer(Player &p) {
@@ -24,4 +24,8 @@ public:
   }
 
   EventType getType() const { return type; };
-};
+
+  Player& getSource() const{
+    return source;
+  }
+}; 

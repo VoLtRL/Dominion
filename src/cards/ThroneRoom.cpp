@@ -2,7 +2,7 @@
 #include "../../include/gameplay/Game.hpp"
 #include "../../include/player/Player.hpp"
 
-void ThroneRoom::onPlay(Game& g, Player& p) const {
+void ThroneRoom::play(Game& g, Player& p) const {
     std::cout << "You can play an action from your hand twice!" << std::endl;
     std::vector<const Card*> actions;
     for(const Card* c : p.getHand().getCards()){
@@ -15,9 +15,13 @@ void ThroneRoom::onPlay(Game& g, Player& p) const {
         std::cout << "You don't have any action card..." << std::endl;
     }
     else{
-        const Card* toPlay = g.chooseCardsFromSelection(actions, 1, "play twice", "exact", {CardType::ACTION})[0];
-        toPlay->onPlay(g, p);
+        std::vector<const Card*> toPlay = g.chooseCardsFromSelection(actions, 1, "play twice", "exact", {CardType::ACTION});
+        if (toPlay.empty()){
+            return;
+        }
+        const Action* action = dynamic_cast<const Action*>(toPlay[0]);
+        action->play(g, p);
         std::cout << "One more time !" << std::endl;
-        g.playCard(p, toPlay);
+        g.playAction(p, toPlay[0]);
     }
 }

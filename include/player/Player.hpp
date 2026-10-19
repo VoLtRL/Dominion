@@ -2,11 +2,24 @@
 #include "CardStack.hpp"
 #include "Hand.hpp"
 #include <iostream>
+#include <set>
 
 #include "../abstract/Reaction.hpp"
+#include "../abstract/Attack.hpp"
+#include "../abstract/Action.hpp"
+#include "../abstract/Treasure.hpp"
+#include "../abstract/Victory.hpp"
+#include "../abstract/Cursed.hpp"
 #include "../events/AttackEvent.hpp"
 
 class Reaction;
+class Attack;
+class Action;
+class Treasure;
+class Victory;
+class Cursed;
+
+class GameEvent;
 
 class Game;
 
@@ -97,7 +110,9 @@ public:
       swapAndShuffleStacks();
     }
     const Card *drawnCard = drawStack.drawCard();
-    hand.addCard(drawnCard);
+    if (drawnCard != nullptr) {
+      hand.addCard(drawnCard);
+    }
   }
 
   /**
@@ -139,5 +154,5 @@ public:
 
   bool hasCardInHand(const Card *) const;
 
-  std::vector<const Reaction *> getAvailableReactions() const;
+  std::set<const Reaction *> getAvailableReactions() const;
 };

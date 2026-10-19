@@ -2,7 +2,7 @@
 #include "../../include/cards/Adventurer.hpp"
 #include "../../include/player/Player.hpp"
 
-void Adventurer::onPlay(Game &g, Player &p) const {
+void Adventurer::play(Game &g, Player &p) const {
     int treasures = 0;
     while (treasures < 2 && p.getDiscardStack().getSize() + p.getDrawStack().getSize() > 0) {
         auto drawnCard = p.getDrawStack().getStack().top();

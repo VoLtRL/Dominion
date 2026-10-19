@@ -2,7 +2,7 @@
 #include "../../include/gameplay/Game.hpp"
 #include "../../include/player/Player.hpp"
 
-void Feast::onPlay(Game& g, Player& p) const {
+void Feast::play(Game& g, Player& p) const {
 
     std::cout << "This card is trashed." << std::endl;
     p.removeCardFromHand(this);

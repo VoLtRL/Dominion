@@ -4,11 +4,6 @@
 #include <iostream>
 #include <sstream>
 
-void Card::onPlay(Game &g, Player &p) const {
-  (void)g;
-  (void)p;
-}
-
 void Card::onDiscard(Game &g, Player &p) const {
   (void)g;
   (void)p;
@@ -23,8 +18,6 @@ void Card::onGain(Game &g, Player &p) const {
   (void)g;
   (void)p;
 }
-
-int Card::getVictoryPoints(const Player &p) const { return 0; }
 
 bool Card::isA(CardType t) const {
   std::set<CardType> types = getTypes();
@@ -124,9 +117,3 @@ const std::string Card::getString(size_t maxWidth) const {
 }
 
 void Card::display() const { std::cout << getString(30) << std::endl; }
-
-void Card::onAttack(Game &g, Player &p, std::set<Player *> targets) const {
-  (void)g;
-  (void)p;
-  (void)targets;
-}

@@ -2,7 +2,7 @@
 #include "../../include/gameplay/Game.hpp"
 #include "../../include/player/Player.hpp"
 
-void CouncilRoom::onPlay(Game& g, Player& p) const {
+void CouncilRoom::play(Game& g, Player& p) const {
     std::cout << "You draw 4 cards and can buy one more card!" << std::endl;
     p.drawCardsToHand(4);
     g.addPlayerPurchases(1);

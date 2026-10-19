@@ -59,6 +59,9 @@ void Game::displaySelection(const std::vector<const Card *> &selection) const {
 
     // Découper chaque carte en lignes
     for (size_t i = start; i < end; ++i) {
+      if (selection[i] == nullptr) {
+        continue;
+      }
       std::vector<std::string> lines = parseLines(selection[i]->getString());
       widths.push_back(lines.empty() ? 0 : lines[0].size());
       maxHeight = std::max(maxHeight, lines.size());
@@ -242,16 +245,19 @@ void Game::ActionPhase() {
     std::cout << "You have " << currentPlayerActions << " actions left."
               << std::endl;
     auto card = chooseCardsFromSelection(activePlayer->getHand().getCards(), 1,
-                                         "play", "exact", {CardType::ACTION});
+                                         "play", "most", {CardType::ACTION});
     if (card.empty()) {
       break;
     }
     std::cout << "You played the " << card[0]->getName() << std::endl;
-    playCard(*activePlayer, card[0]);
+    playAction(*activePlayer, card[0]);
     if (card[0]->isA(CardType::ATTACK)) {
+      std::cout << "Attacking other players" << std::endl;
       playAttackCard(card[0]);
     }
     currentPlayerActions--;
+    std::cout << "Your current hand is : " << std::endl;
+    displaySelection(activePlayer->getHand().getCards());
   }
   useTreasureCards();
   std::cout << "Action phase ended." << std::endl;
@@ -263,7 +269,7 @@ void Game::useTreasureCards() {
       activePlayer->getHand().getCards(), activePlayer->getHand().getSize(),
       "play", "most", {CardType::TREASURE});
   for (const Card *card : treasureCards) {
-    playCard(*activePlayer, card);
+    playTreasure(*activePlayer, card);
     continue;
   }
 }
@@ -361,8 +367,8 @@ void Game::playTurn(Player &player) {
   std::cout << "It is " << activePlayer->getName() << "'s turn." << std::endl;
   ActionPhase();
   BuyPhase();
+  discardCardsInPlay();
   player.discardHand();
-
   player.drawCardsToHand(5);
   hasGameEnded();
 }
@@ -402,7 +408,8 @@ void Game::launchGame() {
   int choice;
   std::cin >> choice;
 
-  std::cout << choice;
+  std::cin.ignore();
+
   if (choice < 1 || static_cast<size_t>(choice) > gameModes.size()) {
     std::cout << "Invalid choice." << std::endl;
     return;
@@ -415,6 +422,7 @@ void Game::launchGame() {
             << std::endl;
   choice = 1;
   std::cin >> choice;
+  std::cin.ignore();
   if (choice < 1 || choice > 4) {
     std::cout << "Invalid choice." << std::endl;
   }
@@ -422,10 +430,10 @@ void Game::launchGame() {
             << std::endl;
 
   auto usualDistribution = std::map<const Card *, int>();
-  usualDistribution.insert({
-      {Factory::get("Copper"), 60 - 7 * choice},
-      {Factory::get("Curse"), 10 * (choice - 1)},
-  });
+  usualDistribution.insert({{Factory::get("Copper"), 60 - 7 * choice},
+                            {Factory::get("Curse"), 10 * (choice - 1)},
+                            {Factory::get("Silver"), 40},
+                            {Factory::get("Gold"), 30}});
   switch (choice) {
   case 1:
   case 2:
@@ -453,9 +461,8 @@ void Game::launchGame() {
   for (int i = 0; i < choice; ++i) {
     std::cout << "Enter the name of player " << i + 1 << ": ";
     std::string playerName;
-    std::cin.clear();
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     std::cin >> playerName;
+    std::cin.ignore();
     CardStack drawStack = CardStack(
         {Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
          Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
@@ -527,15 +534,16 @@ bool Game::isStackEmpty(std::string cardName) const {
 }
 
 std::string Game::HUDFormat() const {
-  std::string hud =
-      "[" + activePlayer->getString() + std::to_string(currentPlayerMoney) +
-      " coins, " + std::to_string(currentPlayerActions) + " actions, " +
-      std::to_string(currentPlayerPurchaseLeft) + " purchases left] ";
+  std::string hud = "[" + activePlayer->getString() + " | " +
+                    std::to_string(currentPlayerMoney) + " coins | " +
+                    std::to_string(currentPlayerActions) + " actions | " +
+                    std::to_string(currentPlayerPurchaseLeft) +
+                    " purchases left] ";
   return hud;
 }
 
 void Game::activateReactions(GameEvent *event) {
-  for (Player player : players) {
+  for (Player &player : players) {
     auto possibleReactions = player.getAvailableReactions();
 
     for (const Reaction *reactionCard : possibleReactions) {
@@ -546,10 +554,10 @@ void Game::activateReactions(GameEvent *event) {
   }
 }
 
-std::vector<Player *> Game::getOtherPlayers(Player &p) const {
+std::vector<Player *> Game::getOtherPlayers() {
   std::vector<Player *> res;
-  for (Player player : players) {
-    if (p != player) {
+  for (Player &player : players) {
+    if (player != *activePlayer) {
       res.push_back(&player);
     }
   }
@@ -557,7 +565,7 @@ std::vector<Player *> Game::getOtherPlayers(Player &p) const {
 }
 
 void Game::playAttackCard(const Card *card) {
-  std::vector<Player *> others = getOtherPlayers(*activePlayer);
+  std::vector<Player *> others = getOtherPlayers();
   AttackEvent event(card, *activePlayer,
                     std::set(others.begin(), others.end()));
   activateReactions(&event);
@@ -565,16 +573,23 @@ void Game::playAttackCard(const Card *card) {
   std::set<Player *> newTargets;
 
   for (Player *p : event.getTargets()) {
+    std::cout << p->getName() << std::endl;
     if (!event.isIgnoredFor(*p)) {
       newTargets.insert(p);
     }
   }
-
-  card->onAttack(*this, *activePlayer, newTargets);
+  const Attack* attack = dynamic_cast<const Attack*>(card);
+  attack->attack(*this, *activePlayer, newTargets);
 }
 
-void Game::playCard(Player &p, const Card *card) {
+void Game::playAction(Player &p, const Card *card) {
   p.removeCardFromHand(card);
   addCardToPlay(card);
-  card->onPlay(*this, p);
+  const Action* action = dynamic_cast<const Action*>(card);
+  action->play(*this, p);
+}
+
+void Game::playTreasure(Player&p, const Card* card){
+  const Treasure* treasure = dynamic_cast<const Treasure*>(card);
+  addGold(treasure->getCoins());
 }
