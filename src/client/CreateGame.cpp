@@ -44,12 +44,12 @@ QString CreateGame::getNumBots() const {
     return "";
 }
 
-
-QJsonObject CreateGame::getRoomData() const {
-    QJsonObject roomData;
-    roomData["name"] = getRoomName();
-    roomData["numPlayers"] = getNumPlayers();
-    roomData["numBots"] = getNumBots();
-    return roomData;
+Network::CreateRoomPayload CreateGame::getRoomData() const {
+    return Network::CreateRoomPayload(
+        "PlaceholderPlayer",
+        getRoomName(),
+        getNumBots().toInt(),
+        getNumPlayers().toInt()
+    );
 }
 

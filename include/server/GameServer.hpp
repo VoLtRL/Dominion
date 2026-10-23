@@ -2,21 +2,28 @@
 
 #include <QObject>
 #include <QTcpSocket>
+#include <QTcpServer>
 #include <QJsonObject>
-#include <QJsonDocument>
+#include <unordered_map>
 
 #include "server/Client.hpp"
+#include "shared/structs/Payloads.hpp"
 
 class GameServer : public QObject {
     Q_OBJECT
 private:
     QTcpServer m_server;
-    QMap<QTcpSocket*, const Client*> m_clients;
+    std::unordered_map<QTcpSocket*, Client*> m_clients;
 
 public:
     explicit GameServer(QObject *parent = nullptr);
-    void startServer(quint16 port);
+    ~GameServer() = default;
+    void startServer(quint16 port = 4040);
     void stopServer();
     void receiveAction(const QString &action, const QJsonObject &data, QTcpSocket *clientSocket);
+
+    void sendAction(const QString &action, const QJsonObject &data, QTcpSocket *clientSocket);
+
+    Client* getClientById(int id);
 
 };

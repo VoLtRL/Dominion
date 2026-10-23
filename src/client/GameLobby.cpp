@@ -17,6 +17,16 @@ void GameLobby::onLaunchGameClicked() {
     emit launchGameClicked();
 }
 
+void GameLobby::updateRoomInfo(const Network::RoomCreatedPayload &data) {
+    QString roomName = data.value("roomName").toString();
+    int botCount = data.value("botCount").toInt();
+    int playerMaxCount = data.value("playerMaxCount").toInt();
+
+    ui->roomNameLabel->setText("Room Name: " + roomName);
+    ui->botCountLabel->setText("Bot Count: " + QString::number(botCount));
+    ui->playerMaxCountLabel->setText("Max Players: " + QString::number(playerMaxCount));
+}
+
 GameLobby::~GameLobby() {
     delete ui;
 }

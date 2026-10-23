@@ -4,6 +4,8 @@
 #include <QRandomGenerator>
 #include <QJsonObject>
 
+#include "shared/structs/Payloads.hpp"
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class CreateGame; }
 QT_END_NAMESPACE
@@ -31,5 +33,5 @@ public:
 
     QString getNumBots() const ;
 
-    QJsonObject getRoomData() const;
+    Network::CreateRoomPayload getRoomData() const;
 };

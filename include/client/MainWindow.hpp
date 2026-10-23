@@ -14,6 +14,11 @@ private:
     Ui::MainWindow *ui; 
     NetworkManager *networkManager;
 
+    QString playerName;
+
+private slots:
+    void onNetworkMessageReceived(const QString &action, const QJsonObject &data);
+
 public:
     explicit MainWindow(QWidget *parent = nullptr, NetworkManager *networkManager = nullptr);
     ~MainWindow() override;

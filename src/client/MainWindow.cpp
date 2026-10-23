@@ -3,11 +3,14 @@
 #include "client/CreateGame.hpp"
 #include "client/GameLobby.hpp"
 #include "client/GameTable.hpp"
+#include "shared/structs/Payloads.hpp"
 
 #include "ui_MainWindow.h"
 
 MainWindow::MainWindow(QWidget *parent, NetworkManager *networkManager) : QMainWindow(parent), ui(new Ui::MainWindow), networkManager(networkManager) {
     ui->setupUi(this);
+
+    playerName = "Player_" + QString::number(QRandomGenerator::global()->bounded(10000));
 
     // Create the main menu
     MainMenu *mainMenu = new MainMenu(this);
@@ -55,8 +58,12 @@ MainWindow::MainWindow(QWidget *parent, NetworkManager *networkManager) : QMainW
             ui->statusbar->showMessage("Not connected to server. Please check your connection.");
             return;
         }
-        networkManager->sendAction("CREATE_ROOM", createGame->getRoomData());
-        ui->stackedWidget->setCurrentIndex(gameLobbyIndex);
+
+        Network::CreateRoomPayload roomData = createGame->getRoomData();
+        roomData.playerName = playerName;
+
+
+        networkManager->sendAction("CREATE_ROOM", roomData.toJson());
     });
 
     connect(gameLobby, &GameLobby::goBackToMenuClicked, this, [this, menuIndex]() {
@@ -78,7 +85,19 @@ MainWindow::MainWindow(QWidget *parent, NetworkManager *networkManager) : QMainW
             QThread::sleep(1); // Wait for 1 second before trying again
         }
     });
+
+    connect(networkManager, &NetworkManager::actionReceived, this, [this,gameLobby, gameLobbyIndex](const QString &action, const QJsonObject &data) {
+        if (action == "ROOM_CREATED") {
+            ui->stackedWidget->setCurrentIndex(gameLobbyIndex);
+            gameLobby->updateRoomInfo(data);
+        } else if (action == "ROOM_CREATION_FAILED") {
+            QString errorMessage = data.value("error").toString();
+            ui->statusbar->showMessage("Room creation failed: " + errorMessage);
+        }
+    });
+
 }
+
 
 MainWindow::~MainWindow() {
     delete ui;

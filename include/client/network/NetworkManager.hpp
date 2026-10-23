@@ -6,6 +6,10 @@
 
 class NetworkManager : public QObject {
     Q_OBJECT
+
+private:
+    QTcpSocket m_socket;
+
 public:
     explicit NetworkManager(QObject *parent = nullptr);
     void connectToServer(const QHostAddress &host, quint16 port);
@@ -26,6 +30,5 @@ private slots:
     void onReadyRead();
     void onErrorOccurred(QAbstractSocket::SocketError socketError);
 
-private:
-    QTcpSocket m_socket;
+
 };

@@ -1,10 +1,12 @@
 #include <QCoreApplication>
 #include <QDebug>
+#include <iostream>
+#include "server/GameServer.hpp"
 
 int main(int argc, char *argv[]) {
     QCoreApplication app(argc, argv);
-
-    qDebug() << "Dominion Server initialisé sur le port 4242...";
+    GameServer server;
+    server.startServer(4040);
 
     return app.exec();
 }

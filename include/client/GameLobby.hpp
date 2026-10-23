@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QWidget>
+#include "shared/structs/Payloads.hpp"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class GameLobby; }
@@ -22,4 +23,6 @@ private slots:
 public:
     explicit GameLobby(QWidget *parent = nullptr);
     ~GameLobby() override;
+
+    void updateRoomInfo(const Network::RoomCreatedPayload &data);
 };
