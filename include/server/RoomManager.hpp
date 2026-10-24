@@ -6,6 +6,7 @@
 #include <QJsonObject>
 #include "server/Room.hpp"
 #include "server/Client.hpp"
+#include "shared/structs/Payloads.hpp"
 
 class RoomManager {
 private:

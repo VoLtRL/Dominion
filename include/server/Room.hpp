@@ -21,6 +21,8 @@ public:
     bool isFull() const { return m_players.size() >= 4; }
     bool isGameStarted() const { return m_game != nullptr; }
 
+    int getPlacesLeft() const { return 4 - m_players.size(); }
+
     bool addPlayer(Client *player);
     void removePlayer(Client *player);
     bool startGame(Client *requester);

@@ -11,6 +11,10 @@ class GameLobby : public QWidget {
     Q_OBJECT
 private:
     Ui::GameLobby *ui;
+    int roomId;
+    int botCount;
+    int playerMaxCount;
+    std::vector<QString> playerNames;
 
 signals:
     void goBackToMenuClicked();
@@ -23,6 +27,9 @@ private slots:
 public:
     explicit GameLobby(QWidget *parent = nullptr);
     ~GameLobby() override;
-
-    void updateRoomInfo(const Network::RoomCreatedPayload &data);
+    void updateRoomInfo(const Network::CreatedRoomPayload &data);
+    void updateRoomInfo(const Network::RoomJoinedPayload &data);
+    void addPlayerToList(const QString &playerName);
+    void clearPlayerList();
+    void removePlayerFromList(const QString &playerName);
 };

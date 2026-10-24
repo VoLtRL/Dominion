@@ -4,6 +4,7 @@
 
 #include "client/network/NetworkManager.hpp"
 
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -16,11 +17,9 @@ private:
 
     QString playerName;
 
-private slots:
-    void onNetworkMessageReceived(const QString &action, const QJsonObject &data);
-
 public:
     explicit MainWindow(QWidget *parent = nullptr, NetworkManager *networkManager = nullptr);
+    
     ~MainWindow() override;
 
 };

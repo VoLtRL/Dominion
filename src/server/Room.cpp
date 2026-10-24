@@ -1,4 +1,3 @@
-// src/server/Room.cpp
 #include "server/Room.hpp"
 #include <algorithm>
 

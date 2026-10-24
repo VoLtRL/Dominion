@@ -31,12 +31,20 @@ void NetworkManager::onReadyRead() {
     
     }
     QJsonObject data = doc.object();
-    emit actionReceived(data["action"].toString(), data["data"].toObject());
+    emit actionReceived(stringToActionType(data["action"].toString().toStdString()), data["data"].toObject());
     }
 }
 
 void NetworkManager::onErrorOccurred(QAbstractSocket::SocketError socketError) {
     emit connectionError(m_socket.errorString());
+}
+
+QHostAddress NetworkManager::getHost() const {
+    return m_host;
+}
+
+quint16 NetworkManager::getPort() const {
+    return m_port;
 }
 
 void NetworkManager::connectToServer(const QHostAddress &host, quint16 port) {
@@ -52,17 +60,18 @@ void NetworkManager::disconnectFromServer() {
     m_socket.disconnectFromHost();
 }
 
-void NetworkManager::sendAction(const QString &action, const QJsonObject &data) {
+void NetworkManager::sendAction(const ActionType &action, const Network::Payload &data) {
     if (m_socket.state() != QAbstractSocket::ConnectedState) {
         emit connectionError("Not connected to server.");
         return;
     }
     QJsonObject message;
-    message["action"] = action;
-    message["data"] = data;
+    message["action"] = actionTypeToString(action).c_str();
+    message["data"] = data.toJson();
 
     QJsonDocument doc(message);
     QByteArray toSend = doc.toJson(QJsonDocument::Compact) + '\n';
     m_socket.write(toSend);
 
 }
+

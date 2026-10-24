@@ -11,13 +11,13 @@ class MainMenu : public QWidget {
 
 signals:
     void createGameClicked();
-    void joinGameClicked();
+    void joinRoomClicked();
     void leaderboardClicked();
     void quitClicked();
 
 private slots:
     void onCreateGameClicked();
-    void onJoinGameClicked();
+    void onJoinRoomClicked();
     void onLeaderboardClicked();
     void onQuitClicked();
 
