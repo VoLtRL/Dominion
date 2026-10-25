@@ -155,4 +155,6 @@ public:
   bool hasCardInHand(const Card *) const;
 
   std::set<const Reaction *> getAvailableReactions() const;
+
+  virtual bool isHuman() const {return true;}
 };
