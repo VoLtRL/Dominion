@@ -19,10 +19,11 @@ void Bureaucrat::attack(Game& g, Player& p, std::set<Player*> targets) const{
     std::cout << "Every opponents must show and put on their draw pile a victory card from their hand." << std::endl;
     for (Player* player : targets){
         std::cout << "Player " << player->getName() << " : show a victory card in your hand to put on top of your draw pile." << std::endl;
-        std::vector<const Card *> selection = g.chooseCardsFromSelection(player->getHand().getCards(), 1, "display and put on your draw pile", "exact", {CardType::VICTORY});
+        SelectionParameters params = InputManager::createSelectionParameters(1, "Display and put one card on your draw pile", g.HUDFormat(), SelectionMode::EXACTLY, {CardType::VICTORY},  player->getHand().getCards());
+        std::vector<const Card *> selection = InputManager::chooseCardsFromSelection(*player, g.getCurrentPhase(), params);
         if(!selection.empty()){
             std::cout << "Putting the following card on top of your draw pile : " << std::endl;
-            g.displaySelection(selection);
+            InputManager::displaySelection(selection);
             player->removeCardFromHand(selection[0]);
             player->addCardToDrawStack(selection[0]);
         }

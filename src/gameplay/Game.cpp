@@ -4,6 +4,8 @@
 #include <limits>
 #include <ostream>
 
+
+
 const std::vector<Player> &Game::getPlayers() const { return players; }
 
 const Player &Game::getActivePlayer() const { return *activePlayer; }
@@ -29,223 +31,14 @@ void Game::setCurrentCardDistribution(
 
 const GameMode *Game::getCurrentGameMode() const { return currentGameMode; }
 
-std::vector<std::string> Game::parseLines(const std::string &str) const {
-  std::vector<std::string> lines;
-  std::string line;
-  for (const char c : str) {
-    if (c == '\n') {
-      lines.push_back(line);
-      line.clear();
-    } else {
-      line += c;
-    }
-  }
-  if (!line.empty()) {
-    lines.push_back(line);
-  }
-  return lines;
-}
-
-void Game::displaySelection(const std::vector<const Card *> &selection) const {
-  const std::string gap = "  ";
-  const size_t cardsPerRow = 5;
-
-  for (size_t start = 0; start < selection.size(); start += cardsPerRow) {
-    const size_t end = std::min(start + cardsPerRow, selection.size());
-
-    std::vector<std::vector<std::string>> cards;
-    std::vector<size_t> widths;
-    size_t maxHeight = 0;
-
-    // Découper chaque carte en lignes
-    for (size_t i = start; i < end; ++i) {
-      if (selection[i] == nullptr) {
-        continue;
-      }
-      std::vector<std::string> lines = parseLines(selection[i]->getString());
-      widths.push_back(lines.empty() ? 0 : lines[0].size());
-      maxHeight = std::max(maxHeight, lines.size());
-      cards.push_back(std::move(lines));
-    }
-
-    // Étirer les cartes trop courtes : lignes vides avant la bordure basse
-    for (size_t c = 0; c < cards.size(); ++c) {
-      auto &lines = cards[c];
-      if (lines.size() >= maxHeight || lines.size() < 2)
-        continue;
-
-      const size_t w = widths[c];
-      // ligne vide : "|" + espaces + "|"
-      const std::string emptyRow = "|" + std::string(w - 2, ' ') + "|";
-
-      const size_t missing = maxHeight - lines.size();
-      lines.insert(lines.end() - 1, missing, emptyRow);
-    }
-
-    // Affichage ligne par ligne
-    for (size_t row = 0; row < maxHeight; ++row) {
-      for (size_t c = 0; c < cards.size(); ++c) {
-        if (row < cards[c].size())
-          std::cout << cards[c][row];
-        else
-          std::cout << std::string(widths[c], ' ');
-
-        if (c + 1 < cards.size())
-          std::cout << gap;
-      }
-      std::cout << '\n';
-    }
-    std::cout << '\n';
-  }
-}
-
-std::vector<const Card *>
-Game::chooseCardsFromSelection(const std::vector<const Card *> &selection,
-                               size_t numberOfCardsToChoose,
-                               const std::string &action, std::string mode,
-                               const std::set<CardType> &allowedTypes) const {
-  if (mode != "exact" && mode != "most" && mode != "least") {
-    mode = "exact";
-  }
-
-  std::vector<const Card *> validSelection;
-  if (allowedTypes.find(CardType::ALL) != allowedTypes.end()) {
-    validSelection = selection;
-  } else {
-    for (const Card *card : selection) {
-      std::set<CardType> types = card->getTypes();
-      for (CardType t : types) {
-        if (allowedTypes.find(t) != allowedTypes.end()) {
-          validSelection.push_back(card);
-        }
-      }
-    }
-  }
-
-  std::cout << HUDFormat();
-
-  if (validSelection.empty()) {
-    std::cout << "There are no valid cards in this selection." << std::endl;
-    return {};
-  }
-
-  size_t allowedCount = std::min(numberOfCardsToChoose, validSelection.size());
-
-  if ((mode == "exact" && allowedCount == validSelection.size()) ||
-      (mode == "least" && allowedCount >= validSelection.size())) {
-    std::cout << "You need to choose all cards" << std::endl;
-    return validSelection;
-  }
-
-  if (mode == "exact") {
-    std::cout << "Choose exactly " << allowedCount;
-  } else if (mode == "most") {
-    std::cout << "Choose at most " << allowedCount;
-  } else {
-    std::cout << "Choose at least " << allowedCount;
-  }
-  std::cout << " card(s) to " << action;
-
-  std::cout << (mode == "exact" ? ":\n" : " (0 to finish):\n");
-
-  displaySelection(validSelection);
-
-  // Indices into `selection`, in order of choice
-  std::vector<size_t> chosen;
-
-  while (true) {
-    const bool reachedN = chosen.size() >= allowedCount;
-
-    // Automatic stop
-    if (chosen.size() == allowedCount || (mode != "least" && reachedN)) {
-      break;
-    }
-
-    const bool canStop = (mode == "most") || (mode == "least" && reachedN);
-
-    std::cout << "[" << chosen.size() << " chosen] Enter a card number"
-              << (canStop ? " (0 to finish)" : "") << ": ";
-
-    std::string input = "";
-    try {
-      if (!std::getline(std::cin, input)) {
-        input = -1;
-        break; // input stream closed
-      }
-    } catch (const std::exception &) {
-      input = -1;
-    }
-
-    if (allowedTypes.find(CardType::TREASURE) != allowedTypes.end()) {
-      if (input == "all") {
-        if (validSelection.size() > allowedCount && mode != "least") {
-          std::cout << "Too many cards!" << std::endl;
-          continue;
-        }
-        chosen.clear();
-        for (size_t i = 0; i < validSelection.size(); i++) {
-          chosen.push_back(i + 1);
-        }
-        continue;
-      }
-      if (input == "none") {
-        if (mode != "most" && allowedCount > 0) {
-          std::cout << "Too few cards chosen!" << std::endl;
-          continue;
-        }
-      }
-    }
-
-    int index = -1;
-    try {
-      size_t pos = 0;
-      index = std::stoi(input, &pos);
-      if (pos != input.size()) {
-        input = -1; // reject things like "12abc"
-      }
-    } catch (const std::exception &) {
-      std::cout << "Invalid index." << std::endl;
-      continue;
-    }
-
-    if (index == 0 && canStop) {
-      break;
-    }
-
-    if (index < 1 || static_cast<size_t>(index) > validSelection.size()) {
-      std::cout << "Invalid index. Please try again.\n";
-      continue;
-    }
-
-    auto posi = std::find(chosen.begin(), chosen.end(), index);
-    if (posi != chosen.end()) {
-      std::cout << "Deselecting card number " << index << std::endl;
-      chosen.erase(posi);
-    } else {
-      std::cout << "Selecting card number " << index << std::endl;
-      chosen.push_back(index);
-    }
-  }
-
-  if (chosen.empty()) {
-    std::cout << "There are no chosen cards to " << action << std::endl;
-    return {};
-  }
-  std::vector<const Card *> res;
-  for (auto index : chosen) {
-    res.push_back(validSelection[index - 1]);
-  }
-  return res;
-}
-
 void Game::clearRevealedCards() { revealedCards.clear(); }
 
 void Game::ActionPhase() {
   while (currentPlayerActions > 0) {
     std::cout << "You have " << currentPlayerActions << " actions left."
               << std::endl;
-    auto card = chooseCardsFromSelection(activePlayer->getHand().getCards(), 1,
-                                         "play", "most", {CardType::ACTION});
+    SelectionParameters params = InputManager::createSelectionParameters(1, "Play one card", HUDFormat(), SelectionMode::EXACTLY, {CardType::ACTION}, activePlayer->getHand().getCards());
+    std::vector<const Card*> card = InputManager::chooseCardsFromSelection(*activePlayer, getCurrentPhase(), params);
     if (card.empty()) {
       break;
     }
@@ -257,7 +50,7 @@ void Game::ActionPhase() {
     }
     currentPlayerActions--;
     std::cout << "Your current hand is : " << std::endl;
-    displaySelection(activePlayer->getHand().getCards());
+    InputManager::displaySelection(activePlayer->getHand().getCards());
   }
   useTreasureCards();
   std::cout << "Action phase ended." << std::endl;
@@ -265,9 +58,8 @@ void Game::ActionPhase() {
 
 void Game::useTreasureCards() {
 
-  std::vector<const Card *> treasureCards = chooseCardsFromSelection(
-      activePlayer->getHand().getCards(), activePlayer->getHand().getSize(),
-      "play", "most", {CardType::TREASURE});
+  SelectionParameters params = InputManager::createSelectionParameters(activePlayer->getHand().getSize(), "Play treasures", HUDFormat(), SelectionMode::AT_MOST, {CardType::TREASURE}, activePlayer->getHand().getCards(), true);
+  std::vector<const Card*> treasureCards = InputManager::chooseCardsFromSelection(*activePlayer, getCurrentPhase(), params);
   for (const Card *card : treasureCards) {
     playTreasure(*activePlayer, card);
     continue;
@@ -291,7 +83,7 @@ void Game::BuyPhase() {
 
     for (auto pair : display) {
       std::cout << pair.first;
-      displaySelection(pair.second);
+      InputManager::displaySelection(pair.second);
     }
 
     std::string card_name;
@@ -363,7 +155,7 @@ void Game::hasGameEnded() {
 void Game::playTurn(Player &player) {
   setActivePlayer(&player);
   player.addTurnPlayed();
-  displaySelection(activePlayer->getHand().getCards());
+  InputManager::displaySelection(activePlayer->getHand().getCards());
   std::cout << "It is " << activePlayer->getName() << "'s turn." << std::endl;
   ActionPhase();
   BuyPhase();

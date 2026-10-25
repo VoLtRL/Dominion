@@ -7,6 +7,8 @@
 #include "Factory.hpp"
 #include "GameMode.hpp"
 #include "TableStack.hpp"
+#include "GamePhase.hpp"
+#include "InputManager.hpp"
 
 class Game {
 private:
@@ -98,6 +100,8 @@ private:
 
   std::vector<const Card *> trash;
 
+  GamePhase currentPhase;
+
 public:
   Game() = default;
 
@@ -143,15 +147,6 @@ public:
 
   void launchGame();
 
-  std::vector<std::string> parseLines(const std::string &) const;
-
-  std::vector<const Card *>
-  chooseCardsFromSelection(const std::vector<const Card *> &selection,
-                           size_t numberOfCardsToChoose,
-                           const std::string &action, std::string mode,
-                           const std::set<CardType> &allowedTypes) const;
-  void displaySelection(const std::vector<const Card *> &selection) const;
-
   const std::vector<const Card *> &getRevealedCards() const {
     return revealedCards;
   }
@@ -178,4 +173,12 @@ public:
   void playAction(Player& p, const Card* card);
 
   void playTreasure(Player& p, const Card* card);
+
+  void setGamePhase(GamePhase phase) {
+    currentPhase = phase;
+  }
+
+  GamePhase getCurrentPhase() const {
+    return currentPhase;
+  }
 };

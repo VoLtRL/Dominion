@@ -15,7 +15,7 @@ void Thief::attack(Game& g, Player& p, std::set<Player*> targets) const {
         if(player!=&p){
             std::vector<const Card*> revealed = {player->drawCard(), player->drawCard()};
             std::cout << "Revealed cards : " << std::endl;
-            g.displaySelection(revealed);
+            InputManager::displaySelection(revealed);
 
             std::vector<const Card*> localTreasures;
             for(const Card* c : revealed){
@@ -34,7 +34,11 @@ void Thief::attack(Game& g, Player& p, std::set<Player*> targets) const {
                     break;
                 default:
                     std::cout << "Player " << p.getName() << ", choose the one you want to trash !" << std::endl;
-                    selected = g.chooseCardsFromSelection(localTreasures, 1, "trash", "exact", {CardType::TREASURE})[0];
+                    SelectionParameters params = InputManager::createSelectionParameters(1, "Trash one card", g.HUDFormat(), SelectionMode::EXACTLY, {CardType::TREASURE}, localTreasures);
+                    std::vector<const Card*> selection = InputManager::chooseCardsFromSelection(p, g.getCurrentPhase(), params);
+                    if(!selection.empty()){
+                        selected = selection[0];
+                    }
                     break;
             }
             if(selected){
@@ -53,7 +57,8 @@ void Thief::attack(Game& g, Player& p, std::set<Player*> targets) const {
     }
     else{
         std::cout << "Now you can keep those treasures!" << std::endl;
-        std::vector<const Card*> toGain = g.chooseCardsFromSelection(treasures, treasures.size(), "gain", "most", {CardType::TREASURE});
+        SelectionParameters params = InputManager::createSelectionParameters(treasures.size(), "Steal as many treasures as you want", g.HUDFormat(), SelectionMode::AT_MOST, {CardType::TREASURE}, treasures);
+        std::vector<const Card*> toGain = InputManager::chooseCardsFromSelection(p, g.getCurrentPhase(), params);
         for(const Card* c : treasures){
             if(std::find(toGain.begin(), toGain.end(), c) != toGain.end()){
                 p.addCardToDiscardStack(c);
