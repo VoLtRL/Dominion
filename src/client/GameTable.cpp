@@ -11,6 +11,7 @@ GameTable::GameTable(QWidget *parent) : QWidget(parent), ui(new Ui::GameTable) {
     ui->gameView->setScene(scene);
 
     connect(ui->endTurnButton, &QPushButton::clicked, this, &GameTable::onEndTurnClicked);
+
 }
 
 void GameTable::onEndTurnClicked() {
@@ -19,7 +20,13 @@ void GameTable::onEndTurnClicked() {
 }
 
 void GameTable::drawPlayerHand(const std::vector<const Card*> hand) {
-    ::drawPlayerHand(scene, hand);
+    std::vector<VisualCard*> visualCards = ::drawPlayerHand(scene, hand);
+    for (VisualCard* visualCard : visualCards) {
+        connect(visualCard, &VisualCard::clicked, [this, visualCard](int cardId) {
+            visualCard->setSelectedEffect(!visualCard->isSelected());
+            visualCardsInHand.push_back(visualCard);
+        });
+    }
 }
 
 GameTable::~GameTable() {

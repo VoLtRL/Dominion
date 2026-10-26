@@ -15,6 +15,9 @@ private:
     Ui::GameTable *ui;
     QGraphicsScene *scene;
 
+    QVector<VisualCard*> visualCardsInHand;
+    QVector<VisualCard*> visualCardsInPlay;
+
 signals:
     void endTurnClicked();
 

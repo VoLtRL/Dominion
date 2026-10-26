@@ -3,6 +3,8 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <optional>
+#include "shared/abstract/Card.hpp"
+#include "shared/gameplay/Factory.hpp"
 
 namespace Network {
 
@@ -300,32 +302,78 @@ namespace Network {
         }
     };
 
-    struct PlayCardPayload : public Payload {
+    // The server sends this payload to all players in the room when a player plays a card.
+    
+    struct PlayCardServerPayload : public Payload {
         int roomId;
         int clientId;
-        int cardId;
+        std::string phase;
+        std::string selectionMode;
+        int numberOfCardsToSelect;
 
-        // Ajouter une phase pour spécifier l'action ? Globaliser ça à un vecteur de cartes plutot que d'avoir une seule carte à jouer à la fois ?
-
-        PlayCardPayload(int roomId, int clientId, int cardId)
-            : roomId(roomId), clientId(clientId), cardId(cardId) {}
+        PlayCardServerPayload(int roomId, int clientId, const std::string &phase, const std::string &selectionMode, int numberOfCardsToSelect)
+            : roomId(roomId), clientId(clientId), phase(phase), selectionMode(selectionMode), numberOfCardsToSelect(numberOfCardsToSelect) {}
 
         QJsonObject toJson() const {
             QJsonObject json;
             json["roomId"] = roomId;
             json["clientId"] = clientId;
-            json["cardId"] = cardId;
+            json["phase"] = QString::fromStdString(phase);
+            json["selectionMode"] = QString::fromStdString(selectionMode);
+            json["numberOfCardsToSelect"] = numberOfCardsToSelect;
+
             return json;
         }
 
-        static std::optional<PlayCardPayload> fromJson(const QJsonObject &json) {
-            if (!json.contains("roomId") || !json.contains("clientId") || !json.contains("cardId")) {
+        static std::optional<PlayCardServerPayload> fromJson(const QJsonObject &json) {
+            if (!json.contains("roomId") || !json.contains("clientId") || !json.contains("phase") || !json.contains("selectionMode") || !json.contains("numberOfCardsToSelect")) {
                 return std::nullopt;
             }
-            return PlayCardPayload(
+            return PlayCardServerPayload(
                 json["roomId"].toInt(),
                 json["clientId"].toInt(),
-                json["cardId"].toInt()
+                json["phase"].toString().toStdString(),
+                json["selectionMode"].toString().toStdString(),
+                json["numberOfCardsToSelect"].toInt()
+            );
+        }
+    };
+
+
+    // The client sends this payload to the server when he plays a card, it contains the roomId, the clientId and the selected cards.
+    // The server will then validate the cards and send this payload back to all players in the room to let them know a card was played.
+    struct CardsToBeInPlayPayload : public Payload {
+        int roomId;
+        int clientId;
+        std::vector<const Card*> selectedCards;
+
+        CardsToBeInPlayPayload(int roomId, int clientId, const std::vector<const Card*> &selectedCards)
+            : roomId(roomId), clientId(clientId), selectedCards(selectedCards) {}
+
+        QJsonObject toJson() const {
+            QJsonObject json;
+            json["roomId"] = roomId;
+            json["clientId"] = clientId;  
+            QJsonArray cardsArray;
+            for (const auto &card : selectedCards) {
+                cardsArray.append(card->getName().c_str());
+            }
+            json["selectedCards"] = cardsArray;
+            return json;
+        }
+
+        static std::optional<CardsToBeInPlayPayload> fromJson(const QJsonObject &json) {
+            if (!json.contains("roomId") || !json.contains("clientId") || !json.contains("selectedCards")) {
+                return std::nullopt;
+            }
+            std::vector<const Card*> selectedCards;
+            for (const auto &cardJson : json["selectedCards"].toArray()) {
+                selectedCards.push_back(Factory::get(cardJson.toString().toStdString()));
+            }
+            return CardsToBeInPlayPayload(
+                json["roomId"].toInt(),
+                json["clientId"].toInt(),
+                selectedCards
             );
         }
     };

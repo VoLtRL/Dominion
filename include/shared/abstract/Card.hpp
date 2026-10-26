@@ -1,9 +1,12 @@
 #pragma once
 
 #include "shared/abstract/CardType.hpp"
+#include "shared/structs/Extension.hpp"
 #include <set>
 #include <string>
 #include <vector>
+#include <QString>
+
 
 class Player;
 class Game;
@@ -18,17 +21,35 @@ private:
   int cost;
   std::string description;
   std::set<CardType> types;
+  Extension extension;
 
 public:
   Card(std::string cardName, int goldCost, std::string cardDescription,
-       std::set<CardType> cardTypes)
+       std::set<CardType> cardTypes, Extension cardExtension = Extension::BASE_CARDS)
       : name(cardName), cost(goldCost), description(cardDescription),
-        types(cardTypes) {}
+        types(cardTypes), extension(cardExtension) {}
   /**
    * @brief Gets the name of the card.
    * @return The name of the card.
    */
   const std::string &getName() const { return name; }
+
+  /**
+   * @brief Gets the extension of the card.
+   * @return The extension of the card.
+   */
+  Extension getExtension() const { return extension; }
+
+  /**
+   * @brief Gets the path of the card's image.
+   * @return The path of the card's image.
+   */
+  const std::string getPath() const {
+    QString lowerName = QString::fromStdString(name).toLower();
+    return ":/images/" + ExtensionUtils::toString(extension) + "/" +
+           lowerName.toStdString() + ".jpg";
+  }
+
   /**
    * @brief Gets the types of the card.
    * @return A set of CardType representing the types of the card.

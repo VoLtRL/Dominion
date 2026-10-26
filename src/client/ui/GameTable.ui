@@ -31,6 +31,19 @@
         </size>
        </property>
       </spacer>
+     </item>     
+     <item>
+      <widget class="QPushButton" name="playSelectedButton">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Play Selected</string>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QPushButton" name="endTurnButton">

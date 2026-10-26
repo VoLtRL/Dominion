@@ -18,6 +18,8 @@ file(GLOB_RECURSE SHARED_HEADERS CONFIGURE_DEPENDS "include/shared/*.hpp")
 file(GLOB_RECURSE SERVER_HEADERS CONFIGURE_DEPENDS "include/server/*.hpp")
 file(GLOB_RECURSE CLIENT_HEADERS CONFIGURE_DEPENDS "include/client/*.hpp")
 
+file(GLOB_RECURSE CLIENT_IMAGES CONFIGURE_DEPENDS "images/*.*")
+
 file(GLOB_RECURSE SHARED_SOURCES CONFIGURE_DEPENDS "src/shared/*.cpp")
 
 # server
@@ -46,11 +48,18 @@ add_executable(DominionClient WIN32
     ${SHARED_HEADERS}
 )
 
-target_include_directories(DominionClient PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include -fsanitize=address)
+target_include_directories(DominionClient PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_compile_options(DominionClient PRIVATE -fsanitize=address)
 target_link_libraries(DominionClient PRIVATE 
     Qt6::Core 
     Qt6::Network 
     Qt6::Gui 
     Qt6::Widgets
-    -fsanitize=address
+)
+target_link_options(DominionClient PRIVATE -fsanitize=address)
+
+qt_add_resources(DominionClient card_images
+    PREFIX "/"
+    BASE "${CMAKE_CURRENT_SOURCE_DIR}"
+    FILES ${CLIENT_IMAGES}
 )

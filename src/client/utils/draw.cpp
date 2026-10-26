@@ -1,27 +1,43 @@
 #include "client/utils/draw.hpp"
+#include "client/VisualCard.hpp"
 
-void drawCard(QGraphicsScene *scene, const Card* card, int x, int y) {
-    // Placeholder implementation for drawing a card
-    // In a real implementation, you would use QGraphicsPixmapItem or similar to draw the card image
-    QGraphicsRectItem *rect = scene->addRect(x, y, 100, 150); // Example dimensions for a card
-    rect->setBrush(QBrush(Qt::white));
-    rect->setPen(QPen(Qt::black));
+VisualCard* drawCard(QGraphicsScene *scene, const Card* card, int x, int y) {
+    VisualCard *visualCard = new VisualCard(VisualCard::getNewId(), QString::fromStdString(card->getName()), card->getCost(), QString(card->getPath().c_str()), Location::DECK);
+    visualCard->setPos(x, y);
+    scene->addItem(visualCard);
+    return visualCard;
 }
 
-void drawPlayerHand(QGraphicsScene *scene, const std::vector<const Card*> hand) {
-    int x = 10;
-    int y = 10;
+std::vector<VisualCard*> drawPlayerHand(QGraphicsScene *scene, const std::vector<const Card*> hand) {
+    // clear the previous hand cards from the scene
+    QList<QGraphicsItem*> items = scene->items();
+    std::vector<VisualCard*> visualCardsInHand;
+    for (QGraphicsItem* item : items) {
+        VisualCard* visualCard = dynamic_cast<VisualCard*>(item);
+        if (visualCard && visualCard->getLocation() == Location::HAND) { // ça marche pas, il faut que je trouve un moyen de savoir si la carte est dans la main du joueur
+            scene->removeItem(visualCard);
+            delete visualCard;
+        }
+    }
+
+    // draw the cards in the player's hand at the bottom of the scene
+    int x = 10; // Starting x position
+    int y = 400;
+
     for (const Card* card : hand) {
-        drawCard(scene, card, x, y);
+        visualCardsInHand.push_back(drawCard(scene, card, x, y));
         x += 110; // Move to the right for the next card
     }
+    return visualCardsInHand;
 }
 
-void drawCardsInPlay(QGraphicsScene *scene, const std::vector<const Card*> cardsInPlay) {
+std::vector<VisualCard*> drawCardsInPlay(QGraphicsScene *scene, const std::vector<const Card*> cardsInPlay) {
     int x = 10;
     int y = 200;
+    std::vector<VisualCard*> visualCardsInPlay;
     for (const Card* card : cardsInPlay) {
-        drawCard(scene, card, x, y);
-        x += 110; // Move to the right for the next card
+        visualCardsInPlay.push_back(drawCard(scene, card, x, y));
+        x += 90; // Move to the right for the next card
     }
+    return visualCardsInPlay;
 }

@@ -6,6 +6,6 @@
 
 class Gold : public Card, public Treasure {
     public: 
-        Gold() : Card("Gold", 6, "", {CardType::TREASURE}) {}
+        Gold() : Card("Gold", 6, "", {CardType::TREASURE}, Extension::BASE_CARDS) {}
         int getCoins() const;
 };
