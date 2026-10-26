@@ -27,4 +27,6 @@ public:
 
   void shuffle();
 
+  std::map<const Card*, int> getCardCount() const;
+
 };

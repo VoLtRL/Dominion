@@ -179,5 +179,19 @@ public:
 
   void playTreasure(Player& p, const Card* card);
 
-  
+  const std::map<const Card*, int> getCurrentCardDistrib() const {
+    return currentCardDistribution;
+  }
+
+  int getActionCount() const {
+    return currentPlayerActions;
+  }
+
+  int getPurchaseCount() const {
+    return currentPlayerPurchaseLeft;
+  }
+
+  int getCoins() const {
+    return currentPlayerMoney;
+  }
 };

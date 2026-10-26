@@ -6,6 +6,7 @@
 
 #include "../abstract/Card.hpp"
 #include "../abstract/Treasure.hpp"
+#include "../gameplay/Game.hpp"
 
 class Player;
 
@@ -18,17 +19,62 @@ struct PlayerView {
 // Just a container of useful informations for bots
 class GameView {
     private:
-        std::map<const Card*, int> supplies;
-        std::map<Player&, PlayerView> otherPlayersStats;
+        std::map<const Card*, int> supplies ;
+        std::map<Player*, PlayerView> otherPlayersStats;
         std::map<const Card*, int> cardCount;
+        Hand hand;
         int turnCount;
         int victoryPoints;
+        int purchases;
+        int actions;
+        int coins;
 
     public:
 
+        GameView(Game& g, Player& p) {
+            for(auto data : g.getCurrentCardDistrib()){
+                supplies[data.first] = data.second;
+            }
+
+            for(Player* p : g.getOtherPlayers()){
+                PlayerView view = {p->getHand().getSize(), p->getDrawStack().getSize(), p->getDiscardStack().getSize(), p->getVictoryPoints()};
+                otherPlayersStats[p] = view;
+            }
+
+            for(const Card* c : p.getHand().getCards()){
+                cardCount[c]++;
+            }
+
+            for(auto data : p.getDrawStack().getCardCount()){
+                cardCount[data.first] += data.second;
+            }
+
+            for(auto data : p.getDiscardStack().getCardCount()){
+                cardCount[data.first] += data.second;
+            }
+
+            hand = p.getHand();
+            turnCount = p.getTurnsPlayed();
+            victoryPoints = p.getVictoryPoints();
+            purchases = g.getPurchaseCount();
+            actions = g.getActionCount();
+            coins = g.getCoins();
+        }
 
         bool isOwned(const Card* card) const {
             return cardCount.find(card) != cardCount.end();
+        }
+
+        int inHand(const Card* card) const {
+            std::vector<const Card*> cards = hand.getCards();
+            std::string name = card->getName();
+            int count = 0;
+            for(const Card* c : cards){
+                if(c->getName() == name){
+                    count++;
+                }
+            }
+            return count;
         }
 
         int getSupplyCount(const Card* card) const {
@@ -90,5 +136,13 @@ class GameView {
                 max = std::max(max, data.second.victoryPoints);
             }
             return victoryPoints-max;
+        }
+
+        int getPurchases() const {
+            return purchases;
+        }
+
+        int getActions() const {
+            return actions;
         }
 };
