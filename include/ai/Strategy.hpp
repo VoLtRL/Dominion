@@ -15,10 +15,19 @@ class Strategy{
         std::function<double(std::map<const Card*, int>)> viability;
         Strategy* fallback;
         bool isFinalized = false;
+        std::map<std::string, int> params;
     public:
 
         size_t resolvePhase(const GameView& view, int i);
         size_t resolvePhase(const GameView& view, int i, size_t current);
+
+        std::string getName() const { return name; }
+        int getTier() const { return tier; }
+
+        void setName(std::string n) { name = n; }
+        void setTier(int t) { tier = t; }
+        void setViability(std::function<double(std::map<const Card*, int>)> v) { viability = v; }
+        void setParams(std::map<std::string, int> p) { params = p; }
 
         double getViability(std::map<const Card*, int> distrib) const;
 

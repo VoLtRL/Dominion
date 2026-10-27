@@ -16,6 +16,10 @@ class Phase {
             std::stable_sort(playRules.begin(), playRules.end(), byPriority);
         }
 
+        void setName(std::string s) { name = s; }
+
+        void setBuyRules(std::vector<Rule> r) { buyRules = r; }
+
         bool canEnter(const GameView& view, int i) const {
             return enter(view, i);
         }

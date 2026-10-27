@@ -71,4 +71,5 @@ class Bot : public Player {
         const Card* chooseBuy(const GameView& v);
         const Card* chooseAction(const GameView& v);
         std::vector<const Card*> chooseFromList(const GameView& v, DecisionType type, SelectionParameters params);
+        void playTurn(GameView& v);
 };

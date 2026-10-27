@@ -203,3 +203,7 @@ std::vector<const Card*> Bot::chooseFromList(const GameView& v, DecisionType typ
     }
     return finishList(std::move(res), label);
 }
+
+void Bot::playTurn(GameView& view) {
+    
+}
