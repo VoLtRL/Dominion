@@ -1,7 +1,5 @@
 #include "client/network/NetworkManager.hpp"
-#include <iostream>
-
-NetworkManager::NetworkManager(QObject *parent) : QObject(parent), m_socket(new QTcpSocket(this)) {
+NetworkManager::NetworkManager(const ClientPreferences &clientPreferences, QObject *parent) : clientPreferences(clientPreferences), QObject(parent), m_socket(this){
     connect(&m_socket, &QTcpSocket::connected, this, &NetworkManager::onConnected);
     connect(&m_socket, &QTcpSocket::disconnected, this, &NetworkManager::onDisconnected);
     connect(&m_socket, &QTcpSocket::readyRead, this, &NetworkManager::onReadyRead);
@@ -39,21 +37,11 @@ void NetworkManager::onErrorOccurred(QAbstractSocket::SocketError socketError) {
     emit connectionError(m_socket.errorString());
 }
 
-QHostAddress NetworkManager::getHost() const {
-    return m_host;
-}
-
-quint16 NetworkManager::getPort() const {
-    return m_port;
-}
-
-void NetworkManager::connectToServer(const QHostAddress &host, quint16 port) {
-    m_socket.connectToHost(host, port);
-    if (m_socket.waitForConnected(3000)) {
-    qDebug() << "Connected to local server successfully!";
-} else {
-    qWarning() << "Could not connect:" << m_socket.errorString();
-}
+void NetworkManager::connectToServer() {
+    if (m_socket.state() != QAbstractSocket::UnconnectedState) {
+        m_socket.abort();
+    }
+    m_socket.connectToHost(clientPreferences.getHostAddress(), clientPreferences.getHostPort());
 }
 
 void NetworkManager::disconnectFromServer() {
@@ -74,4 +62,3 @@ void NetworkManager::sendAction(const ActionType &action, const Network::Payload
     m_socket.write(toSend);
 
 }
-

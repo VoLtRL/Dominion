@@ -72,98 +72,179 @@ Client* GameServer::getClientById(int id){
 }
 
 void GameServer::receiveAction(const QString &action, const QJsonObject &data, QTcpSocket *clientSocket) {
-    Client *client = m_clients[clientSocket];
-    if (!client) return;
-
-    auto &roomMgr = RoomManager::getInstance();
+    auto clientIt = m_clients.find(clientSocket);
+    if (clientIt == m_clients.end() || !clientIt->second) {
+        qWarning() << "Received action from unknown client.";
+        return;
+    }
+    Client *client = clientIt->second;
 
     std::cout << "Received action: " << action.toStdString() << " from client ID: "<< client->getId() << std::endl;
 
     switch (stringToActionType(action.toStdString())) {
-        case ActionType::CREATE_ROOM: {
-            auto payload_create = Network::CreateRoomPayload::fromJson(data);
-            if(!payload_create){
-                qWarning() << "Invalid data given" << data;
-                return;
-            }
-            client->setName(payload_create->playerName);
-            roomMgr.createRoom(*payload_create, client);
-
-            Network::CreatedRoomPayload to_send_created = Network::CreatedRoomPayload(roomMgr.getRoomByClient(client)->getId(), payload_create->roomName);
-            sendAction(QString::fromStdString(actionTypeToString(ActionType::ROOM_CREATED)), to_send_created.toJson(), client->getSocket());
+        case ActionType::CREATE_ROOM:
+            handleCreateRoom(data, client);
             break;
-        }
-        case ActionType::JOIN_ROOM: {
-            auto payload_join = Network::JoinRoomPayload::fromJson(data);
-            if(!payload_join.has_value()){
-                qWarning() << "Invalid data given" << data;
-                return;
-            }
-
-            client->setName(payload_join->playerName);
-            Room* targetRoom = roomMgr.getRoomById(payload_join->roomId);
-            if (!targetRoom || !roomMgr.joinRoom(client, targetRoom)) {
-                sendAction(QString::fromStdString(actionTypeToString(ActionType::ROOM_JOIN_FAILED)),
-                           QJsonObject{{"error", "Room is unavailable."}}, clientSocket);
-                break;
-            }
-
-            std::vector<QString> playerNames;
-            for (const Client *roomClient : targetRoom->getClients()) {
-                playerNames.push_back(roomClient->getName());
-            }
-            Network::RoomInfo roomInfo(targetRoom->getId(), targetRoom->getName(),
-                                       playerNames, targetRoom->getPlacesLeft());
-            Network::RoomJoinedPayload roomJoined(roomInfo, playerNames);
-            sendAction(QString::fromStdString(actionTypeToString(ActionType::JOIN_ROOM)),
-                       roomJoined.toJson(), clientSocket);
-
-            Network::PlayerJoinedRoomPayload to_send_joined = Network::PlayerJoinedRoomPayload(client->getName());
-
-            for(Client* c : targetRoom->getClients()){
-                if (c != client) {
-                    sendAction(QString::fromStdString(actionTypeToString(ActionType::PLAYER_JOINED)),to_send_joined.toJson(), c->getSocket());
-                }
-            };
-
+        case ActionType::JOIN_ROOM:
+            handleJoinRoom(data, client);
             break;
-        }
-        case ActionType::REQUEST_ROOM_LIST: {
-            Network::RoomListPayload roomListJson = Network::RoomListPayload({});
-            for (const Room* room : roomMgr.getAvailableRooms()) {
-                std::vector<QString> playerNames;
-                for (const Client *roomClient : room->getClients()) {
-                    playerNames.push_back(roomClient->getName());
-                }
-                roomListJson.rooms.push_back(Network::RoomInfo(
-                    room->getId(), room->getName(), playerNames, room->getPlacesLeft()));
-            }
-            sendAction(QString::fromStdString(actionTypeToString(ActionType::REQUEST_ROOM_LIST)), roomListJson.toJson(), clientSocket);
+        case ActionType::REQUEST_ROOM_LIST:
+            handleRequestRoomList(client);
             break;
-        }
         case ActionType::LEAVE_ROOM:
-            roomMgr.leaveRoom(client);
+            handleLeaveRoom(client);
             break;
         case ActionType::START_GAME:
-            roomMgr.startGame(client);
+            handleStartGame(client);
             break;
-        case ActionType::PLAY_CARD: {
-            if (Room *room = roomMgr.getRoomByClient(client)) {
-                if (Game *game = room->getGame()) {
-                }
-            }
+        case ActionType::PLAY_CARD:
+            handlePlayCard(client);
             break;
-        }
-        case ActionType::END_TURN: {
-            if (Room *room = roomMgr.getRoomByClient(client)) {
-                if (Game *game = room->getGame()) {
-                }
-            }
+        case ActionType::END_TURN:
+            handleEndTurn(client);
             break;
-        }
         default:
             qWarning() << "Received invalid action:" << action;
             break;
+    }
+}
+
+void GameServer::handleCreateRoom(const QJsonObject &data, Client *client) {
+    auto payload = Network::CreateRoomPayload::fromJson(data);
+    if (!payload) {
+        qWarning() << "Invalid data given" << data;
+        return;
+    }
+
+    auto &roomMgr = RoomManager::getInstance();
+    client->setName(payload->playerName);
+    roomMgr.createRoom(*payload, client);
+
+    Network::CreatedRoomPayload roomCreated(
+        roomMgr.getRoomByClient(client)->getId(),
+        payload->roomName);
+    sendAction(
+        QString::fromStdString(actionTypeToString(ActionType::ROOM_CREATED)),
+        roomCreated.toJson(),
+        client->getSocket());
+}
+
+void GameServer::handleJoinRoom(const QJsonObject &data, Client *client) {
+    auto payload = Network::JoinRoomPayload::fromJson(data);
+    if (!payload) {
+        qWarning() << "Invalid data given" << data;
+        return;
+    }
+
+    auto &roomMgr = RoomManager::getInstance();
+    client->setName(payload->playerName);
+    Room *targetRoom = roomMgr.getRoomById(payload->roomId);
+    if (!targetRoom || !roomMgr.joinRoom(client, targetRoom)) {
+        sendAction(
+            QString::fromStdString(actionTypeToString(ActionType::ROOM_JOIN_FAILED)),
+            QJsonObject{{"error", "Room is unavailable."}},
+            client->getSocket());
+        return;
+    }
+
+    targetRoom->addPlayer(client);
+
+    std::vector<QString> playerNames;
+    for (const Client *roomClient : targetRoom->getClients()) {
+        playerNames.push_back(roomClient->getName());
+    }
+    Network::RoomInfo roomInfo(
+        targetRoom->getId(),
+        targetRoom->getName(),
+        playerNames,
+        targetRoom->getPlacesLeft());
+    Network::RoomJoinedPayload roomJoined(roomInfo, playerNames);
+    sendAction(
+        QString::fromStdString(actionTypeToString(ActionType::JOIN_ROOM)),
+        roomJoined.toJson(),
+        client->getSocket());
+
+    Network::PlayerJoinedRoomPayload playerJoined(client->getName());
+    for (Client *roomClient : targetRoom->getClients()) {
+        if (roomClient != client) {
+            sendAction(
+                QString::fromStdString(actionTypeToString(ActionType::PLAYER_JOINED)),
+                playerJoined.toJson(),
+                roomClient->getSocket());
+        }
+    }
+}
+
+void GameServer::handleRequestRoomList(Client *client) {
+    auto &roomMgr = RoomManager::getInstance();
+    Network::RoomListPayload roomList({});
+    for (const Room *room : roomMgr.getAvailableRooms()) {
+        std::vector<QString> playerNames;
+        for (const Client *roomClient : room->getClients()) {
+            playerNames.push_back(roomClient->getName());
+        }
+        roomList.rooms.push_back(Network::RoomInfo(
+            room->getId(),
+            room->getName(),
+            playerNames,
+            room->getPlacesLeft()));
+    }
+
+    sendAction(
+        QString::fromStdString(actionTypeToString(ActionType::REQUEST_ROOM_LIST)),
+        roomList.toJson(),
+        client->getSocket());
+}
+
+void GameServer::handleLeaveRoom(Client *client) {
+    RoomManager &roomMgr = RoomManager::getInstance();
+    Room *room = roomMgr.getRoomByClient(client);
+    std::cout << "Client ID: " << client->getId() << " is leaving room." << std::endl;
+
+    if (!room) {
+        return;
+    }
+
+    Network::PlayerLeftRoomPayload playerLeft(client->getName());
+    for (Client *roomClient : room->getClients()) {
+        if (roomClient != client) {
+            sendAction(
+                QString::fromStdString(actionTypeToString(ActionType::PLAYER_LEFT)),
+                playerLeft.toJson(),
+                roomClient->getSocket());
+        }
+    }
+
+    roomMgr.leaveRoom(client);
+}
+
+void GameServer::handleStartGame(Client *client) {
+    RoomManager &roomMgr = RoomManager::getInstance();
+    Room *room = roomMgr.getRoomByClient(client);
+    if (!room || !roomMgr.startGame(client)) {
+        return;
+    }
+
+    Network::StartGamePayload gameStarted(room->getName());
+    for (Client *roomClient : room->getClients()) {
+        sendAction(
+            QString::fromStdString(actionTypeToString(ActionType::START_GAME)),
+            gameStarted.toJson(),
+            roomClient->getSocket());
+    }
+}
+
+void GameServer::handlePlayCard(Client *client) {
+    if (Room *room = RoomManager::getInstance().getRoomByClient(client)) {
+        if (Game *game = room->getGame()) {
+        }
+    }
+}
+
+void GameServer::handleEndTurn(Client *client) {
+    if (Room *room = RoomManager::getInstance().getRoomByClient(client)) {
+        if (Game *game = room->getGame()) {
+        }
     }
 }
 
@@ -177,5 +258,6 @@ void GameServer::sendAction(const QString &action, const QJsonObject &data, QTcp
 
     QJsonDocument doc(message);
     QByteArray toSend = doc.toJson(QJsonDocument::Compact) + '\n';
+    std::cout << "Sending JSON: " << toSend.toStdString() << std::endl;
     clientSocket->write(toSend);
 }

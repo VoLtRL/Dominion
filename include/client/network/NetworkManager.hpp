@@ -2,25 +2,23 @@
 
 #include <QObject>
 #include <QtTypes>
-#include <QHostAddress>
 #include <QTcpSocket>
+#include <QString>
 #include <QJsonObject>
 #include "shared/structs/ActionType.hpp"
 #include "shared/structs/Payloads.hpp"
+#include "client/ClientPreferences.hpp"
 
 class NetworkManager : public QObject {
     Q_OBJECT
 
 private:
     QTcpSocket m_socket;
-    QHostAddress m_host;
-    quint16 m_port;
+    const ClientPreferences &clientPreferences;
 
 public:
-    explicit NetworkManager(QObject *parent = nullptr);
-    QHostAddress getHost() const;
-    quint16 getPort() const;
-    void connectToServer(const QHostAddress &host, quint16 port);
+    explicit NetworkManager(const ClientPreferences &clientPreferences, QObject *parent = nullptr);
+    void connectToServer();
     void disconnectFromServer();
     void sendAction(const ActionType &action, const Network::Payload &data);
     QAbstractSocket::SocketState getState() const;

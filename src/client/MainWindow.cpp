@@ -1,183 +1,324 @@
 #include "client/MainWindow.hpp"
-#include "client/MainMenu.hpp"
+
 #include "client/CreateGame.hpp"
 #include "client/GameLobby.hpp"
-#include "client/JoinRoom.hpp"
 #include "client/GameTable.hpp"
+#include "client/JoinRoom.hpp"
+#include "client/MainMenu.hpp"
 #include "shared/structs/Payloads.hpp"
-#include "shared/structs/ActionType.hpp"
-
+#include "client/ClientPreferences.hpp"
 #include "ui_MainWindow.h"
 
-MainWindow::MainWindow(QWidget *parent, NetworkManager *networkManager) : QMainWindow(parent), ui(new Ui::MainWindow), networkManager(networkManager) {
+#include <QAbstractSocket>
+
+MainWindow::MainWindow(QWidget *parent, NetworkManager *networkManager, ClientPreferences *clientPreferences)
+    : QMainWindow(parent),
+      ui(new Ui::MainWindow),
+      networkManager(networkManager),
+      clientPreferences(clientPreferences),
+      mainMenu(nullptr),
+      createGame(nullptr),
+      gameLobby(nullptr),
+      gameTable(nullptr),
+      joinRoom(nullptr) {
     ui->setupUi(this);
+    reconnectTimer.setInterval(1000);
+    connect(&reconnectTimer, &QTimer::timeout, this, &MainWindow::tryReconnect);
 
-    playerName = "Player_" + QString::number(QRandomGenerator::global()->bounded(10000));
-
-    // Create the main menu
-    MainMenu *mainMenu = new MainMenu(this);
-    CreateGame *createGame = new CreateGame(this);
-    GameLobby *gameLobby = new GameLobby(this);
-    GameTable *gameTable = new GameTable(this);
-    JoinRoom *joinRoom = new JoinRoom(this);
-
-    int menuIndex = ui->stackedWidget->addWidget(mainMenu);
-    int createGameIndex = ui->stackedWidget->addWidget(createGame);
-    int gameLobbyIndex = ui->stackedWidget->addWidget(gameLobby);
-    int gameTableIndex = ui->stackedWidget->addWidget(gameTable);
-    int joinRoomIndex = ui->stackedWidget->addWidget(joinRoom);
-    ui->stackedWidget->setCurrentIndex(menuIndex);
-
-    connect(mainMenu, &MainMenu::createGameClicked, this, [this, createGameIndex, networkManager]() {
-        if (networkManager->getState() != QAbstractSocket::ConnectedState) {
-            ui->statusbar->showMessage("Not connected to server. Trying to reconnect...");
-            networkManager->connectToServer(networkManager->getHost(), networkManager->getPort());
-            return;
-        }
-        ui->stackedWidget->setCurrentIndex(createGameIndex);
-    });
-
-    connect(mainMenu, &MainMenu::joinRoomClicked, this, [this, joinRoomIndex, networkManager]() {
-        if (networkManager->getState() != QAbstractSocket::ConnectedState) {
-            ui->statusbar->showMessage("Not connected to server. Trying to reconnect...");
-            networkManager->connectToServer(networkManager->getHost(), networkManager->getPort());
-            return;
-        }
-        ui->stackedWidget->setCurrentIndex(joinRoomIndex);
-        networkManager->sendAction(ActionType::REQUEST_ROOM_LIST, Network::EmptyPayload());
-    });
-
-    connect(mainMenu, &MainMenu::leaderboardClicked, this, [this]() {
-        // Handle leaderboard action
-    });
-
-    connect(mainMenu, &MainMenu::quitClicked, this, [this]() {
-        close();
-    });
-
-    connect(createGame, &CreateGame::goBackToMenuClicked, this, [this, menuIndex]() {
-        ui->stackedWidget->setCurrentIndex(menuIndex);
-    });
-
-    connect(createGame, &CreateGame::createRoomClicked, this, [this, gameLobbyIndex, createGame, networkManager]() {
-        if (networkManager->getState() != QAbstractSocket::ConnectedState) {
-            ui->statusbar->showMessage("Not connected to server. Please check your connection.");
-            return;
-        }
-
-        Network::CreateRoomPayload roomData = createGame->getRoomData();
-        roomData.playerName = playerName;
-
-
-
-        networkManager->sendAction(ActionType::CREATE_ROOM, roomData);
-    });
-
-    connect(gameLobby, &GameLobby::goBackToMenuClicked, this, [this, menuIndex]() {
-        ui->stackedWidget->setCurrentIndex(menuIndex);
-    });
-
-    connect(gameLobby, &GameLobby::launchGameClicked, this, [this, gameTableIndex]() {
-        ui->stackedWidget->setCurrentIndex(gameTableIndex);
-    });
-
-    connect(networkManager, &NetworkManager::connected, this, [this]() {
-        ui->statusbar->showMessage("Connected to server");
-    });
-
-    connect(networkManager, &NetworkManager::disconnected, this, [this, networkManager]() {
-        ui->statusbar->showMessage("Disconnected from server. Trying to reconnect...");
-        while (networkManager->getState() != QAbstractSocket::ConnectedState) {
-            networkManager->connectToServer(QHostAddress("127.0.0.1"), 4040);
-            QThread::sleep(1); // Wait for 1 second before trying again
-        }
-    });
-
-    connect(joinRoom, &JoinRoom::goBackToMenuClicked, this, [this, menuIndex]() {
-        ui->stackedWidget->setCurrentIndex(menuIndex);
-    });
-
-    connect(joinRoom, &JoinRoom::joinRoomClicked, this, [this, networkManager, gameLobbyIndex](int roomId) {
-        if (networkManager->getState() != QAbstractSocket::ConnectedState) {
-            ui->statusbar->showMessage("Not connected to server. Please check your connection.");
-            return;
-        }
-
-        Network::JoinRoomPayload join_payload = Network::JoinRoomPayload(roomId, playerName);
-
-        networkManager->sendAction(ActionType::JOIN_ROOM, join_payload);
-    });
-
-
-
-    connect(networkManager, &NetworkManager::actionReceived, this, [this,gameLobby, gameLobbyIndex, gameTableIndex](const ActionType &action, const QJsonObject &data) {
-        if (action == ActionType::ROOM_CREATED) {
-            ui->stackedWidget->setCurrentIndex(gameLobbyIndex);
-
-            auto payload = Network::CreatedRoomPayload::fromJson(data);
-            if(!payload.has_value()){
-                qWarning() << "Invalid data received for ROOM_CREATED action: " << data;
-                return;
-            }
-            
-            gameLobby->clearPlayerList();
-            gameLobby->updateRoomInfo(payload.value());
-            gameLobby->addPlayerToList(playerName);
-
-        } else if (action == ActionType::ROOM_CREATION_FAILED) {
-            QString errorMessage = data.value("error").toString();
-            ui->statusbar->showMessage("Room creation failed: " + errorMessage);
-        } else if (action == ActionType::ROOM_JOIN_FAILED) {
-            ui->statusbar->showMessage("Room join failed: " + data.value("error").toString());
-        } else if (action == ActionType::PLAYER_JOINED) {
-            auto payload = Network::PlayerJoinedRoomPayload::fromJson(data);
-            if(!payload.has_value()){
-                qWarning() << "Invalid data received for PLAYER_JOINED action: " << data;
-                return;
-            }
-            gameLobby->addPlayerToList(payload->playerName);
-        }
-        else if (action == ActionType::JOIN_ROOM) {
-            auto payload = Network::RoomJoinedPayload::fromJson(data);
-            if(!payload.has_value()){
-                qWarning() << "Invalid data received for JOIN_ROOM action: " << data;
-                return;
-            }
-            ui->stackedWidget->setCurrentIndex(gameLobbyIndex);
-            gameLobby->clearPlayerList();
-            gameLobby->updateRoomInfo(payload.value());
-
-        }
-         else if (action == ActionType::PLAYER_LEFT) {
-            auto payload = Network::PlayerLeftRoomPayload::fromJson(data);
-            if(!payload.has_value()){
-                qWarning() << "Invalid data received for PLAYER_LEFT action: " << data;
-                return;
-            }
-            gameLobby->removePlayerFromList(payload->playerName);
-        } else if (action == ActionType::START_GAME) {
-            auto payload = Network::StartGamePayload::fromJson(data);
-            if(!payload.has_value()){
-                qWarning() << "Invalid data received for START_GAME action: " << data;
-                return;
-            }
-            ui->stackedWidget->setCurrentIndex(gameTableIndex);
-        } else if (action == ActionType::REQUEST_ROOM_LIST) {
-            auto payload = Network::RoomListPayload::fromJson(data);
-            if(!payload.has_value()){
-                qWarning() << "Invalid data received for REQUEST_ROOM_LIST action: " << data;
-                return;
-            }
-            JoinRoom *joinRoom = qobject_cast<JoinRoom*>(ui->stackedWidget->widget(ui->stackedWidget->currentIndex()));
-            if(joinRoom){
-                joinRoom->updateAvailableRooms(payload.value().rooms);
-            }
-        }
-    });
-
+    createPages();
+    mainMenu->setSettings(
+        clientPreferences->getPlayerName(),
+        clientPreferences->getHostAddress(),
+        clientPreferences->getHostPort());
+    gameLobby->setCurrentPlayerName(clientPreferences->getPlayerName());
+    connectNavigation();
+    connectNetwork();
+    showPage(Page::MainMenu);
 }
-
 
 MainWindow::~MainWindow() {
     delete ui;
+}
+
+void MainWindow::createPages() {
+    mainMenu = new MainMenu(this);
+    createGame = new CreateGame(this);
+    gameLobby = new GameLobby(this);
+    gameTable = new GameTable(this);
+    joinRoom = new JoinRoom(this);
+
+    ui->stackedWidget->addWidget(mainMenu);
+    ui->stackedWidget->addWidget(createGame);
+    ui->stackedWidget->addWidget(gameLobby);
+    ui->stackedWidget->addWidget(gameTable);
+    ui->stackedWidget->addWidget(joinRoom);
+}
+
+void MainWindow::connectNavigation() {
+    connect(mainMenu, &MainMenu::createGameClicked, this, &MainWindow::showCreateGame);
+    connect(mainMenu, &MainMenu::joinRoomClicked, this, &MainWindow::showJoinRoom);
+    connect(mainMenu, &MainMenu::quitClicked, this, &MainWindow::close);
+    connect(mainMenu, &MainMenu::settingsChanged, this, &MainWindow::applySettings);
+
+    connect(createGame, &CreateGame::createRoomClicked, this, &MainWindow::createRoom);
+    connect(createGame, &CreateGame::goBackToMenuClicked, this, &MainWindow::showMainMenu);
+    connect(joinRoom, &JoinRoom::joinRoomClicked, this, &MainWindow::joinRoomById);
+    connect(joinRoom, &JoinRoom::goBackToMenuClicked, this, &MainWindow::showMainMenu);
+    connect(gameLobby, &GameLobby::goBackToMenuClicked, this, [this]() {
+        leaveRoom();
+        showMainMenu();
+    });
+    connect(gameLobby, &GameLobby::launchGameClicked, this, [this]() {
+        if (ensureConnected()) {
+            networkManager->sendAction(ActionType::START_GAME, Network::EmptyPayload());
+        }
+    });
+}
+
+void MainWindow::connectNetwork() {
+    connect(networkManager, &NetworkManager::connected, this, &MainWindow::handleConnected);
+    connect(networkManager, &NetworkManager::disconnected, this, &MainWindow::handleDisconnected);
+    connect(networkManager, &NetworkManager::actionReceived, this, &MainWindow::handleAction);
+    connect(networkManager, &NetworkManager::connectionError, this, [this](const QString &error) {
+        ui->statusbar->showMessage(error);
+        if (networkManager->getState() != QAbstractSocket::ConnectedState) {
+            reconnectTimer.start();
+        }
+    });
+}
+
+void MainWindow::showPage(Page page) {
+    switch (page) {
+    case Page::MainMenu:
+        ui->stackedWidget->setCurrentWidget(mainMenu);
+        break;
+    case Page::CreateGame:
+        ui->stackedWidget->setCurrentWidget(createGame);
+        break;
+    case Page::GameLobby:
+        ui->stackedWidget->setCurrentWidget(gameLobby);
+        break;
+    case Page::GameTable:
+        ui->stackedWidget->setCurrentWidget(gameTable);
+        break;
+    case Page::JoinRoom:
+        ui->stackedWidget->setCurrentWidget(joinRoom);
+        break;
+    }
+}
+
+bool MainWindow::ensureConnected() {
+    if (networkManager->getState() == QAbstractSocket::ConnectedState) {
+        return true;
+    }
+
+    ui->statusbar->showMessage("Not connected to server. Reconnecting...");
+    tryReconnect();
+    return false;
+}
+
+void MainWindow::showCreateGame() {
+    if (ensureConnected()) {
+        showPage(Page::CreateGame);
+    }
+}
+
+void MainWindow::showJoinRoom() {
+    if (!ensureConnected()) {
+        return;
+    }
+
+    showPage(Page::JoinRoom);
+    networkManager->sendAction(ActionType::REQUEST_ROOM_LIST, Network::EmptyPayload());
+}
+
+void MainWindow::showMainMenu() {
+    showPage(Page::MainMenu);
+}
+
+void MainWindow::leaveRoom() {
+    if (!clientPreferences->getCurrentRoomId().has_value()) {
+        return;
+    }
+
+    if (ensureConnected()) {
+        networkManager->sendAction(ActionType::LEAVE_ROOM, Network::EmptyPayload());
+    }
+
+    clientPreferences->setCurrentRoomId(std::nullopt);
+}
+
+void MainWindow::createRoom() {
+    if (!ensureConnected()) {
+        return;
+    }
+
+    Network::CreateRoomPayload roomData = createGame->getRoomData();
+    roomData.playerName = clientPreferences->getPlayerName();
+    networkManager->sendAction(ActionType::CREATE_ROOM, roomData);
+}
+
+void MainWindow::joinRoomById(int roomId) {
+    if (!ensureConnected()) {
+        return;
+    }
+
+    networkManager->sendAction(
+        ActionType::JOIN_ROOM,
+        Network::JoinRoomPayload(roomId, clientPreferences->getPlayerName()));
+}
+
+void MainWindow::handleConnected() {
+    reconnectTimer.stop();
+    ui->statusbar->showMessage(
+        QString("Connected to %1:%2").arg(clientPreferences->getHostAddress()).arg(clientPreferences->getHostPort()));
+}
+
+void MainWindow::handleDisconnected() {
+    ui->statusbar->showMessage("Disconnected from server. Reconnecting...");
+    reconnectTimer.start();
+}
+
+void MainWindow::tryReconnect() {
+    if (networkManager->getState() == QAbstractSocket::ConnectedState ||
+        networkManager->getState() == QAbstractSocket::ConnectingState) {
+        return;
+    }
+
+    networkManager->connectToServer();
+}
+
+void MainWindow::handleAction(const ActionType &action, const QJsonObject &data) {
+    switch (action) {
+    case ActionType::ROOM_CREATED:
+        handleRoomCreated(data);
+        break;
+    case ActionType::ROOM_CREATION_FAILED:
+        handleRoomCreationFailed(data);
+        break;
+    case ActionType::ROOM_JOIN_FAILED:
+        handleRoomJoinFailed(data);
+        break;
+    case ActionType::PLAYER_JOINED:
+        handlePlayerJoined(data);
+        break;
+    case ActionType::JOIN_ROOM:
+        handleRoomJoined(data);
+        break;
+    case ActionType::PLAYER_LEFT:
+        handlePlayerLeft(data);
+        break;
+    case ActionType::START_GAME:
+        handleGameStarted(data);
+        break;
+    case ActionType::REQUEST_ROOM_LIST:
+        handleRoomList(data);
+        break;
+    default:
+        qWarning() << "Unhandled server action:" << static_cast<int>(action);
+        break;
+    }
+}
+
+void MainWindow::handleRoomCreated(const QJsonObject &data) {
+    const auto payload = Network::CreatedRoomPayload::fromJson(data);
+    if (!payload) {
+        qWarning() << "Invalid ROOM_CREATED payload:" << data;
+        return;
+    }
+
+    clientPreferences->setCurrentRoomId(payload->roomId);
+
+    gameLobby->setRoomName(payload->roomName);
+    gameLobby->setCurrentPlayerName(clientPreferences->getPlayerName());
+    gameLobby->clearPlayerList();
+    gameLobby->addPlayerToList(clientPreferences->getPlayerName());
+
+    gameLobby->updateRoomInfo();
+    showPage(Page::GameLobby);
+}
+
+void MainWindow::handleRoomCreationFailed(const QJsonObject &data) {
+    ui->statusbar->showMessage("Room creation failed: " + data.value("error").toString());
+}
+
+void MainWindow::handleRoomJoinFailed(const QJsonObject &data) {
+    ui->statusbar->showMessage("Room join failed: " + data.value("error").toString());
+}
+
+void MainWindow::handlePlayerJoined(const QJsonObject &data) {
+    const auto payload = Network::PlayerJoinedRoomPayload::fromJson(data);
+    if (!payload) {
+        qWarning() << "Invalid PLAYER_JOINED payload:" << data;
+        return;
+    }
+
+    gameLobby->addPlayerToList(payload->playerName);
+}
+
+void MainWindow::handleRoomJoined(const QJsonObject &data) {
+    const auto payload = Network::RoomJoinedPayload::fromJson(data);
+    if (!payload) {
+        qWarning() << "Invalid JOIN_ROOM payload:" << data;
+        return;
+    }
+    clientPreferences->setCurrentRoomId(payload->roomInfo.roomId);
+
+    gameLobby->setRoomName(payload->roomInfo.roomName);
+    gameLobby->setCurrentPlayerName(clientPreferences->getPlayerName());
+    gameLobby->clearPlayerList();
+    for (const auto &playerName : payload->playerNames) {
+        gameLobby->addPlayerToList(playerName);
+    }
+    gameLobby->updateRoomInfo();
+    showPage(Page::GameLobby);
+}
+
+void MainWindow::handlePlayerLeft(const QJsonObject &data) {
+    const auto payload = Network::PlayerLeftRoomPayload::fromJson(data);
+    if (!payload) {
+        qWarning() << "Invalid PLAYER_LEFT payload:" << data;
+        return;
+    }
+
+    gameLobby->removePlayerFromList(payload->playerName);
+    gameLobby->updateRoomInfo();
+}
+
+void MainWindow::handleGameStarted(const QJsonObject &data) {
+    const auto payload = Network::StartGamePayload::fromJson(data);
+    if (!payload) {
+        qWarning() << "Invalid START_GAME payload:" << data;
+        return;
+    }
+
+    showPage(Page::GameTable);
+}
+
+void MainWindow::handleRoomList(const QJsonObject &data) {
+    const auto payload = Network::RoomListPayload::fromJson(data);
+    if (!payload) {
+        qWarning() << "Invalid REQUEST_ROOM_LIST payload:" << data;
+        return;
+    }
+
+    joinRoom->updateAvailableRooms(payload->rooms);
+}
+
+void MainWindow::applySettings(
+    const QString &newPlayerName,
+    const QString &hostAddress,
+    quint16 hostPort) {
+    clientPreferences->setPlayerName(newPlayerName);
+    gameLobby->setCurrentPlayerName(clientPreferences->getPlayerName());
+    clientPreferences->setHostAddress(hostAddress);
+    clientPreferences->setHostPort(hostPort);
+
+    reconnectTimer.stop();
+    networkManager->disconnectFromServer();
+    networkManager->connectToServer();
+    ui->statusbar->showMessage(
+        QString("Connection settings updated: %1:%2")
+            .arg(clientPreferences->getHostAddress())
+            .arg(clientPreferences->getHostPort()));
 }

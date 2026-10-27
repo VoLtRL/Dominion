@@ -1,14 +1,19 @@
 #include "client/utils/draw.hpp"
 #include "client/VisualCard.hpp"
 
-VisualCard* drawCard(QGraphicsScene *scene, const Card* card, int x, int y) {
-    VisualCard *visualCard = new VisualCard(VisualCard::getNewId(), QString::fromStdString(card->getName()), card->getCost(), QString(card->getPath().c_str()), Location::DECK);
+VisualCard* drawCard(QGraphicsScene *scene, const Card* card, int x, int y, Location location) {
+    VisualCard *visualCard = new VisualCard(
+        VisualCard::getNewId(),
+        QString::fromStdString(card->getName()),
+        card->getCost(),
+        QString(card->getPath().c_str()),
+        location);
     visualCard->setPos(x, y);
     scene->addItem(visualCard);
     return visualCard;
 }
 
-std::vector<VisualCard*> drawPlayerHand(QGraphicsScene *scene, const std::vector<const Card*> hand) {
+std::vector<VisualCard*> drawPlayerHand(QGraphicsScene *scene, const std::vector<const Card*> hand, qreal x, qreal y) {
     // clear the previous hand cards from the scene
     QList<QGraphicsItem*> items = scene->items();
     std::vector<VisualCard*> visualCardsInHand;
@@ -20,24 +25,29 @@ std::vector<VisualCard*> drawPlayerHand(QGraphicsScene *scene, const std::vector
         }
     }
 
-    // draw the cards in the player's hand at the bottom of the scene
-    int x = 10; // Starting x position
-    int y = 400;
-
     for (const Card* card : hand) {
-        visualCardsInHand.push_back(drawCard(scene, card, x, y));
+        visualCardsInHand.push_back(drawCard(scene, card, x, y, Location::HAND));
         x += 110; // Move to the right for the next card
     }
     return visualCardsInHand;
 }
 
-std::vector<VisualCard*> drawCardsInPlay(QGraphicsScene *scene, const std::vector<const Card*> cardsInPlay) {
-    int x = 10;
-    int y = 200;
+std::vector<VisualCard*> drawCardsInPlay(QGraphicsScene *scene, const std::vector<const Card*> cardsInPlay, qreal x, qreal y) {
     std::vector<VisualCard*> visualCardsInPlay;
     for (const Card* card : cardsInPlay) {
-        visualCardsInPlay.push_back(drawCard(scene, card, x, y));
+        visualCardsInPlay.push_back(drawCard(scene, card, x, y, Location::IN_PLAY));
         x += 90; // Move to the right for the next card
     }
     return visualCardsInPlay;
+}
+
+void drawBackCard(QGraphicsScene *scene, qreal x, qreal y, int width, int height) {
+    QPixmap backPixmap(":/images/back_card.png");
+
+    backPixmap = backPixmap.scaled(width, height, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+    QGraphicsPixmapItem* backCard = new QGraphicsPixmapItem(backPixmap);
+    
+    backCard->setPos(x,y);
+    scene->addItem(backCard);
 }

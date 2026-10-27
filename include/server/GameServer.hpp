@@ -15,6 +15,14 @@ private:
     QTcpServer m_server;
     std::unordered_map<QTcpSocket*, Client*> m_clients;
 
+    void handleCreateRoom(const QJsonObject &data, Client *client);
+    void handleJoinRoom(const QJsonObject &data, Client *client);
+    void handleRequestRoomList(Client *client);
+    void handleLeaveRoom(Client *client);
+    void handleStartGame(Client *client);
+    void handlePlayCard(Client *client);
+    void handleEndTurn(Client *client);
+
 public:
     explicit GameServer(QObject *parent = nullptr);
     ~GameServer() = default;

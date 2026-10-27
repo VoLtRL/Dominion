@@ -7,7 +7,7 @@
 #include "shared/gameplay/Factory.hpp"
 #include "shared/gameplay/GameMode.hpp"
 #include "shared/gameplay/TableStack.hpp"
-#include "shared/gameplay/GamePhase.hpp"
+#include "shared/structs/GamePhase.hpp"
 
 class Game {
 private:
@@ -89,6 +89,8 @@ private:
   Player *activePlayer = nullptr;
   const GameMode *currentGameMode = nullptr;
   GamePhase currentPhase = GamePhase::ACTION;
+
+  GamePhase currentPhase;
 
   std::map<const Card *, int> currentCardDistribution;
 

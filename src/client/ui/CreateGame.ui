@@ -156,6 +156,9 @@
          <property name="text">
           <string>1 player</string>
          </property>
+         <attribute name="buttonGroup">
+          <string notr="true">PlayerGroup</string>
+         </attribute>
         </widget>
        </item>
        <item>
@@ -163,6 +166,9 @@
          <property name="text">
           <string>2 players</string>
          </property>
+         <attribute name="buttonGroup">
+          <string notr="true">PlayerGroup</string>
+         </attribute>
         </widget>
        </item>
        <item>
@@ -170,6 +176,9 @@
          <property name="text">
           <string>3 players</string>
          </property>
+         <attribute name="buttonGroup">
+          <string notr="true">PlayerGroup</string>
+         </attribute>
         </widget>
        </item>
        <item>
@@ -177,6 +186,9 @@
          <property name="text">
           <string>4 players</string>
          </property>
+         <attribute name="buttonGroup">
+          <string notr="true">PlayerGroup</string>
+         </attribute>
         </widget>
        </item>
        <item>
@@ -249,6 +261,9 @@
          <property name="text">
           <string>1 bot</string>
          </property>
+         <attribute name="buttonGroup">
+          <string notr="true">BotGroup</string>
+         </attribute>
         </widget>
        </item>
        <item>
@@ -256,6 +271,9 @@
          <property name="text">
           <string>2 bots</string>
          </property>
+         <attribute name="buttonGroup">
+          <string notr="true">BotGroup</string>
+         </attribute>
         </widget>
        </item>
        <item>
@@ -263,6 +281,9 @@
          <property name="text">
           <string>3 bots</string>
          </property>
+         <attribute name="buttonGroup">
+          <string notr="true">BotGroup</string>
+         </attribute>
         </widget>
        </item>
        <item>
@@ -270,6 +291,9 @@
          <property name="text">
           <string>4 bots</string>
          </property>
+         <attribute name="buttonGroup">
+          <string notr="true">BotGroup</string>
+         </attribute>
         </widget>
        </item>
        <item>
@@ -337,4 +361,8 @@
  </widget>
  <resources/>
  <connections/>
+ <buttongroups>
+  <buttongroup name="PlayerGroup"/>
+  <buttongroup name="BotGroup"/>
+ </buttongroups>
 </ui>
