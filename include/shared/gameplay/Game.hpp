@@ -7,6 +7,7 @@
 #include "shared/gameplay/Factory.hpp"
 #include "shared/gameplay/GameMode.hpp"
 #include "shared/gameplay/TableStack.hpp"
+#include "shared/gameplay/GamePhase.hpp"
 
 class Game {
 private:
@@ -87,6 +88,7 @@ private:
 
   Player *activePlayer = nullptr;
   const GameMode *currentGameMode = nullptr;
+  GamePhase currentPhase = GamePhase::ACTION;
 
   std::map<const Card *, int> currentCardDistribution;
 
@@ -139,8 +141,6 @@ public:
 
   void discardCardsInPlay();
 
-  Player getWinner();
-
   void launchGame();
 
   std::vector<std::string> parseLines(const std::string &) const;
@@ -158,7 +158,6 @@ public:
   void addRevealedCard(const Card *card) { revealedCards.push_back(card); }
   void putCardsinDiscardStack(std::vector<const Card *> &cards);
 
-  void hasGameEnded();
 
   void clearRevealedCards();
   std::vector<const Card *> getBuyableCardsBelowCost(int cost) const;
@@ -178,4 +177,23 @@ public:
   void playAction(Player& p, const Card* card);
 
   void playTreasure(Player& p, const Card* card);
+
+  bool canPlayAction(Player* p, const Card* card) const;
+  bool tryPlayAction(Player* p, const Card* card);
+
+  bool canPlayTreasure(Player* p, const Card* card) const;
+  bool tryPlayTreasure(Player* p, const Card* card);
+  bool tryPlayAllTreasures(Player* p);
+
+  bool canBuyCard(Player* p, const Card* card) const;
+  bool tryBuyCard(Player* p, const Card* card);
+
+  bool tryNextPhase(Player* p); 
+
+  bool trySendSelection(Player* p, const std::vector<const Card*>& selection);
+
+  void passToNextPlayer();
+  void performCleanup();
+  bool hasGameEnded() const;
+  Player getWinner() const;
 };

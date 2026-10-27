@@ -332,34 +332,7 @@ void Game::BuyPhase() {
   }
 }
 
-void Game::hasGameEnded() {
-  int emptyStacks = 0;
-  for (const TableStack &stack : KingdomStacks) {
-    if (stack.getQuantity() == 0) {
-      emptyStacks++;
-    }
-  }
-  for (const TableStack &stack : BasicStacks) {
-    if (stack.getQuantity() == 0) {
-      emptyStacks++;
-    }
-    if (stack.getCard()->getName() == "Province" && stack.getQuantity() == 0) {
-      std::cout << "Game over! The game has ended due to the Province stack "
-                   "being empty."
-                << std::endl;
-      std::cout << "The winner is: " << getWinner().getString() << std::endl;
-      exit(0);
-    }
-  }
-
-  if (emptyStacks >= 3) {
-    std::cout << "Game over! The game has ended due to three empty stacks."
-              << std::endl;
-    std::cout << "The winner is: " << getWinner().getString() << std::endl;
-    exit(0);
-  }
-}
-
+/*
 void Game::playTurn(Player &player) {
   setActivePlayer(&player);
   player.addTurnPlayed();
@@ -372,6 +345,7 @@ void Game::playTurn(Player &player) {
   player.drawCardsToHand(5);
   hasGameEnded();
 }
+*/
 
 void Game::addGold(int amount) { currentPlayerMoney += amount; }
 
@@ -382,7 +356,7 @@ void Game::discardCardsInPlay() {
   CardsInPlay.clear();
 }
 
-Player Game::getWinner() {
+Player Game::getWinner() const {
   Player winner = players[0];
   int maxScore = 0;
 
@@ -583,13 +557,156 @@ void Game::playAttackCard(const Card *card) {
 }
 
 void Game::playAction(Player &p, const Card *card) {
-  p.removeCardFromHand(card);
-  addCardToPlay(card);
-  const Action* action = dynamic_cast<const Action*>(card);
-  action->play(*this, p);
+
 }
 
 void Game::playTreasure(Player&p, const Card* card){
+
+}
+
+
+bool Game::canPlayAction(Player* p, const Card* card) const {
+  if(currentPlayerActions <= 0) { return false; }
+  if(!p->hasCardInHand(card)) { return false; }
+  if(p != activePlayer) { return false; }
+  return true;
+}
+
+bool Game::tryPlayAction(Player* p, const Card* card) {
+  if(!canPlayAction(p, card)){
+    // Signal "erreur"
+    return false;
+  }
+
+  // Signal "ok"
+  p->removeCardFromHand(card);
+  addCardToPlay(card);
+  const Action* action = dynamic_cast<const Action*>(card);
+  action->play(*this, *p);
+  return true;
+}
+
+bool Game::canPlayTreasure(Player* p, const Card* card) const {
+  if(!p->hasCardInHand(card)) { return false; }
+  if(p != activePlayer) { return false; }
+  const Treasure* treasure = dynamic_cast<const Treasure*>(card);
+  const Treasure* secondTreasure = dynamic_cast<const Treasure*>(Factory::get(card->getName()));
+  if(treasure->getCoins() != secondTreasure->getCoins()) { return false ;}  // Si d'une manière ou d'une autre les coins de la carte ont changés, jsp comment tu gères l'envoi des cartes
+  return true;
+}
+bool Game::tryPlayTreasure(Player* p, const Card* card) {
+  if(!canPlayTreasure(p, card)){
+    // Signal "erreur"
+    return false;
+  }
+  // Signal "ok"
+  p->removeCardFromHand(card);
+  addCardToPlay(card);
   const Treasure* treasure = dynamic_cast<const Treasure*>(card);
   addGold(treasure->getCoins());
+}
+bool Game::tryPlayAllTreasures(Player* p) {
+  if(p != activePlayer) {
+    // Signal "erreur"
+    return false;
+  }
+  for(const Card* card : p->getHand().getCards()){
+    tryPlayTreasure(p, card);
+  }
+}
+
+bool Game::canBuyCard(Player* p, const Card* card) const {
+  if(currentPlayerPurchaseLeft <= 0) { return false; }
+  if(p != activePlayer) { return false; }
+  if(!currentCardDistribution.at(card)) { return false ;}
+  if(card->getCost() > currentPlayerMoney) { return false; }
+  if(!Factory::get(card->getName())){ return false ;}
+  return true;
+}
+bool Game::tryBuyCard(Player* p, const Card* card) {
+  if(!canBuyCard(p, card)) {
+    // Signal erreur
+    return false;
+  }
+  currentCardDistribution.at(card) -= 1;
+  currentPlayerMoney -= card->getCost();
+  const Card* newCard = Factory::get(card->getName());
+  p->addCardToDiscardStack(newCard);
+}
+
+// Là pour le coup je sais pas ce que tu comptes faire ou en tout cas comment le faire
+bool Game::tryNextPhase(Player* p) {
+  if(p != activePlayer) {
+    // Signal erreur
+    return false;
+  }
+  switch(currentPhase) {
+    case GamePhase::ACTION :
+      
+      break;
+
+    case GamePhase::BUY :
+      
+      break;
+
+    case GamePhase::REACTION :
+      
+      break;
+    
+    case GamePhase::SELECTION :
+      
+      break;
+  }
+}
+
+// Pareil jsp, c'est dans le cadre d'une demande de sélection, d'une réponse ?
+bool Game::trySendSelection(Player* p, const std::vector<const Card*>& selection) {
+
+}
+
+bool Game::hasGameEnded() const {
+  int emptyStacks = 0;
+  for (const TableStack &stack : KingdomStacks) {
+    if (stack.getQuantity() == 0) {
+      emptyStacks++;
+    }
+  }
+  for (const TableStack &stack : BasicStacks) {
+    if (stack.getQuantity() == 0) {
+      emptyStacks++;
+    }
+    if (stack.getCard()->getName() == "Province" && stack.getQuantity() == 0) {
+      // Message de fin
+      return true;
+    }
+  }
+
+  if (emptyStacks >= 3) {
+    return true;
+  }
+}
+
+void Game::performCleanup() {
+  discardCardsInPlay();
+  activePlayer->discardHand();
+  activePlayer->drawCardsToHand(5);
+  if(hasGameEnded()){
+    //fin du jeu
+  }
+  else {
+    passToNextPlayer();
+  }
+}
+
+void Game::passToNextPlayer() {
+  auto index = std::find(players.begin(), players.end(), *activePlayer);
+  if(index == players.end()){
+    // Pas normal
+    return;
+  }
+  index += 1;
+  if(index == players.end()){
+    index = players.begin();
+  }
+  activePlayer = &*index;
 }
