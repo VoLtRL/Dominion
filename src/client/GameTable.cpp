@@ -5,6 +5,20 @@
 #include "ui_GameTable.h"
 
 #include <QResizeEvent>
+#include <QGraphicsTextItem>
+
+namespace {
+    constexpr qreal CardWidth = 100;
+    constexpr qreal CardHeight = 150;
+    constexpr qreal CardSpacing = 110;
+    constexpr qreal TableMargin = 20;
+
+    void setRotatedItemGeometry(QGraphicsItem *item, qreal centerX, qreal centerY, qreal rotation) {
+        item->setTransformOriginPoint(CardWidth / 2, CardHeight / 2);
+        item->setPos(centerX - CardWidth / 2, centerY - CardHeight / 2);
+        item->setRotation(rotation);
+    }
+}
 
 GameTable::GameTable(QWidget *parent) : QWidget(parent), ui(new Ui::GameTable) {
     ui->setupUi(this);
@@ -31,20 +45,16 @@ void GameTable::drawTable() {
         delete item;
     }
 
-    constexpr qreal cardWidth = 100;
-    constexpr qreal cardHeight = 150;
-    constexpr qreal cardSpacing = 110;
-    constexpr qreal bottomMargin = 20;
     const qreal sceneWidth = scene->sceneRect().width();
     const qreal sceneHeight = scene->sceneRect().height();
 
-    const qreal handWidth = cardWidth + (gameState.hand.getCards().size() - 1) * cardSpacing;
+    const qreal handWidth = gameState.hand.getCards().empty() ? 0 : CardWidth + (gameState.hand.getCards().size() - 1) * CardSpacing;
 
     // Draw the table
-    drawPlayerHand(gameState.hand.getCards(), (sceneWidth - handWidth) / 2, sceneHeight - cardHeight - bottomMargin);
+    drawPlayerHand(gameState.hand.getCards(), (sceneWidth - handWidth) / 2, sceneHeight - CardHeight - TableMargin);
     drawStacks(gameState.selfDrawStackSize, gameState.selfDiscardStackSize, gameState.selfTopDiscardCard);
-    drawCardsInPlay(gameState.cardsInPlay, (sceneWidth - cardWidth) / 2,
-                    sceneHeight / 2 - cardHeight / 2);
+    const qreal cardsInPlayWidth = gameState.cardsInPlay.empty() ? 0 : CardWidth + (gameState.cardsInPlay.size() - 1) * 90;
+    drawCardsInPlay(gameState.cardsInPlay, (sceneWidth - cardsInPlayWidth) / 2, sceneHeight / 2 - CardHeight / 2);
     drawOtherPlayersHands(gameState.otherPlayers);
     drawOtherPlayersDrawAndDiscard(gameState.otherPlayers);
     drawOtherCardsInPlay(gameState.otherPlayers);
@@ -52,26 +62,12 @@ void GameTable::drawTable() {
 
 void GameTable::onEndTurnClicked() {
     emit endTurnClicked();
-
-    const std::vector<const Card*> hand = {
-        Factory::get("Copper"),
-        Factory::get("Estate"),
-        Factory::get("Silver"),
-        Factory::get("Duchy"),
-        Factory::get("Gold")
-    };
-    const std::vector<const Card*> cardsInPlay = {
-        Factory::get("Village"),
-        Factory::get("Smithy"),
-        Factory::get("Market")
-    };
-
-    drawTable();
 }
 
 void GameTable::resizeEvent(QResizeEvent *event) {
     QWidget::resizeEvent(event);
     scene->setSceneRect(ui->gameView->viewport()->rect());
+    drawTable();
     emit widgetResized(event->size());}
 
 void GameTable::drawPlayerHand(const std::vector<const Card*> hand, qreal x, qreal y) {
@@ -86,34 +82,33 @@ void GameTable::drawPlayerHand(const std::vector<const Card*> hand, qreal x, qre
 }
 
 void GameTable::drawOtherPlayersHands(const std::vector<ClientPlayerState>& players) {
-        constexpr qreal cardWidth = 100;
-        constexpr qreal cardHeight = 150;
-        constexpr qreal cardSpacing = 110;
-        constexpr qreal margin = 20;
         const qreal sceneWidth = scene->sceneRect().width();
         const qreal sceneHeight = scene->sceneRect().height();
 
         const QList<QGraphicsItem*> items = scene->items();
         for (QGraphicsItem *item : items) {
-            VisualCard *visualCard = dynamic_cast<VisualCard*>(item);
-            if (visualCard && visualCard->getLocation() == Location::OTHER_PLAYER_HAND) {
-                scene->removeItem(visualCard);
-                delete visualCard;
+            if (item->data(0).toString() == "other-player-hand") {
+                scene->removeItem(item);
+                delete item;
             }
         }
 
         const auto drawOtherHand = [&](int numberOfCards, qreal centerX, qreal centerY,
+                                       bool vertical,
                                        qreal rotation) {
             if (numberOfCards <= 0) {
                 return;
             }
 
-            const qreal handLength = cardWidth + (numberOfCards - 1) * cardSpacing;
+            const qreal handLength = CardWidth + (numberOfCards - 1) * CardSpacing;
             for (size_t cardIndex = 0; cardIndex < numberOfCards; ++cardIndex) {
-                QGraphicsPixmapItem* backCard = drawBackCard(scene,centerX + (cardIndex * cardSpacing - handLength / 2 + cardWidth / 2), centerY - cardHeight / 2); // Draw the back of the card
-                backCard->setTransformOriginPoint(cardWidth / 2, cardHeight / 2);
-                backCard->setRotation(rotation);
-                scene->addItem(backCard);
+                const qreal offset = cardIndex * CardSpacing - handLength / 2 + CardWidth / 2;
+                const qreal cardCenterX = vertical ? centerX : centerX + offset;
+                const qreal cardCenterY = vertical ? centerY + offset : centerY;
+                QGraphicsPixmapItem *backCard = drawBackCard(
+                    scene, cardCenterX - CardWidth / 2, cardCenterY - CardHeight / 2);
+                backCard->setData(0, "other-player-hand");
+                setRotatedItemGeometry(backCard, cardCenterX, cardCenterY, rotation);
             }
         };
 
@@ -124,23 +119,22 @@ void GameTable::drawOtherPlayersHands(const std::vector<ClientPlayerState>& play
             }
 
             if (playerIndex == 0) {
-                drawOtherHand(player->handSize, sceneWidth / 2, margin + cardHeight / 2, 180);
+                drawOtherHand(player->handSize, sceneWidth / 2,
+                              TableMargin + CardHeight / 2, false, 180);
             } else if (playerIndex == 1) {
-                drawOtherHand(player->handSize, margin + cardWidth / 2,
-                              sceneHeight / 2, 90);
+                drawOtherHand(player->handSize, TableMargin + CardHeight / 2,
+                              sceneHeight / 2, true, 90);
             } else if (playerIndex == 2) {
-                drawOtherHand(player->handSize, sceneWidth - margin - cardWidth / 2,
-                              sceneHeight / 2, -90);
+                drawOtherHand(player->handSize,
+                              sceneWidth - TableMargin - CardHeight / 2,
+                              sceneHeight / 2, true, -90);
             }
         }
 }
 
 void GameTable::drawOtherCardsInPlay(
         const std::vector<ClientPlayerState>& players) {
-        constexpr qreal cardWidth = 100;
-        constexpr qreal cardHeight = 150;
         constexpr qreal cardSpacing = 90;
-        constexpr qreal margin = 20;
         const qreal sceneWidth = scene->sceneRect().width();
         const qreal sceneHeight = scene->sceneRect().height();
 
@@ -156,23 +150,26 @@ void GameTable::drawOtherCardsInPlay(
         for (size_t playerIndex = 0; playerIndex < players.size(); ++playerIndex) {
             const auto &cards = players[playerIndex].cardsInPlay;
             const qreal cardsLength =
-                cardWidth + (cards.size() > 0 ? (cards.size() - 1) * cardSpacing : 0);
+                CardWidth + (cards.size() > 0 ? (cards.size() - 1) * cardSpacing : 0);
 
-            qreal centerX;
-            qreal centerY;
+            qreal centerX = 0;
+            qreal centerY = 0;
             qreal rotation;
+            bool vertical = false;
             if (playerIndex == 0) {
                 centerX = sceneWidth / 2;
-                centerY = margin + cardHeight * 1.5;
+                centerY = TableMargin + CardHeight * 1.5;
                 rotation = 180;
             } else if (playerIndex == 1) {
-                centerX = margin + cardWidth / 2 + cardHeight / 2;
+                centerX = TableMargin + CardHeight * 1.5;
                 centerY = sceneHeight / 2;
                 rotation = 90;
+                vertical = true;
             } else if (playerIndex == 2) {
-                centerX = sceneWidth - margin - cardWidth / 2 - cardHeight / 2;
+                centerX = sceneWidth - TableMargin - CardHeight * 1.5;
                 centerY = sceneHeight / 2;
                 rotation = -90;
+                vertical = true;
             } else {
                 continue;
             }
@@ -185,11 +182,10 @@ void GameTable::drawOtherCardsInPlay(
                     card->getCost(),
                     QString(card->getPath().c_str()),
                     Location::OTHER_PLAYER_IN_PLAY);
-                const qreal offset = cardIndex * cardSpacing - cardsLength / 2 + cardWidth / 2;
-                visualCard->setTransformOriginPoint(cardWidth / 2, cardHeight / 2);
-                visualCard->setPos(centerX + offset - cardWidth / 2,
-                                   centerY - cardHeight / 2);
-                visualCard->setRotation(rotation);
+                const qreal offset = cardIndex * cardSpacing - cardsLength / 2 + CardWidth / 2;
+                const qreal cardCenterX = vertical ? centerX : centerX + offset;
+                const qreal cardCenterY = vertical ? centerY + offset : centerY;
+                setRotatedItemGeometry(visualCard, cardCenterX, cardCenterY, rotation);
                 scene->addItem(visualCard);
             }
         }
@@ -197,9 +193,6 @@ void GameTable::drawOtherCardsInPlay(
 
 void GameTable::drawOtherPlayersDrawAndDiscard(
         const std::vector<ClientPlayerState>& players) {
-        constexpr qreal cardWidth = 100;
-        constexpr qreal cardHeight = 150;
-        constexpr qreal margin = 20;
         const qreal sceneWidth = scene->sceneRect().width();
         const qreal sceneHeight = scene->sceneRect().height();
 
@@ -211,39 +204,65 @@ void GameTable::drawOtherPlayersDrawAndDiscard(
             }
         }
 
+        const auto drawOtherStack = [&](qreal centerX, qreal centerY, qreal rotation,
+                                        int count, const Card *topCard) {
+            QGraphicsItem *stackItem = nullptr;
+            if (topCard && count > 0) {
+                VisualCard *card = drawCard(scene, topCard,
+                    centerX - CardWidth / 2, centerY - CardHeight / 2,
+                    Location::DISCARD_PILE);
+                setRotatedItemGeometry(card, centerX, centerY, rotation);
+                stackItem = card;
+            } else {
+                QGraphicsPixmapItem *backCard = drawBackCard(
+                    scene, centerX - CardWidth / 2, centerY - CardHeight / 2);
+                setRotatedItemGeometry(backCard, centerX, centerY, rotation);
+                stackItem = backCard;
+            }
+            stackItem->setData(0, "other-player-stack");
+
+            QGraphicsTextItem *countText =
+                scene->addText(QString::number(count));
+            countText->setDefaultTextColor(Qt::white);
+            countText->setData(0, "other-player-stack");
+            countText->setPos(centerX - countText->boundingRect().width() / 2,
+                              centerY + CardHeight / 2 + 2);
+        };
+
         for (size_t playerIndex = 0; playerIndex < players.size(); ++playerIndex) {
             const ClientPlayerState *player = &players[playerIndex];
             if (!player || playerIndex > 2) {
                 continue;
             }
 
-            qreal drawX;
-            qreal drawY;
-            qreal discardX;
-            qreal discardY;
+            qreal drawX = 0;
+            qreal drawY = 0;
+            qreal discardX = 0;
+            qreal discardY = 0;
             qreal rotation;
             if (playerIndex == 0) {
-                drawX = sceneWidth / 2 - cardWidth - margin;
-                drawY = margin;
-                discardX = sceneWidth / 2 + margin;
-                discardY = margin;
+                drawX = TableMargin + CardWidth / 2;
+                drawY = TableMargin + CardHeight / 2;
+                discardX = sceneWidth - TableMargin - CardWidth / 2;
+                discardY = TableMargin + CardHeight / 2;
                 rotation = 180;
             } else if (playerIndex == 1) {
-                drawX = margin;
-                drawY = sceneHeight / 2 - cardHeight - margin;
-                discardX = margin;
-                discardY = sceneHeight / 2 + margin;
+                drawX = TableMargin + CardHeight / 2;
+                drawY = TableMargin + CardWidth / 2;
+                discardX = TableMargin + CardHeight / 2;
+                discardY = sceneHeight - TableMargin - CardWidth / 2;
                 rotation = 90;
             } else {
-                drawX = sceneWidth - cardWidth - margin;
-                drawY = sceneHeight / 2 - cardHeight - margin;
-                discardX = sceneWidth - cardWidth - margin;
-                discardY = sceneHeight / 2 + margin;
+                drawX = sceneWidth - TableMargin - CardHeight / 2;
+                drawY = TableMargin + CardWidth / 2;
+                discardX = sceneWidth - TableMargin - CardHeight / 2;
+                discardY = sceneHeight - TableMargin - CardWidth / 2;
                 rotation = -90;
             }
 
-            drawStack(scene, drawX, drawY, rotation, player->drawStackSize);
-            drawStack(scene, discardX, discardY, rotation, player->discardStackSize);
+            drawOtherStack(drawX, drawY, rotation, player->drawStackSize, nullptr);
+            drawOtherStack(discardX, discardY, rotation, player->discardStackSize,
+                           player->topDiscardCard);
         }
 }
 
