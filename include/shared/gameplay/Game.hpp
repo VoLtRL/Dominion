@@ -39,6 +39,9 @@ private:
 public:
   Game() = default;
 
+  bool initialize(const GameMode& gameMode,const std::vector<QString> &playerNames);
+  Player* getPlayerByName(const std::string& name);
+
   const std::vector<TableStack> &getKingdomStacks();
   const std::vector<TableStack> &getBasicStacks();
 
@@ -46,6 +49,10 @@ public:
   const std::vector<Player> &getPlayers() const;
 
   const Player &getActivePlayer() const;
+  GamePhase getCurrentPhase() const { return currentPhase; }
+  int getCurrentPlayerMoney() const { return currentPlayerMoney; }
+  int getCurrentPlayerActions() const { return currentPlayerActions; }
+  int getCurrentPlayerPurchasesLeft() const { return currentPlayerPurchaseLeft; }
   void setActivePlayer(Player *player);
 
   void setCurrentCardDistribution(

@@ -5,6 +5,7 @@
 
 #include "client/network/NetworkManager.hpp"
 #include "shared/gameplay/Game.hpp"
+#include "client/Game/ClientGameState.hpp"
 
 class MainMenu;
 class CreateGame;
@@ -37,7 +38,6 @@ private:
     GameTable *gameTable;
     JoinRoom *joinRoom;
     QTimer reconnectTimer;
-    std::optional<Game> instance;
 
 private slots:
     void applySettings(const QString &newPlayerName, const QString &hostAddress, quint16 hostPort);
@@ -57,19 +57,28 @@ public:
 
 private:
     void createPages();
+    void showPage(Page page);
+
     void connectNavigation();
     void connectNetwork();
-    void showPage(Page page);
+
     bool ensureConnected();
     void leaveRoom();
+
     void handleRoomCreated(const QJsonObject &data);
     void handleRoomCreationFailed(const QJsonObject &data);
     void handleRoomJoinFailed(const QJsonObject &data);
+
     void handlePlayerJoined(const QJsonObject &data);
     void handleRoomJoined(const QJsonObject &data);
     void handlePlayerLeft(const QJsonObject &data);
+
     void handleGameStarted(const QJsonObject &data);
+
     void handleRoomList(const QJsonObject &data);
+
     void handleTurnState(const QJsonObject &data);
     void handleGameState(const QJsonObject &data);
+    
+    void updateGameState(const Network::GameStatePayload &payload);
 };

@@ -298,7 +298,6 @@ void MainWindow::handleGameStarted(const QJsonObject &data) {
         return;
     }
 
-    instance.emplace();
     showPage(Page::GameTable);
 }
 
@@ -317,12 +316,48 @@ void MainWindow::handleGameState(const QJsonObject &data) {
         return;
     }
 
-    if (instance) {
-        // Update the game instance with the state to initialize the game table.
-    } else {
-        qWarning() << "Received GAME_STATE payload but no game instance exists.";
+    updateGameState(*payload);
+}
+
+void MainWindow::updateGameState(const Network::GameStatePayload &payload) {
+    ClientGameState instance;
+
+    instance.selfName = payload.selfName;
+    instance.currentPhase = payload.currentPhase;
+
+    instance.currentPlayerActions = payload.actions;
+    instance.currentPlayerPurchasesLeft = payload.buys;
+    instance.currentPlayerMoney = payload.money;
+
+    instance.hand = payload.hand;
+
+    instance.selfDrawStackSize = payload.drawStackCount;
+
+    instance.selfDiscardStackSize = payload.discardStackCount;
+    instance.selfTopDiscardCard = payload.topCardDiscardPile;
+
+    instance.cardsInPlay = payload.cardsInPlay;
+
+    instance.otherPlayers.clear();
+    for (const auto &playerState : payload.otherPlayers) {
+        ClientPlayerState clientPlayerState;
+
+        clientPlayerState.name = playerState.playerName;
+
+        clientPlayerState.handSize = playerState.handSize;
+        clientPlayerState.drawStackSize = playerState.drawStackSize;
+
+        clientPlayerState.discardStackSize = playerState.discardStackSize;
+        clientPlayerState.topDiscardCard = playerState.topDiscardCard;
+
+        clientPlayerState.cardsInPlay = playerState.cardsInPlay;
+
+        clientPlayerState.isActive = playerState.isActive;
+
+        instance.otherPlayers.push_back(clientPlayerState);
     }
 
+    gameTable->updateGameState(instance);
 }
 
 void MainWindow::handleRoomList(const QJsonObject &data) {

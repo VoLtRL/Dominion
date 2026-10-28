@@ -2,7 +2,7 @@
 #include "client/VisualCard.hpp"
 
     
-VisualCard* drawCard(QGraphicsScene *scene, const Card* card, int x, int y, Location location) {
+VisualCard* drawCard(QGraphicsScene *scene, const Card* card, qreal x, qreal y, Location location) {
     VisualCard *visualCard = new VisualCard(
         VisualCard::getNewId(),
         QString::fromStdString(card->getName()),
@@ -42,7 +42,8 @@ std::vector<VisualCard*> drawCardsInPlay(QGraphicsScene *scene, const std::vecto
     return visualCardsInPlay;
 }
 
-void drawBackCard(QGraphicsScene *scene, qreal x, qreal y, int width, int height) {
+
+QGraphicsPixmapItem* drawBackCard(QGraphicsScene *scene, qreal x, qreal y, int width, int height) {
     QPixmap backPixmap(":/images/back_card.png");
 
     backPixmap = backPixmap.scaled(width, height, Qt::KeepAspectRatio, Qt::SmoothTransformation);
@@ -51,6 +52,7 @@ void drawBackCard(QGraphicsScene *scene, qreal x, qreal y, int width, int height
     
     backCard->setPos(x,y);
     scene->addItem(backCard);
+    return backCard;
 }
 
 void drawStack(QGraphicsScene *scene, qreal x, qreal y,int rotation, quint16 count) {

@@ -34,6 +34,9 @@ add_executable(DominionServer
 
 target_include_directories(DominionServer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(DominionServer PRIVATE Qt6::Core Qt6::Network)
+# add sanitizers for debugging server
+target_compile_options(DominionServer PRIVATE -fsanitize=address)
+target_link_options(DominionServer PRIVATE -fsanitize=address)
 
 # client
 file(GLOB_RECURSE CLIENT_SOURCES CONFIGURE_DEPENDS 

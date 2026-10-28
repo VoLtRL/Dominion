@@ -3,6 +3,87 @@
 #include <iostream>
 #include <limits>
 #include <ostream>
+#include <random>
+
+bool Game::initialize(const GameMode& gameMode,const std::vector<QString> &playerNames) {
+  setCurrentCardDistribution(gameMode.getCardDistribution());
+  for (const QString &name : playerNames) {
+    addPlayer(Player(name.toStdString()));
+  }
+
+  std::cout << "Game initialized with " << players.size() << " players." << std::endl;
+
+  auto seed = std::mt19937(std::random_device{}());
+
+  std::shuffle(players.begin(), players.end(), seed);
+
+  activePlayer = &players[0];
+  currentPhase = GamePhase::ACTION;
+
+  currentPlayerMoney = 0;
+  currentPlayerActions = 1;
+  currentPlayerPurchaseLeft = 1;
+
+  CardsInPlay.clear();
+  revealedCards.clear();
+  trash.clear();
+
+  auto usualDistribution = std::map<const Card *, int>();
+    usualDistribution.insert({{Factory::get("Copper"), 60 - 7 * players.size()},
+                            {Factory::get("Curse"), 10 * (players.size() - 1)},
+                            {Factory::get("Silver"), 40},
+                            {Factory::get("Gold"), 30}});
+  switch (players.size()) {
+    case 1:
+    case 2:
+      usualDistribution.insert({
+          {Factory::get("Estate"), 8},
+          {Factory::get("Duchy"), 8},
+          {Factory::get("Province"), 8},
+      });
+    break;
+    case 3:
+    case 4:
+      usualDistribution.insert({
+          {Factory::get("Estate"), 12},
+          {Factory::get("Duchy"), 12},
+          {Factory::get("Province"), 12},
+      });
+      break;
+  }
+
+  auto combinedDistribution = std::map<const Card *, int>(usualDistribution);
+
+  combinedDistribution.insert(currentCardDistribution.begin(), currentCardDistribution.end());
+
+  setCurrentCardDistribution(combinedDistribution);
+
+  for (Player &player : players) {
+    CardStack drawStack = CardStack(
+        {Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
+         Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
+         Factory::get("Estate"), Factory::get("Estate"),
+         Factory::get("Estate")});
+    drawStack.shuffle();
+    Hand hand;
+    CardStack discardStack = CardStack();
+    hand.refillHandFromDrawStack(drawStack, discardStack);
+    player.setHand(hand);
+    player.setDrawStack(drawStack);
+    player.setDiscardStack(discardStack);
+  }
+
+  return true;
+}
+
+Player* Game::getPlayerByName(const std::string& name) {
+  for (auto& player : players) {
+    if (player.getString() == name) {
+      return &player;
+    }
+  }
+  return nullptr;
+}
 
 const std::vector<Player> &Game::getPlayers() const { return players; }
 

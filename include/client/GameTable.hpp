@@ -6,6 +6,7 @@
 #include "shared/abstract/Card.hpp"
 #include "shared/player/Player.hpp"
 #include "client/VisualCard.hpp"
+#include "client/Game/ClientGameState.hpp"
 
 #include <QtGlobal>
 
@@ -23,6 +24,8 @@ private:
     Ui::GameTable *ui;
     QGraphicsScene *scene;
 
+    ClientGameState gameState;
+
     QVector<VisualCard*> visualCardsInHand;
     QVector<VisualCard*> visualCardsInPlay;
 
@@ -37,13 +40,16 @@ public:
     explicit GameTable(QWidget *parent = nullptr);
     ~GameTable() override;
 
+    void updateGameState(ClientGameState newGameState);
+
+    void drawTable();
+
     void drawPlayerHand(const std::vector<const Card*> hand, qreal x, qreal y);
-    void drawOtherPlayersHands(const std::vector<const Player*>& players);
-    void drawOtherCardsInPlay(
-        const std::vector<std::vector<const Card*>>& cardsInPlayByPlayer);
-    void drawOtherPlayersDrawAndDiscard(const std::vector<const Player*>& players);
+    void drawOtherPlayersHands(const std::vector<ClientPlayerState>& players);
+    void drawOtherCardsInPlay(const std::vector<ClientPlayerState>& players);
+    void drawOtherPlayersDrawAndDiscard(const std::vector<ClientPlayerState>& players);
     void drawCardsInPlay(const std::vector<const Card*> cardsInPlay, qreal x, qreal y);
-    void drawStacks(quint16 cardsInDraw, quint16 cardsInDiscard);
+    void drawStacks(quint16 cardsInDraw, quint16 cardsInDiscard, const Card* topDiscardCard);
         
     void displayMessage(QString message);
     

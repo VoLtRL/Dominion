@@ -129,7 +129,7 @@ void GameServer::handleCreateRoom(const QJsonObject &data, Client *client) {
         return;
     }
 
-    room->setGameMode(&payload->gameMode);
+    room->setGameMode(payload->gameMode);
 
     Network::CreatedRoomPayload roomCreated(
         roomMgr.getRoomByClient(client)->getId(),
@@ -232,7 +232,7 @@ void GameServer::handleLeaveRoom(Client *client) {
 void GameServer::handleStartGame(Client *client) {
     RoomManager &roomMgr = RoomManager::getInstance();
     Room *room = roomMgr.getRoomByClient(client);
-    if (!room /*|| !roomMgr.startGame(client)*/) {
+    if (!room || !roomMgr.startGame(client)) {
         return;
     }
 
@@ -241,6 +241,11 @@ void GameServer::handleStartGame(Client *client) {
         sendAction(
             QString::fromStdString(actionTypeToString(ActionType::START_GAME)),
             gameStarted.toJson(),
+            roomClient->getSocket());
+
+        sendAction(
+            QString::fromStdString(actionTypeToString(ActionType::GAME_STATE)),
+            room->getGameStatePayload().toJson(),
             roomClient->getSocket());
     }
 }

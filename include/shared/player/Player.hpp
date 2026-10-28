@@ -47,6 +47,17 @@ public:
 
         };
 
+  Player(std::string playerName) : name(playerName) {
+  };
+
+  void setHand(const Hand &a_hand) { hand = a_hand; }
+
+  void setDrawStack(const CardStack &a_drawStack) { drawStack = a_drawStack; }
+
+  void setDiscardStack(const CardStack &a_discardStack) {
+    discardStack = a_discardStack;
+  }
+
   /**
    * @brief Gets the player's hand.
    * @return A reference to the player's hand.
