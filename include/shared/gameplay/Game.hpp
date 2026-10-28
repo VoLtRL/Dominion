@@ -1,6 +1,8 @@
 #pragma once
 
 #include <vector>
+#include <string>
+#include <algorithm>
 
 #include "shared/events/AttackEvent.hpp"
 #include "shared/player/Player.hpp"
@@ -12,82 +14,11 @@
 class Game {
 private:
   std::vector<Player> players;
-  const std::vector<GameMode> gameModes = {
-      GameMode("Les premières parties",
-               "Configuration recommandée pour découvrir le jeu",
-               {{Factory::get("Workshop"), 10},
-                {Factory::get("Woodcutter"), 10},
-                {Factory::get("Cellar"), 10},
-                {Factory::get("Moat"), 10},
-                {Factory::get("Smithy"), 10},
-                {Factory::get("Market"), 10},
-                {Factory::get("Militia"), 10},
-                {Factory::get("Mine"), 10},
-                {Factory::get("Remodel"), 10},
-                {Factory::get("Village"), 10}}),
-
-      GameMode("Richesses et trésors",
-               "Aventurier, Bureaucrate, Chancelier, Chapelle, Festin, "
-               "Laboratoire, Marché, Mine, Prêteur sur gages, Salle du Trône",
-               {{Factory::get("Adventurer"), 10},
-                {Factory::get("Bureaucrat"), 10},
-                {Factory::get("Chancellor"), 10},
-                {Factory::get("Chapel"), 10},
-                {Factory::get("Feast"), 10},
-                {Factory::get("Laboratory"), 10},
-                {Factory::get("Market"), 10},
-                {Factory::get("Mine"), 10},
-                {Factory::get("Moneylender"), 10},
-                {Factory::get("ThroneRoom"), 10}}),
-
-      GameMode("Interaction",
-               "Bibliothèque, Bureaucrate, Chambre du conseil, Chancelier, "
-               "Douves, Espion, Festival, Milice, Village, Voleur",
-               {{Factory::get("Library"), 10},
-                {Factory::get("Bureaucrat"), 10},
-                {Factory::get("CouncilRoom"), 10},
-                {Factory::get("Chancellor"), 10},
-                {Factory::get("Moat"), 10},
-                {Factory::get("Spy"), 10},
-                {Factory::get("Festival"), 10},
-                {Factory::get("Militia"), 10},
-                {Factory::get("Village"), 10},
-                {Factory::get("Thief"), 10}}),
-
-      GameMode(
-          "Changement de taille",
-          "Atelier, Bûcheron, Cave, Chapelle, Festin, Jardins, Laboratoire, "
-          "Sorcière, Village, Voleur",
-          {{Factory::get("Workshop"), 10},
-           {Factory::get("Woodcutter"), 10},
-           {Factory::get("Cellar"), 10},
-           {Factory::get("Chapel"), 10},
-           {Factory::get("Feast"), 10},
-           {Factory::get("Gardens"), 12},
-           {Factory::get("Laboratory"), 10},
-           {Factory::get("Witch"), 10},
-           {Factory::get("Village"), 10},
-           {Factory::get("Thief"), 10}}),
-
-      GameMode("Place du Village",
-               "Bibliothèque, Bûcheron, Bureaucrate, Cave, Festival, Forgeron, "
-               "Marché, Rénovation, Salle du Trône, Village",
-               {{Factory::get("Library"), 10},
-                {Factory::get("Woodcutter"), 10},
-                {Factory::get("Bureaucrat"), 10},
-                {Factory::get("Cellar"), 10},
-                {Factory::get("Festival"), 10},
-                {Factory::get("Smithy"), 10},
-                {Factory::get("Market"), 10},
-                {Factory::get("Remodel"), 10},
-                {Factory::get("ThroneRoom"), 10},
-                {Factory::get("Village"), 10}})};
-
+  
   std::vector<TableStack> KingdomStacks;
   std::vector<TableStack> BasicStacks;
 
   Player *activePlayer = nullptr;
-  const GameMode *currentGameMode = nullptr;
 
   GamePhase currentPhase;
 
@@ -116,9 +47,6 @@ public:
 
   const Player &getActivePlayer() const;
   void setActivePlayer(Player *player);
-
-  void setCurrentGameMode(const GameMode *gameMode);
-  const GameMode *getCurrentGameMode() const;
 
   void setCurrentCardDistribution(
       const std::map<const Card *, int> &cardDistribution);
@@ -231,7 +159,7 @@ public:
   bool removePendingPlayers(Player* p){
     auto i = std::find(pendingPlayers.begin(), pendingPlayers.end(), p);
     if(i == pendingPlayers.end()) { return false; }
-    std::remove(pendingPlayers.begin(), pendingPlayers.end(), i);
+    pendingPlayers.erase(i);
     return true;
   }
 };

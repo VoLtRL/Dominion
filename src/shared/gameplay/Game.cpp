@@ -12,9 +12,6 @@ void Game::addPlayer(Player player) { players.push_back(player); }
 
 void Game::setActivePlayer(Player *player) { activePlayer = player; }
 
-void Game::setCurrentGameMode(const GameMode *gameMode) {
-  currentGameMode = gameMode;
-}
 void Game::insertCardDistribution(
     const std::map<const Card *, int> &cardDistribution) {
   for (const auto &pair : cardDistribution) {
@@ -27,7 +24,6 @@ void Game::setCurrentCardDistribution(
   currentCardDistribution = cardDistribution;
 }
 
-const GameMode *Game::getCurrentGameMode() const { return currentGameMode; }
 
 std::vector<std::string> Game::parseLines(const std::string &str) const {
   std::vector<std::string> lines;
@@ -369,7 +365,7 @@ Player Game::getWinner() const {
 
   return winner;
 }
-
+/*
 void Game::launchGame() {
   std::cout << "Welcome to Dominion!" << std::endl;
   std::cout << "Available game modes:" << std::endl;
@@ -462,6 +458,7 @@ void Game::launchGame() {
   std::cout << "Game is over!" << std::endl;
   std::cout << "The winner is:" << getWinner().getString() << std::endl;
 }
+*/
 
 const std::vector<TableStack> &Game::getKingdomStacks() {
   return KingdomStacks;
@@ -639,7 +636,7 @@ bool Game::applyProtection(Player* p, Player* attacker, const Card* card) {
   if(attacker != activePlayer) { return false; }
   auto i = std::find(currentTargets.begin(), currentTargets.end(), p);
   if(i != currentTargets.end()) {
-    std::remove(currentTargets.begin(), currentTargets.end(), i);
+    currentTargets.erase(i);
     return true;
   }
   return false;

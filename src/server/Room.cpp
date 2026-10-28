@@ -33,6 +33,10 @@ void Room::removePlayer(Client *player) {
     }
 }
 
+void Room::setGameMode(const GameMode *gameMode) {
+    chosenGameMode = gameMode;
+}
+
 bool Room::startGame(Client *requester) {
     // only the host can start the game, and there must be at least 2 players, and the game must not have already started
     if (requester != m_host || m_players.size() < 2 || isGameStarted()) {
@@ -40,6 +44,6 @@ bool Room::startGame(Client *requester) {
     }
 
     m_game = std::make_unique<Game>();
-    m_game->launchGame();
+    // m_game->launchGame();
     return true;
 }

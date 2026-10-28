@@ -5,6 +5,8 @@
 #include <QJsonObject>
 
 #include "shared/structs/Payloads.hpp"
+#include "shared/gameplay/GameMode.hpp"
+#include "client/PredefinedGameModes.hpp"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class CreateGame; }

@@ -5,6 +5,7 @@
 #include <optional>
 #include "shared/abstract/Card.hpp"
 #include "shared/gameplay/Factory.hpp"
+#include "shared/gameplay/GameMode.hpp"
 
 namespace Network {
 
@@ -116,16 +117,18 @@ namespace Network {
     struct CreateRoomPayload : public Payload {
         QString playerName;
         QString roomName;
+        GameMode gameMode;
         int botCount;
         int playerMaxCount;
 
-        CreateRoomPayload(const QString &playerName, const QString &roomName, int botCount, int playerMaxCount)
-            : playerName(playerName), roomName(roomName), botCount(botCount), playerMaxCount(playerMaxCount) {}
+        CreateRoomPayload(const QString &playerName, const QString &roomName, const GameMode &gameMode, int botCount, int playerMaxCount)
+            : playerName(playerName), roomName(roomName), gameMode(gameMode), botCount(botCount), playerMaxCount(playerMaxCount) {}
         
         QJsonObject toJson() const {
             QJsonObject json;
             json["playerName"] = playerName;
             json["roomName"] = roomName;
+            json["gameMode"] = gameMode.toJson();
             json["botCount"] = botCount;
             json["playerMaxCount"] = playerMaxCount;
             return json;
@@ -135,9 +138,14 @@ namespace Network {
             if (!json.contains("playerName") || !json.contains("roomName") || !json.contains("botCount") || !json.contains("playerMaxCount")) {
                 return std::nullopt;
             }
+            auto gameModeOpt = GameMode::fromJson(json["gameMode"].toObject());
+            if (!gameModeOpt) {
+                return std::nullopt;
+            }
             return CreateRoomPayload(
                 json["playerName"].toString(),
                 json["roomName"].toString(),
+                gameModeOpt.value(),
                 json["botCount"].toInt(),
                 json["playerMaxCount"].toInt()
             );
@@ -484,7 +492,7 @@ struct GameStatePayload : public Payload {
     }
 
     static std::optional<GameStatePayload> fromJson(const QJsonObject &json) {
-        if (!json.contains("roomId") || !json.contains("activePlayerName") || !json.contains("phase") ||
+        if (!json.contains("activePlayerName") || !json.contains("phase") ||
             !json.contains("actions") || !json.contains("buys") || !json.contains("money") ||
             !json.contains("hand") || !json.contains("cardsInPlay") || !json.contains("drawStackCount") ||
             !json.contains("discardStackCount") || !json.contains("topCardDiscardPile") || !json.contains("otherPlayers")) {

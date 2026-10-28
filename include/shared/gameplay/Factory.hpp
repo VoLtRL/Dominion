@@ -53,7 +53,7 @@ class Factory{
             m_card_map["Chancellor"] = std::make_unique<Chancellor>();
             m_card_map["Chapel"] = std::make_unique<Chapel>();
             m_card_map["Copper"] = std::make_unique<Copper>();
-            m_card_map["CouncilRoom"] = std::make_unique<CouncilRoom>();
+            m_card_map["Council Room"] = std::make_unique<CouncilRoom>();
             m_card_map["Curse"] = std::make_unique<Curse>();
             m_card_map["Duchy"] = std::make_unique<Duchy>();
             m_card_map["Estate"] = std::make_unique<Estate>();
@@ -74,7 +74,7 @@ class Factory{
             m_card_map["Smithy"] = std::make_unique<Smithy>();
             m_card_map["Spy"] = std::make_unique<Spy>();
             m_card_map["Thief"] = std::make_unique<Thief>();
-            m_card_map["ThroneRoom"] = std::make_unique<ThroneRoom>();
+            m_card_map["Throne Room"] = std::make_unique<ThroneRoom>();
             m_card_map["Village"] = std::make_unique<Village>();
             m_card_map["Witch"] = std::make_unique<Witch>();
             m_card_map["Woodcutter"] = std::make_unique<Woodcutter>();

@@ -7,6 +7,10 @@ CreateGame::CreateGame(QWidget *parent) : QWidget(parent), ui(new Ui::CreateGame
 
     connect(ui->goBackToMenuButton, &QPushButton::clicked, this, &CreateGame::onGoBackToMenuClicked);
     connect(ui->createRoomButton, &QPushButton::clicked, this, &CreateGame::onCreateRoomClicked);
+
+    for (const auto &gameMode : PredefinedGameModes::getGameModes()) {
+        ui->GameModeList->addItem(QString::fromStdString(gameMode.getName()));
+    }
 }
 
 void CreateGame::onGoBackToMenuClicked() {
@@ -45,9 +49,17 @@ QString CreateGame::getNumBots() const {
 }
 
 Network::CreateRoomPayload CreateGame::getRoomData() const {
+
+    GameMode gameMode = PredefinedGameModes::getGameModes().front();
+
+    if(!(ui->GameModeList->currentRow() < 0) || !(ui->GameModeList->currentRow() >= PredefinedGameModes::getGameModes().size())) {
+        gameMode = PredefinedGameModes::getGameModes()[ui->GameModeList->currentRow()];
+    }
+
     return Network::CreateRoomPayload(
         "PlaceholderPlayer",
         getRoomName(),
+        gameMode,
         getNumBots().toInt(),
         getNumPlayers().toInt()
     );

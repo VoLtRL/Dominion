@@ -5,6 +5,7 @@
 #include <QString>
 #include "server/Client.hpp"
 #include "shared/gameplay/Game.hpp"
+#include "shared/gameplay/GameMode.hpp"
 
 class Room {
 public:
@@ -21,7 +22,10 @@ public:
     bool isFull() const { return m_players.size() >= 4; }
     bool isGameStarted() const { return m_game != nullptr; }
 
+    void setGameMode(const GameMode *gameMode);
+
     int getPlacesLeft() const { return 4 - m_players.size(); }
+    const GameMode* getGameMode() const { return chosenGameMode; }
 
     bool addPlayer(Client *player);
     void removePlayer(Client *player);
@@ -33,4 +37,5 @@ private:
     Client *m_host{nullptr};
     std::vector<Client*> m_players;
     std::unique_ptr<Game> m_game{nullptr};
+    const GameMode* chosenGameMode{nullptr};
 };

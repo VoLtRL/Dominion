@@ -3,23 +3,38 @@
 #include <string>
 
 enum class ActionType {
+
     CREATE_ROOM,
     ROOM_CREATED,
     ROOM_CREATION_FAILED,
-    ROOM_JOIN_FAILED,
+
     REQUEST_ROOM_LIST,
+
     JOIN_ROOM,
     PLAYER_JOINED,
+    ROOM_JOIN_FAILED,
+
     LEAVE_ROOM,
     PLAYER_LEFT,
+
     START_GAME,
-    PLAY_CARD,
-    TURN_STATE,
+
+    // update game state for the client
     GAME_STATE,
+    TURN_STATE,
+
+    // client actions
+    SELECTION_REQUEST,
+    BUY_CARD,
+    PLAY_CARD,
     END_TURN,
-    ERROR,
     REACTION,
     INVALID_ACTION,
+
+    NEXT_PHASE,
+    ERROR,
+    GAME_ENDED,
+
 
 };
 
@@ -39,6 +54,10 @@ inline std::string actionTypeToString(ActionType actionType) {
         case ActionType::TURN_STATE: return "TURN_STATE";
         case ActionType::GAME_STATE: return "GAME_STATE";
         case ActionType::END_TURN: return "END_TURN";
+        case ActionType::NEXT_PHASE: return "NEXT_PHASE";
+        case ActionType::GAME_ENDED: return "GAME_ENDED";
+        case ActionType::BUY_CARD: return "BUY_CARD";
+        case ActionType::SELECTION_REQUEST: return "SELECTION_REQUEST";
         case ActionType::ERROR: return "ERROR";
         case ActionType::REACTION: return "REACTION";
         default: return "INVALID_ACTION";
@@ -60,6 +79,10 @@ inline ActionType stringToActionType(const std::string &actionStr) {
     if (actionStr == "TURN_STATE") return ActionType::TURN_STATE;
     if (actionStr == "GAME_STATE") return ActionType::GAME_STATE;
     if (actionStr == "END_TURN") return ActionType::END_TURN;
+    if (actionStr == "NEXT_PHASE") return ActionType::NEXT_PHASE;
+    if (actionStr == "GAME_ENDED") return ActionType::GAME_ENDED;
+    if (actionStr == "BUY_CARD") return ActionType::BUY_CARD;
+    if (actionStr == "SELECTION_REQUEST") return ActionType::SELECTION_REQUEST;
     if (actionStr == "ERROR") return ActionType::ERROR;
     if (actionStr == "REACTION") return ActionType::REACTION;
     return ActionType::INVALID_ACTION;

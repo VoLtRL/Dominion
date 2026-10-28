@@ -120,10 +120,21 @@ void GameServer::handleCreateRoom(const QJsonObject &data, Client *client) {
     client->setName(payload->playerName);
     roomMgr.createRoom(*payload, client);
 
+    auto room = roomMgr.getRoomByClient(client);
+    if (!room) {
+        sendAction(
+            QString::fromStdString(actionTypeToString(ActionType::ROOM_CREATION_FAILED)),
+            QJsonObject{{"error", "Room creation failed."}},
+            client->getSocket());
+        return;
+    }
+
+    room->setGameMode(&payload->gameMode);
+
     Network::CreatedRoomPayload roomCreated(
         roomMgr.getRoomByClient(client)->getId(),
         payload->roomName);
-    sendAction(
+        sendAction(
         QString::fromStdString(actionTypeToString(ActionType::ROOM_CREATED)),
         roomCreated.toJson(),
         client->getSocket());
