@@ -245,7 +245,7 @@ void GameServer::handleStartGame(Client *client) {
 
         sendAction(
             QString::fromStdString(actionTypeToString(ActionType::GAME_STATE)),
-            room->getGameStatePayload().toJson(),
+            room->getGameStatePayload(roomClient).toJson(),
             roomClient->getSocket());
     }
 }

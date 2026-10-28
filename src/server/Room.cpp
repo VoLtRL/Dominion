@@ -9,19 +9,42 @@ Room::Room(int id, const QString &name, Client *host)
     }
 }
 
-Network::GameStatePayload Room::getGameStatePayload() const {
+Network::GameStatePayload Room::getGameStatePayload(const Client *client) const {
+    const Player *self = client ? client->getAssociatedPlayer() : nullptr;
+    if (!m_game || !self) {
+        return Network::GameStatePayload("", "", 0, 0, 0, Hand(), {}, 0, 0, nullptr, {});
+    }
+
+    std::vector<Network::PlayerState> otherPlayers;
+    for (const Client *roomClient : m_players) {
+        if (roomClient == client || !roomClient->getAssociatedPlayer()) {
+            continue;
+        }
+
+        const Player *player = roomClient->getAssociatedPlayer();
+        const auto &discardStack = player->getDiscardStack();
+        otherPlayers.push_back(Network::PlayerState(
+            player->getName().c_str(),
+            static_cast<int>(player->getHand().getSize()),
+            player->getDrawStack().getSize(),
+            discardStack.getSize(),
+            discardStack.getStack().empty() ? nullptr : discardStack.getStack().top(),
+            player->getCardsInPlay(),
+            player == &m_game->getActivePlayer()));
+    }
+
     Network::GameStatePayload payload(
-        m_game->getActivePlayer().getName().c_str(),
+        self->getName().c_str(),
         toString(m_game->getCurrentPhase()).c_str(),
         m_game->getCurrentPlayerActions(),
         m_game->getCurrentPlayerPurchasesLeft(),
         m_game->getCurrentPlayerMoney(),
-        m_game->getActivePlayer().getHand(),
+        self->getHand(),
         m_game->getCardsInPlay(),
-        m_game->getActivePlayer().getDrawStack().getSize(),
-        m_game->getActivePlayer().getDiscardStack().getSize(),
-        m_game->getActivePlayer().getDiscardStack().getStack().empty() ? nullptr : m_game->getActivePlayer().getDiscardStack().getStack().top(),
-        {}
+        self->getDrawStack().getSize(),
+        self->getDiscardStack().getSize(),
+        self->getDiscardStack().getStack().empty() ? nullptr : self->getDiscardStack().getStack().top(),
+        otherPlayers
     );
     return payload;
 }

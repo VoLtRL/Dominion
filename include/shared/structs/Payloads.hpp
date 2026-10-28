@@ -470,9 +470,9 @@ struct GameStatePayload : public Payload {
         json["actions"] = actions;
         json["buys"] = buys;
         json["money"] = money;
-        QJsonObject handJson;
+        QJsonArray handJson;
         for (const auto &card : hand.getCards()) {
-            handJson[QString::fromStdString(card->getName())] = card->getName().c_str();
+            handJson.append(QString::fromStdString(card->getName()));
         }
         json["hand"] = handJson;
         QJsonArray cardsInPlayArray;
@@ -492,12 +492,15 @@ struct GameStatePayload : public Payload {
     }
 
     static std::optional<GameStatePayload> fromJson(const QJsonObject &json) {
-        if (!json.contains("selfName") || !json.contains("currentPhase") || !json.contains("actions") || !json.contains("buys") || !json.contains("money") || !json.contains("handSize") || !json.contains("cardsInPlay") || !json.contains("drawStackCount") || !json.contains("discardStackCount") || !json.contains("topCardDiscardPile") || !json.contains("otherPlayers")) {
+        if (!json.contains("selfName") || !json.contains("currentPhase") || !json.contains("actions") || !json.contains("buys") || !json.contains("money") || !json.contains("hand") || !json.contains("cardsInPlay") || !json.contains("drawStackCount") || !json.contains("discardStackCount") || !json.contains("topCardDiscardPile") || !json.contains("otherPlayers")) {
             return std::nullopt;
         }
         Hand hand;
-        for (const auto &cardJson : json["hand"].toObject()) {
-            hand.addCard(Factory::get(cardJson.toString().toStdString()));
+        for (const auto &cardJson : json["hand"].toArray()) {
+            const Card *card = Factory::get(cardJson.toString().toStdString());
+            if (card) {
+                hand.addCard(card);
+            }
         }
         std::vector<const Card*> cardsInPlay;
         for (const auto &cardJson : json["cardsInPlay"].toArray()) {

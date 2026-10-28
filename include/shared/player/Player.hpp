@@ -63,6 +63,9 @@ public:
    * @return A reference to the player's hand.
    */
   const Hand &getHand() const { return hand; }
+  const std::vector<const Card *> &getCardsInPlay() const {
+    return cardsInPlay;
+  }
 
   /**
    * @brief Gets the player's draw stack.

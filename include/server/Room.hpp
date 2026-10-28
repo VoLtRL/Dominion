@@ -14,7 +14,7 @@ public:
     Room(int id, const QString &name, Client *host);
     ~Room() = default;
 
-    Network::GameStatePayload getGameStatePayload() const;
+    Network::GameStatePayload getGameStatePayload(const Client *client) const;
 
     int getId() const { return m_id; }
     QString getName() const { return m_name; }

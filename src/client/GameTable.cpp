@@ -43,6 +43,8 @@ void GameTable::drawTable() {
     // Draw the table
     drawPlayerHand(gameState.hand.getCards(), (sceneWidth - handWidth) / 2, sceneHeight - cardHeight - bottomMargin);
     drawStacks(gameState.selfDrawStackSize, gameState.selfDiscardStackSize, gameState.selfTopDiscardCard);
+    drawCardsInPlay(gameState.cardsInPlay, (sceneWidth - cardWidth) / 2,
+                    sceneHeight / 2 - cardHeight / 2);
     drawOtherPlayersHands(gameState.otherPlayers);
     drawOtherPlayersDrawAndDiscard(gameState.otherPlayers);
     drawOtherCardsInPlay(gameState.otherPlayers);
