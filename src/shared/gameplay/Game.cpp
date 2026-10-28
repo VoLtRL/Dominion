@@ -235,7 +235,7 @@ Game::chooseCardsFromSelection(const std::vector<const Card *> &selection,
 }
 
 void Game::clearRevealedCards() { revealedCards.clear(); }
-
+/*
 void Game::ActionPhase() {
   while (currentPlayerActions > 0) {
     std::cout << "You have " << currentPlayerActions << " actions left."
@@ -512,6 +512,7 @@ std::string Game::HUDFormat() const {
   return hud;
 }
 
+/*
 void Game::activateReactions(GameEvent *event) {
   for (Player &player : players) {
     auto possibleReactions = player.getAvailableReactions();
@@ -523,6 +524,7 @@ void Game::activateReactions(GameEvent *event) {
     }
   }
 }
+*/
 
 std::vector<Player *> Game::getOtherPlayers() {
   std::vector<Player *> res;
@@ -534,11 +536,9 @@ std::vector<Player *> Game::getOtherPlayers() {
   return res;
 }
 
+/*
 void Game::playAttackCard(const Card *card) {
   std::vector<Player *> others = getOtherPlayers();
-  AttackEvent event(card, *activePlayer,
-                    std::set(others.begin(), others.end()));
-  activateReactions(&event);
 
   std::set<Player *> newTargets;
 
@@ -551,6 +551,7 @@ void Game::playAttackCard(const Card *card) {
   const Attack* attack = dynamic_cast<const Attack*>(card);
   attack->attack(*this, *activePlayer, newTargets);
 }
+*/
 
 void Game::playAction(Player &p, const Card *card) {
 
@@ -602,6 +603,7 @@ bool Game::tryPlayTreasure(Player* p, const Card* card) {
   addCardToPlay(card);
   const Treasure* treasure = dynamic_cast<const Treasure*>(card);
   addGold(treasure->getCoins());
+  return true;
 }
 bool Game::tryPlayAllTreasures(Player* p) {
   if(p != activePlayer) {
@@ -609,8 +611,14 @@ bool Game::tryPlayAllTreasures(Player* p) {
     return false;
   }
   for(const Card* card : p->getHand().getCards()){
+    if(!canPlayTreasure(p, card)){
+      return false;
+    }
+  }
+  for(const Card* card : p->getHand().getCards()){
     tryPlayTreasure(p, card);
   }
+  return true;
 }
 
 bool Game::canPlayAttack(Player* p, const Card* card) const {
@@ -622,12 +630,27 @@ bool Game::canPlayAttack(Player* p, const Card* card) const {
 }
 
 bool Game::tryPlayAttack(Player* p, const Card* card) {
-
+  if(!canPlayAttack(p, card)) { return false; }
+  const Attack* at = dynamic_cast<const Attack*>(card);
+  at->attack(*this, *p, currentTargets);
+  return true;
 }
 
-bool Game::canReactToAttack(Player* p) const {
+bool Game::canPlayReaction(Player* p, const Card* card, EventType t, Player* actor) {
   if(!isPlayerPending(p)) { return false;}
-  if(!isPlayerTargetted(p)) { return false;}
+  if(!card->isA(CardType::REACTION)) { return false; }
+  if(!p->hasCardInHand(card)) { return false; }
+
+  const Reaction* reac = dynamic_cast<const Reaction*>(card);
+  if(!reac->canReact(t, p)) { return false; }
+  return true;
+}
+
+bool Game::tryPlayReaction(Player* p, const Card* card, EventType t, Player* actor) {
+  if(!canPlayReaction(p, card, t, actor)) { return false ;}
+  const Reaction* reac = dynamic_cast<const Reaction*>(card);
+  reac->react(t, *this, p, actor);
+  removePendingPlayers(p);
   return true;
 }
 
@@ -659,6 +682,7 @@ bool Game::tryBuyCard(Player* p, const Card* card) {
   currentPlayerMoney -= card->getCost();
   const Card* newCard = Factory::get(card->getName());
   p->addCardToDiscardStack(newCard);
+  return true;
 }
 
 // Là pour le coup je sais pas ce que tu comptes faire ou en tout cas comment le faire
@@ -684,11 +708,12 @@ bool Game::tryNextPhase(Player* p) {
       
       break;
   }
+  return false;
 }
 
 // Pareil jsp, c'est dans le cadre d'une demande de sélection, d'une réponse ?
 bool Game::trySendSelection(Player* p, const std::vector<const Card*>& selection) {
-
+  return false;
 }
 
 bool Game::hasGameEnded() const {
@@ -711,6 +736,7 @@ bool Game::hasGameEnded() const {
   if (emptyStacks >= 3) {
     return true;
   }
+  return false;
 }
 
 bool Game::performCleanup() {

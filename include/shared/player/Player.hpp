@@ -10,7 +10,7 @@
 #include "shared/abstract/Treasure.hpp"
 #include "shared/abstract/Victory.hpp"
 #include "shared/abstract/Cursed.hpp"
-#include "shared/events/AttackEvent.hpp"
+#include "shared/structs/EventType.hpp"
 
 class Reaction;
 class Attack;
@@ -18,8 +18,6 @@ class Action;
 class Treasure;
 class Victory;
 class Cursed;
-
-class GameEvent;
 
 class Game;
 
@@ -156,5 +154,6 @@ public:
 
   bool hasCardInHand(const Card *) const;
 
-  std::set<const Reaction *> getAvailableReactions() const;
+  std::set<EventType> getReactionTypes() const;
+  bool canReactToEvent(EventType t) const;
 };

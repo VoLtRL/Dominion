@@ -1,12 +1,21 @@
 #pragma once
 
 #include "shared/player/Player.hpp"
-#include "shared/abstract/GameEvent.hpp"
+#include "shared/structs/EventType.hpp"
 
-class GameEvent;
 
 class Reaction {
-public:
-  virtual bool canReact(GameEvent *event, Game *game, Player *owner) const = 0;
-  virtual void react(GameEvent *event, Game *game, Player *owner) const = 0;
+  private:
+    std::set<EventType> reactionTypes;
+  public:
+    bool canReact(EventType type, Player *owner) const {
+      return isEventTriggered(reactionTypes, type);
+    }
+    virtual void react(EventType type, Game &game, Player *owner, Player* actor) const = 0;
+    std::set<EventType> getTypes() const {
+      return reactionTypes;
+    }
+    void setReactionTypes(std::set<EventType> t) {
+      reactionTypes = t;
+    }
 };

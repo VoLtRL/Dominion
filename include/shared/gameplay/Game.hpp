@@ -4,7 +4,6 @@
 #include <string>
 #include <algorithm>
 
-#include "shared/events/AttackEvent.hpp"
 #include "shared/player/Player.hpp"
 #include "shared/gameplay/Factory.hpp"
 #include "shared/gameplay/GameMode.hpp"
@@ -34,7 +33,8 @@ private:
 
   const Card* pendingCard;
   std::vector<Player*> pendingPlayers;
-  std::vector<Player*> currentTargets;
+  std::set<Player*> currentTargets;
+  CardType currentType;
 
 public:
   Game() = default;
@@ -101,7 +101,7 @@ public:
 
   const Card *getCardFromCardDistrib(std::string cardName);
 
-  void activateReactions(GameEvent *event);
+  //void activateReactions(GameEvent *event);
 
   void playAttackCard(const Card *card);
 
@@ -121,7 +121,8 @@ public:
   bool canPlayAttack(Player* p, const Card* card) const;
   bool tryPlayAttack(Player* p, const Card* card);
 
-  bool canReactToAttack(Player* p) const;
+  bool canPlayReaction(Player* p, const Card* card, EventType type, Player* actor);
+  bool tryPlayReaction(Player* p, const Card* card, EventType type, Player* actor);
   bool applyProtection(Player*p, Player* attacker, const Card* card);
 
   bool canBuyCard(Player* p, const Card* card) const;
@@ -136,7 +137,7 @@ public:
   bool hasGameEnded() const;
   Player getWinner() const;
 
-  void setCurrentTargets(std::vector<Player*> targets){
+  void setCurrentTargets(std::set<Player*> targets){
     currentTargets = targets;
   }
 
@@ -161,5 +162,32 @@ public:
     if(i == pendingPlayers.end()) { return false; }
     pendingPlayers.erase(i);
     return true;
+  }
+
+  void setCurrentType(CardType t) {
+    currentType = t;
+  }
+
+  CardType getCurrentType() {
+    return currentType;
+  }
+
+  Player* getPlayerFromName(std::string name) const {
+    for(const Player& p : players) {
+      if(p.getName() == name) { return const_cast<Player*>(&p);}
+    }
+    return nullptr;
+  }
+
+  bool waitingForPlayers() const {
+    return !pendingPlayers.empty();
+  }
+
+  const Card* getPendingCard() const {
+    return pendingCard;
+  }
+
+  std::set<Player*> getCurrentTargets() const {
+    return currentTargets;
   }
 };

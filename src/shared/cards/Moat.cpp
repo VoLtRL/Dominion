@@ -8,15 +8,7 @@ void Moat::play(Game& g, Player& p) const {
     p.drawCardsToHand(2);
 }
 
-bool Moat::canReact(GameEvent *event, Game *game, Player *owner) const {
-  return event->getType() == EventType::AttackPlayed;
-}
-
-void Moat::react(GameEvent* event, Game* game, Player* owner) const {
-  if (event->getSource() == *owner){
-    std::cout << "Player " << owner->getName() << " is the source of the attack, so he won't be ignored !" << std::endl;
-    return;
-  }
-  std::cout << "Player " << owner->getName() << " is immuned to this attack !" << std::endl;
-  event->ignorePlayer(*owner);
+void Moat::react(EventType type, Game& game, Player* owner, Player* actor) const {
+  if(owner == actor) { return; }
+  game.applyProtection(owner, actor, this);
 }

@@ -90,12 +90,20 @@ bool Player::hasCardInHand(const Card *card) const {
   return false;
 }
 
-std::set<const Reaction *> Player::getAvailableReactions() const {
-  std::set<const Reaction *> reactions;
-  for (const Card *card : hand.getCards()) {
-    if (card->isA(CardType::REACTION)) {
-      reactions.insert(dynamic_cast<const Reaction *>(card));
+std::set<EventType> Player::getReactionTypes() const {
+  std::set<EventType> res;
+  for(const Card* card : hand.getCards()) {
+    if(card->isA(CardType::REACTION)) {
+      const Reaction* reac = dynamic_cast<const Reaction*>(card);
+      for(EventType t : reac->getTypes()) {
+        res.insert(t);
+      }
     }
   }
-  return reactions;
+  return res;
+}
+
+bool Player::canReactToEvent(EventType t) const {
+  EventTypeSet set = getReactionTypes();
+  return isEventTriggered(set, t);
 }
