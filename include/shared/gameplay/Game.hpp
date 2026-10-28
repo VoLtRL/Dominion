@@ -88,7 +88,6 @@ private:
 
   Player *activePlayer = nullptr;
   const GameMode *currentGameMode = nullptr;
-  GamePhase currentPhase = GamePhase::ACTION;
 
   GamePhase currentPhase;
 

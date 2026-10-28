@@ -14,6 +14,8 @@ enum class ActionType {
     PLAYER_LEFT,
     START_GAME,
     PLAY_CARD,
+    TURN_STATE,
+    GAME_STATE,
     END_TURN,
     INVALID_ACTION,
 };
@@ -31,6 +33,8 @@ inline std::string actionTypeToString(ActionType actionType) {
         case ActionType::PLAYER_LEFT: return "PLAYER_LEFT";
         case ActionType::START_GAME: return "START_GAME";
         case ActionType::PLAY_CARD: return "PLAY_CARD";
+        case ActionType::TURN_STATE: return "TURN_STATE";
+        case ActionType::GAME_STATE: return "GAME_STATE";
         case ActionType::END_TURN: return "END_TURN";
         default: return "INVALID_ACTION";
     }
@@ -48,6 +52,8 @@ inline ActionType stringToActionType(const std::string &actionStr) {
     if (actionStr == "PLAYER_LEFT") return ActionType::PLAYER_LEFT;
     if (actionStr == "START_GAME") return ActionType::START_GAME;
     if (actionStr == "PLAY_CARD") return ActionType::PLAY_CARD;
+    if (actionStr == "TURN_STATE") return ActionType::TURN_STATE;
+    if (actionStr == "GAME_STATE") return ActionType::GAME_STATE;
     if (actionStr == "END_TURN") return ActionType::END_TURN;
     return ActionType::INVALID_ACTION;
 }

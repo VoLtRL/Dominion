@@ -211,6 +211,12 @@ void MainWindow::handleAction(const ActionType &action, const QJsonObject &data)
     case ActionType::START_GAME:
         handleGameStarted(data);
         break;
+    case ActionType::TURN_STATE:
+        handleTurnState(data);
+        break;
+    case ActionType::GAME_STATE:
+        handleGameState(data);
+        break;    
     case ActionType::REQUEST_ROOM_LIST:
         handleRoomList(data);
         break;
@@ -292,7 +298,31 @@ void MainWindow::handleGameStarted(const QJsonObject &data) {
         return;
     }
 
+    instance.emplace();
     showPage(Page::GameTable);
+}
+
+void MainWindow::handleTurnState(const QJsonObject &data) {
+    const auto payload = Network::TurnStatePayload::fromJson(data);
+    if (!payload) {
+        qWarning() << "Invalid TURN_STATE payload:" << data;
+        return;
+    }
+}
+
+void MainWindow::handleGameState(const QJsonObject &data) {
+    const auto payload = Network::GameStatePayload::fromJson(data);
+    if (!payload) {
+        qWarning() << "Invalid GAME_STATE payload:" << data;
+        return;
+    }
+
+    if (instance) {
+        // Update the game instance with the state to initialize the game table.
+    } else {
+        qWarning() << "Received GAME_STATE payload but no game instance exists.";
+    }
+
 }
 
 void MainWindow::handleRoomList(const QJsonObject &data) {

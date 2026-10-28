@@ -1,6 +1,7 @@
 #include "client/utils/draw.hpp"
 #include "client/VisualCard.hpp"
 
+    
 VisualCard* drawCard(QGraphicsScene *scene, const Card* card, int x, int y, Location location) {
     VisualCard *visualCard = new VisualCard(
         VisualCard::getNewId(),
@@ -50,4 +51,18 @@ void drawBackCard(QGraphicsScene *scene, qreal x, qreal y, int width, int height
     
     backCard->setPos(x,y);
     scene->addItem(backCard);
+}
+
+void drawStack(QGraphicsScene *scene, qreal x, qreal y,int rotation, quint16 count) {
+    constexpr int cardWidth = 100;
+    constexpr int cardHeight = 150;
+
+    drawBackCard(scene, x, y, cardWidth, cardHeight);
+    QGraphicsItem *stack = scene->items().front();
+    stack->setRotation(rotation);
+    stack->setData(0, "other-player-stack");
+
+    QGraphicsTextItem *countText = scene->addText(QString::number(count));
+    countText->setPos(x, y + cardHeight + 2);
+    countText->setData(0, "other-player-stack");
 }

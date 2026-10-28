@@ -221,7 +221,7 @@ void GameServer::handleLeaveRoom(Client *client) {
 void GameServer::handleStartGame(Client *client) {
     RoomManager &roomMgr = RoomManager::getInstance();
     Room *room = roomMgr.getRoomByClient(client);
-    if (!room || !roomMgr.startGame(client)) {
+    if (!room /*|| !roomMgr.startGame(client)*/) {
         return;
     }
 

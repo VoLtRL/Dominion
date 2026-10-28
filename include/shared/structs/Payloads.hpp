@@ -12,6 +12,67 @@ namespace Network {
         virtual QJsonObject toJson() const = 0;
     };
 
+    struct PlayerState {
+        QString playerName;
+        int playerId;
+        int playerScore;
+        int hand;
+        std::vector<const Card*> playedCards;
+        int discardPile;
+        const Card* topCardDiscardPile;
+        int drawStack;
+
+        PlayerState(const QString &playerName, int playerId, int playerScore, int hand, const std::vector<const Card*> &playedCards, int discardPile, const Card* topCardDiscardPile, int drawStack)
+            : playerName(playerName), playerId(playerId), playerScore(playerScore), hand(hand), playedCards(playedCards), discardPile(discardPile), topCardDiscardPile(topCardDiscardPile), drawStack(drawStack) {}
+        
+        QJsonObject toJson() const {
+            QJsonObject json;
+            json["playerName"] = playerName;
+            json["playerId"] = playerId;
+            json["playerScore"] = playerScore;
+            json["hand"] = hand;
+            QJsonArray playedCardsArray;
+            for (const auto &card : playedCards) {
+                playedCardsArray.append(QString::fromStdString(card->getName()));
+            }
+            json["playedCards"] = playedCardsArray;
+            json["discardPile"] = discardPile;
+            json["topCardDiscardPile"] = topCardDiscardPile ? QString::fromStdString(topCardDiscardPile->getName()) : QString();
+            json["drawStack"] = drawStack;
+            return json;
+        }
+
+        static std::optional<PlayerState> fromJson(const QJsonObject &json) {
+            if (!json.contains("playerName") || !json.contains("playerId") || !json.contains("playerScore") ||
+                !json.contains("hand") || !json.contains("playedCards") || !json.contains("discardPile") ||
+                !json.contains("topCardDiscardPile") || !json.contains("drawStack")) {
+                return std::nullopt;
+            }
+            std::vector<const Card*> playedCards;
+            for (const auto &cardJson : json["playedCards"].toArray()) {
+                const Card* card = Factory::get(cardJson.toString().toStdString());
+                if (card) {
+                    playedCards.push_back(card);
+                }
+            }
+            const Card* topCardDiscardPile = nullptr;
+            if (!json["topCardDiscardPile"].toString().isEmpty()) {
+                topCardDiscardPile = Factory::get(json["topCardDiscardPile"].toString().toStdString());
+            }
+            return PlayerState(
+                json["playerName"].toString(),
+                json["playerId"].toInt(),
+                json["playerScore"].toInt(),
+                json["hand"].toInt(),
+                playedCards,
+                json["discardPile"].toInt(),
+                topCardDiscardPile,
+                json["drawStack"].toInt()
+            );
+        }
+
+    
+    };
 
     struct RoomInfo {
             int roomId;
@@ -338,6 +399,131 @@ namespace Network {
             );
         }
     };
+
+    struct TurnStatePayload : public Payload {
+        QString activePlayerName;
+        QString phase;
+        int actions;
+        int buys;
+        int money;
+
+        TurnStatePayload(const QString &activePlayerName, const QString &phase, int actions, int buys, int money)
+            : activePlayerName(activePlayerName), phase(phase), actions(actions), buys(buys), money(money) {}
+
+        QJsonObject toJson() const {
+            QJsonObject json;
+            json["activePlayerName"] = activePlayerName;
+            json["phase"] = phase;
+            json["actions"] = actions;
+            json["buys"] = buys;
+            json["money"] = money;
+            return json;
+        }
+
+        static std::optional<TurnStatePayload> fromJson(const QJsonObject &json) {
+            if (!json.contains("activePlayerName") || !json.contains("phase") || !json.contains("actions") || !json.contains("buys") || !json.contains("money")) {
+                return std::nullopt;
+            }
+            return TurnStatePayload(
+                json["activePlayerName"].toString(),
+                json["phase"].toString(),
+                json["actions"].toInt(),
+                json["buys"].toInt(),
+                json["money"].toInt()
+            );
+        }
+};
+
+struct GameStatePayload : public Payload {
+    QString activePlayerName;
+    QString phase;
+    int actions;
+    int buys;
+    int money;
+
+    Hand hand;
+    std::vector<const Card*> cardsInPlay;
+    int drawStackCount;
+    int discardStackCount;
+    const Card* topCardDiscardPile;
+    std::vector<PlayerState> otherPlayers;
+
+    GameStatePayload( const QString &activePlayerName, const QString &phase, int actions, int buys, int money,
+                     const Hand &hand, const std::vector<const Card*> &cardsInPlay, int drawStackCount, int discardStackCount,
+                     const Card* topCardDiscardPile, const std::vector<PlayerState> &otherPlayers)
+        :activePlayerName(activePlayerName), phase(phase), actions(actions), buys(buys), money(money),
+          hand(hand), cardsInPlay(cardsInPlay), drawStackCount(drawStackCount), discardStackCount(discardStackCount),
+          topCardDiscardPile(topCardDiscardPile), otherPlayers(otherPlayers) {}
+
+    QJsonObject toJson() const {
+        QJsonObject json;
+        json["activePlayerName"] = activePlayerName;
+        json["phase"] = phase;
+        json["actions"] = actions;
+        json["buys"] = buys;
+        json["money"] = money;
+        QJsonArray handArray;
+        for (const auto &card : hand.getCards()) {
+            handArray.append(QString::fromStdString(card->getName()));
+        }
+        json["hand"] = handArray;
+        QJsonArray cardsInPlayArray;
+        for (const auto &card : cardsInPlay) {
+            cardsInPlayArray.append(QString::fromStdString(card->getName()));
+        }
+        json["cardsInPlay"] = cardsInPlayArray;
+        json["drawStackCount"] = drawStackCount;
+        json["discardStackCount"] = discardStackCount;
+        json["topCardDiscardPile"] = topCardDiscardPile ? QString::fromStdString(topCardDiscardPile->getName()) : QString();
+        QJsonArray otherPlayersArray;
+        for (const auto &player : otherPlayers) {
+            otherPlayersArray.append(player.toJson());
+        }
+        json["otherPlayers"] = otherPlayersArray;
+        return json;
+    }
+
+    static std::optional<GameStatePayload> fromJson(const QJsonObject &json) {
+        if (!json.contains("roomId") || !json.contains("activePlayerName") || !json.contains("phase") ||
+            !json.contains("actions") || !json.contains("buys") || !json.contains("money") ||
+            !json.contains("hand") || !json.contains("cardsInPlay") || !json.contains("drawStackCount") ||
+            !json.contains("discardStackCount") || !json.contains("topCardDiscardPile") || !json.contains("otherPlayers")) {
+            return std::nullopt;
+        }
+
+        std::vector<const Card*> cardsInPlay;
+        for (const auto &cardJson : json["cardsInPlay"].toArray()) {
+            cardsInPlay.push_back(Factory::get(cardJson.toString().toStdString()));
+        }
+
+        std::vector<PlayerState> otherPlayers;
+        for (const auto &playerJson : json["otherPlayers"].toArray()) {
+            auto playerStateOpt = PlayerState::fromJson(playerJson.toObject());
+            if (playerStateOpt) {
+                otherPlayers.push_back(*playerStateOpt);
+            }
+        }
+
+        Hand hand;
+        for (const auto &cardJson : json["hand"].toArray()) {
+            hand.addCard(Factory::get(cardJson.toString().toStdString()));
+        }
+
+        return GameStatePayload(
+            json["activePlayerName"].toString(),
+            json["phase"].toString(),
+            json["actions"].toInt(),
+            json["buys"].toInt(),
+            json["money"].toInt(),
+            hand,
+            cardsInPlay,
+            json["drawStackCount"].toInt(),
+            json["discardStackCount"].toInt(),
+            Factory::get(json["topCardDiscardPile"].toString().toStdString()),
+            otherPlayers
+        );
+    }
+};
 
 
     // The client sends this payload to the server when he plays a card, it contains the roomId, the clientId and the selected cards.

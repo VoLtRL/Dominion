@@ -456,7 +456,6 @@ void Game::launchGame() {
       currentPlayerActions = 1;
       currentPlayerPurchaseLeft = 1;
       currentPlayerMoney = 0;
-      playTurn(player);
     }
   }
 

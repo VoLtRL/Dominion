@@ -36,6 +36,8 @@ private:
   CardStack drawStack;
   CardStack discardStack;
 
+  std::vector<const Card *> cardsInPlay;
+
   int turnsPlayed = 0;
 
 public:

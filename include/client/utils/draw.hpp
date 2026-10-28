@@ -23,3 +23,7 @@ std::vector<VisualCard*> drawPlayerHand(QGraphicsScene *scene, const std::vector
 std::vector<VisualCard*> drawCardsInPlay(QGraphicsScene *scene, const std::vector<const Card*> cardsInPlay, qreal x, qreal y);
 
 void drawBackCard(QGraphicsScene *scene, qreal x, qreal y, int width = 100, int height = 150);
+
+void drawStack(QGraphicsScene *scene, qreal x, qreal y,int rotation, quint16 count);
+
+void drawOtherHand(QGraphicsScene *scene, const std::vector<const Card*> hand, int cardWidth, int cardHeight, qreal cardSpacing, qreal centerX, qreal centerY, qreal rotation);

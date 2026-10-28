@@ -4,6 +4,7 @@
 #include <QJsonObject>
 
 #include "client/network/NetworkManager.hpp"
+#include "shared/gameplay/Game.hpp"
 
 class MainMenu;
 class CreateGame;
@@ -36,6 +37,7 @@ private:
     GameTable *gameTable;
     JoinRoom *joinRoom;
     QTimer reconnectTimer;
+    std::optional<Game> instance;
 
 private slots:
     void applySettings(const QString &newPlayerName, const QString &hostAddress, quint16 hostPort);
@@ -68,4 +70,6 @@ private:
     void handlePlayerLeft(const QJsonObject &data);
     void handleGameStarted(const QJsonObject &data);
     void handleRoomList(const QJsonObject &data);
+    void handleTurnState(const QJsonObject &data);
+    void handleGameState(const QJsonObject &data);
 };
