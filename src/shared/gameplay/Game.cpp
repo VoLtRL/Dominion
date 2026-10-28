@@ -568,6 +568,7 @@ bool Game::canPlayAction(Player* p, const Card* card) const {
   if(currentPlayerActions <= 0) { return false; }
   if(!p->hasCardInHand(card)) { return false; }
   if(p != activePlayer) { return false; }
+  if(!card->isA(CardType::ACTION)) { return false; }
   return true;
 }
 
@@ -588,6 +589,7 @@ bool Game::tryPlayAction(Player* p, const Card* card) {
 bool Game::canPlayTreasure(Player* p, const Card* card) const {
   if(!p->hasCardInHand(card)) { return false; }
   if(p != activePlayer) { return false; }
+  if(!card->isA(CardType::TREASURE)) { return false; }
   const Treasure* treasure = dynamic_cast<const Treasure*>(card);
   const Treasure* secondTreasure = dynamic_cast<const Treasure*>(Factory::get(card->getName()));
   if(treasure->getCoins() != secondTreasure->getCoins()) { return false ;}  // Si d'une manière ou d'une autre les coins de la carte ont changés, jsp comment tu gères l'envoi des cartes
@@ -612,6 +614,35 @@ bool Game::tryPlayAllTreasures(Player* p) {
   for(const Card* card : p->getHand().getCards()){
     tryPlayTreasure(p, card);
   }
+}
+
+bool Game::canPlayAttack(Player* p, const Card* card) const {
+  if(std::find(CardsInPlay.begin(), CardsInPlay.end(), card) == CardsInPlay.end()) { return false; } // Si la carte a pas été jouée juste avant
+  if(p != activePlayer) { return false; }
+  if(!card->isA(CardType::ATTACK)) { return false; }
+
+  return true;
+}
+
+bool Game::tryPlayAttack(Player* p, const Card* card) {
+
+}
+
+bool Game::canReactToAttack(Player* p) const {
+  if(!isPlayerPending(p)) { return false;}
+  if(!isPlayerTargetted(p)) { return false;}
+  return true;
+}
+
+bool Game::applyProtection(Player* p, Player* attacker, const Card* card) {
+  if(card->getName() != pendingCard->getName()) { return false; }
+  if(attacker != activePlayer) { return false; }
+  auto i = std::find(currentTargets.begin(), currentTargets.end(), p);
+  if(i != currentTargets.end()) {
+    std::remove(currentTargets.begin(), currentTargets.end(), i);
+    return true;
+  }
+  return false;
 }
 
 bool Game::canBuyCard(Player* p, const Card* card) const {
@@ -685,15 +716,17 @@ bool Game::hasGameEnded() const {
   }
 }
 
-void Game::performCleanup() {
+bool Game::performCleanup() {
   discardCardsInPlay();
   activePlayer->discardHand();
   activePlayer->drawCardsToHand(5);
   if(hasGameEnded()){
     //fin du jeu
+    return true;
   }
   else {
     passToNextPlayer();
+    return false;
   }
 }
 

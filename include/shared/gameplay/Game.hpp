@@ -101,6 +101,10 @@ private:
 
   std::vector<const Card *> trash;
 
+  const Card* pendingCard;
+  std::vector<Player*> pendingPlayers;
+  std::vector<Player*> currentTargets;
+
 public:
   Game() = default;
 
@@ -186,6 +190,12 @@ public:
   bool tryPlayTreasure(Player* p, const Card* card);
   bool tryPlayAllTreasures(Player* p);
 
+  bool canPlayAttack(Player* p, const Card* card) const;
+  bool tryPlayAttack(Player* p, const Card* card);
+
+  bool canReactToAttack(Player* p) const;
+  bool applyProtection(Player*p, Player* attacker, const Card* card);
+
   bool canBuyCard(Player* p, const Card* card) const;
   bool tryBuyCard(Player* p, const Card* card);
 
@@ -194,7 +204,34 @@ public:
   bool trySendSelection(Player* p, const std::vector<const Card*>& selection);
 
   void passToNextPlayer();
-  void performCleanup();
+  bool performCleanup();
   bool hasGameEnded() const;
   Player getWinner() const;
+
+  void setCurrentTargets(std::vector<Player*> targets){
+    currentTargets = targets;
+  }
+
+  void setPendingCard(const Card* card){
+    pendingCard = card;
+  }
+
+  void setPendingPlayers(std::vector<Player*> p){
+    pendingPlayers = p;
+  }
+
+  bool isPlayerTargetted(Player* p) const {
+    return std::find(currentTargets.begin(), currentTargets.end(), p) != currentTargets.end();
+  }
+
+  bool isPlayerPending(Player* p) const {
+    return std::find(pendingPlayers.begin(), pendingPlayers.end(), p) != pendingPlayers.end();
+  }
+
+  bool removePendingPlayers(Player* p){
+    auto i = std::find(pendingPlayers.begin(), pendingPlayers.end(), p);
+    if(i == pendingPlayers.end()) { return false; }
+    std::remove(pendingPlayers.begin(), pendingPlayers.end(), i);
+    return true;
+  }
 };

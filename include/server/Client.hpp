@@ -18,7 +18,7 @@ private:
     
     QTcpSocket* m_socket; 
 
-    std::shared_ptr<Player> m_associatedPlayer = nullptr;
+    Player* m_associatedPlayer = nullptr;
 
     static qint64 generateId();
 
@@ -37,8 +37,8 @@ public:
     void setName(const QString &name) { m_name = name; }
     void setRoomName(const QString &roomName) { m_roomName = roomName; }
 
-    void setAssociatedPlayer(std::shared_ptr<Player> player) { m_associatedPlayer = player; }
-    std::shared_ptr<Player> getAssociatedPlayer() const { return m_associatedPlayer; }
+    void setAssociatedPlayer(Player* player) { m_associatedPlayer = player; }
+    Player* getAssociatedPlayer() const { return m_associatedPlayer; }
 
     void sendJson(const QString &actionType, const QJsonObject &payload = {});
 };

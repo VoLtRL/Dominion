@@ -20,8 +20,10 @@ private:
     void handleRequestRoomList(Client *client);
     void handleLeaveRoom(Client *client);
     void handleStartGame(Client *client);
-    void handlePlayCard(Client *client);
+    void handlePlayCard(const QJsonObject &data, Client *client);
     void handleEndTurn(Client *client);
+    void handleSelection(const QJsonObject &data, Client *client);
+    void handleReaction(const QJsonObject &data, Client *client);
 
 public:
     explicit GameServer(QObject *parent = nullptr);

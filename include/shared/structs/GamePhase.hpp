@@ -4,5 +4,6 @@ enum class GamePhase{
     ACTION,
     BUY,
     REACTION,
-    SELECTION
+    SELECTION,
+    ATTACK
 };

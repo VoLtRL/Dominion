@@ -563,4 +563,151 @@ struct GameStatePayload : public Payload {
             );
         }
     };
+
+    // Fired the server when a card was successfully played. Gives info regarding the card and the type it was used for (useful for double type cards like Witch)
+    struct CardPlayed : public Payload {
+        int roomId;
+        int clientId;
+        CardType type;
+        const Card* card;
+
+        CardPlayed(int roomId, int clientId, CardType t, const Card* c)
+            : roomId(roomId), clientId(clientId), type(t), card(c) {}
+
+        QJsonObject toJson() const {
+            QJsonObject json;
+            json["roomId"] = roomId;
+            json["clientId"] = clientId;  
+            json["type"] = cardTypeToString(type).c_str();
+            json["card"] = card->getName().c_str();
+            return json;
+        }
+
+        static std::optional<CardPlayed> fromJson(const QJsonObject &json) {
+            if (!json.contains("roomId") || !json.contains("clientId") || !json.contains("type") || !json.contains("card")) {
+                return std::nullopt;
+            }
+            return CardPlayed(
+                json["roomId"].toInt(),
+                json["clientId"].toInt(),
+                stringToCardType(json["type"].toString().toStdString()),
+                Factory::get(json["card"].toString().toStdString())
+            );
+        }
+    };
+
+    // Fired the server when a card was successfully played. Gives info regarding the card and the type it was used for (useful for double type cards like Witch)
+    struct AttackPlayed : public Payload {
+        int roomId;
+        int clientId;
+        std::vector<QString> targets;
+        const Card* card;
+
+        AttackPlayed(int roomId, int clientId, std::vector<QString> t, const Card* c)
+            : roomId(roomId), clientId(clientId), targets(t), card(c) {}
+        
+        AttackPlayed(int roomId, int clientId, std::vector<Player*> t, const Card* c)
+            : roomId(roomId), clientId(clientId), card(c) {
+                std::vector<QString> ts;
+                for(Player* p : t){
+                    ts.push_back(p->getName().c_str());
+                }
+                targets = ts;
+            }
+
+        QJsonObject toJson() const {
+            QJsonObject json;
+            json["roomId"] = roomId;
+            json["clientId"] = clientId;  
+            QJsonArray targs;
+            for(QString n : targets){
+                targs.append(n);
+            }
+            json["targets"] = targs;
+            json["card"] = card->getName().c_str();
+            return json;
+        }
+
+        static std::optional<AttackPlayed> fromJson(const QJsonObject &json) {
+            if (!json.contains("roomId") || !json.contains("clientId") || !json.contains("targets") || !json.contains("card")) {
+                return std::nullopt;
+            }
+
+            std::vector<QString> ts;
+            for(const auto t : json["targets"].toArray()){
+                ts.push_back(t.toString());
+            }
+
+            return AttackPlayed(
+                json["roomId"].toInt(),
+                json["clientId"].toInt(),
+                ts,
+                Factory::get(json["card"].toString().toStdString())
+            );
+        }
+    };
+
+    // Fired the server when a card was successfully played. Gives info regarding the card and the type it was used for (useful for double type cards like Witch)
+    struct Reaction : public Payload {
+        int roomId;
+        int clientId;
+        QString attacker;
+        const Card* card;
+        bool protection;
+
+        Reaction(int roomId, int clientId, QString at, const Card* c, bool p=false)
+            : roomId(roomId), clientId(clientId), attacker(at), card(c), protection(p) {}
+        
+        Reaction(int roomId, int clientId, Player* at, const Card* c, bool p=false)
+            : roomId(roomId), clientId(clientId), card(c), protection(p) {
+                attacker = at->getName().c_str();
+            }
+
+        QJsonObject toJson() const {
+            QJsonObject json;
+            json["roomId"] = roomId;
+            json["clientId"] = clientId;  
+            json["attacker"] = attacker;
+            json["card"] = card->getName().c_str();
+            json["protection"] = protection? "TRUE" : "FALSE";
+            return json;
+        }
+
+        static std::optional<Reaction> fromJson(const QJsonObject &json) {
+            if (!json.contains("roomId") || !json.contains("clientId") || !json.contains("attacker") || !json.contains("card")) {
+                return std::nullopt;
+            }
+
+            return Reaction(
+                json["roomId"].toInt(),
+                json["clientId"].toInt(),
+                json["attacker"].toString(),
+                Factory::get(json["card"].toString().toStdString()),
+                json.contains("protection") ? (json["protection"].toString().toStdString() == "TRUE" ? true : false) : false
+            );
+        }
+    };
+
+    // A payload sent by the server to notify the client that the requeted action ended up not working.
+    struct ErrorPayload : public Payload {
+        QString message;
+
+        ErrorPayload(const QString &m)
+            : message(m) {}
+
+        QJsonObject toJson() const {
+            QJsonObject json;
+            json["message"] = message;
+            return json;
+        }
+
+        static std::optional<ErrorPayload> fromJson(const QJsonObject &json) {
+            if (!json.contains("message")) {
+                return std::nullopt;
+            }
+            return ErrorPayload(
+                json["message"].toString()
+            );
+        }
+    };
 };

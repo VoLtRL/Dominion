@@ -98,7 +98,7 @@ void GameServer::receiveAction(const QString &action, const QJsonObject &data, Q
             handleStartGame(client);
             break;
         case ActionType::PLAY_CARD:
-            handlePlayCard(client);
+            handlePlayCard(data, client);
             break;
         case ActionType::END_TURN:
             handleEndTurn(client);
@@ -234,16 +234,146 @@ void GameServer::handleStartGame(Client *client) {
     }
 }
 
-void GameServer::handlePlayCard(Client *client) {
+void GameServer::handlePlayCard(const QJsonObject &data, Client *client) {
     if (Room *room = RoomManager::getInstance().getRoomByClient(client)) {
         if (Game *game = room->getGame()) {
+            auto payload = Network::CardsToBeInPlayPayload::fromJson(data);
+            if (!payload) {
+                qWarning() << "Invalid data given" << data;
+                return;
+            }
+
+            std::vector<const Card*> validCards;
+            for (const Card* c : payload->selectedCards) {
+                if(c->isA(CardType::ACTION)) {
+                    if(!game->tryPlayAction(client->getAssociatedPlayer(), c)){
+                        const std::string message = "ACTION CARD ERROR : " + c->getName() + " FROM PLAYER " + client->getAssociatedPlayer()->getName();
+                        sendAction(
+                            QString::fromStdString(actionTypeToString(ActionType::ERROR)),
+                            Network::ErrorPayload(QString::fromStdString(message)).toJson(),
+                            client->getSocket()
+                        );
+                        return;
+                    }
+
+                    for(Client* cl : room->getClients()){
+                        sendAction(
+                            QString::fromStdString(actionTypeToString(ActionType::PLAY_CARD)),
+                            Network::CardPlayed(
+                                payload->roomId,
+                                payload->clientId,
+                                CardType::ACTION,
+                                c
+                            ).toJson(),
+                            cl->getSocket()
+                        );
+                    }
+                    
+
+                    if(c->isA(CardType::ATTACK)){
+                        if(!game->canPlayAttack(client->getAssociatedPlayer(), c)){
+                            const std::string message = "ATTACK CARD ERROR : " + c->getName() + " FROM PLAYER " + client->getAssociatedPlayer()->getName();
+                            sendAction(
+                                QString::fromStdString(actionTypeToString(ActionType::ERROR)),
+                                Network::ErrorPayload(QString::fromStdString(message)).toJson(),
+                                client->getSocket()
+                            );
+                            return;
+                        }
+                        std::vector<Player*> targets = game->getOtherPlayers();
+                        std::vector<Player*> canReact;
+                        for(Player* target : targets) {
+                            if(!target->getAvailableReactions().empty()){
+                                canReact.push_back(target);
+                            }
+                        }
+                        if(canReact.empty()){
+                            if(!game->tryPlayAttack(client->getAssociatedPlayer(), c)){
+                                const std::string message = "ATTACK CARD ERROR : " + c->getName() + " FROM PLAYER " + client->getAssociatedPlayer()->getName();
+                                sendAction(
+                                    QString::fromStdString(actionTypeToString(ActionType::ERROR)),
+                                    Network::ErrorPayload(QString::fromStdString(message)).toJson(),
+                                    client->getSocket()
+                                );
+                                return;
+                            }
+
+                            for(Client* cl : room->getClients()){
+                                sendAction(
+                                    QString::fromStdString(actionTypeToString(ActionType::PLAY_CARD)),
+                                    Network::AttackPlayed(
+                                        payload->roomId,
+                                        payload->clientId,
+                                        targets,
+                                        c
+                                    ).toJson(),
+                                    cl->getSocket()
+                                );
+                            }
+
+                            return;
+                        }
+                        game->setCurrentTargets(targets);
+                        game->setPendingCard(c);
+                        game->setPendingPlayers(canReact);
+
+                        for(Client* cl : room->getClients()){
+                            if(std::find(canReact.begin(), canReact.end(), cl->getAssociatedPlayer()) != canReact.end()){
+                                sendAction(
+                                    QString::fromStdString(actionTypeToString(ActionType::REACTION)),
+                                    Network::Reaction(
+                                        payload->roomId,
+                                        payload->clientId,
+                                        client->getAssociatedPlayer(),
+                                        c
+                                    ).toJson(),
+                                    cl->getSocket()
+                                );
+                            }
+                        }
+                    }
+
+                    return;
+                }
+                else if(c->isA(CardType::TREASURE)) {
+                    if(!game->tryPlayTreasure(client->getAssociatedPlayer(), c)){
+                        const std::string message = "TREASURE CARD ERROR : " + c->getName() + " FROM PLAYER " + client->getAssociatedPlayer()->getName();
+                        sendAction(
+                            QString::fromStdString(actionTypeToString(ActionType::ERROR)),
+                            Network::ErrorPayload(QString::fromStdString(message)).toJson(),
+                            client->getSocket()
+                        );
+                    }
+                }
+                validCards.push_back(c);
+            }
         }
     }
+}
+
+void GameServer::handleReaction(const QJsonObject &data, Client* client){
+    if (Room *room = RoomManager::getInstance().getRoomByClient(client)) {
+        if (Game *game = room->getGame()) {
+            auto payload = Network::Reaction::fromJson(data);
+            if (!payload) {
+                qWarning() << "Invalid data given" << data;
+                return;
+            }
+
+        }
+    }
+
 }
 
 void GameServer::handleEndTurn(Client *client) {
     if (Room *room = RoomManager::getInstance().getRoomByClient(client)) {
         if (Game *game = room->getGame()) {
+            if(game->performCleanup()){
+                // Fin du jeu
+                
+            } else{
+                
+            }
         }
     }
 }
