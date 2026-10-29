@@ -55,10 +55,12 @@ public:
   int getCurrentPlayerPurchasesLeft() const { return currentPlayerPurchaseLeft; }
   void setActivePlayer(Player *player);
 
-  void setCurrentCardDistribution(
-      const std::map<const Card *, int> &cardDistribution);
-  void
-  insertCardDistribution(const std::map<const Card *, int> &cardDistribution);
+  void setCurrentCardDistribution(const std::map<const Card *, int> &cardDistribution);
+  void insertCardDistribution(const std::map<const Card *, int> &cardDistribution);
+
+  std::map<const Card *, int> getCurrentCardDistribution() const {
+    return currentCardDistribution;
+  }
 
   const std::vector<const Card *> &getCardsInPlay() const {
     return CardsInPlay;

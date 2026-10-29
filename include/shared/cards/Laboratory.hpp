@@ -6,6 +6,6 @@
 
 class Laboratory : public Card, public Action {
     public:
-        Laboratory() : Card("Laboratory", 5," +2 Cards; +1 Action.", {CardType::ACTION}) {}
+        Laboratory() : Card("Laboratory", 5," +2 Cards; +1 Action.", {CardType::ACTION}, Extension::DOMINION) {}
         void play(Game& g, Player& p) const;
 };

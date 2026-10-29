@@ -5,6 +5,6 @@
 
 class Moneylender : public Card, public Action  {
     public:
-        Moneylender() : Card("Moneylender", 4, "Trash a Copper card from your hand. +3 Coins.", {CardType::ACTION}) {}
+        Moneylender() : Card("Moneylender", 4, "Trash a Copper card from your hand. +3 Coins.", {CardType::ACTION}, Extension::DOMINION) {}
         void play(Game& g, Player& p) const;
 };

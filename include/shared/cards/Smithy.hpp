@@ -5,6 +5,6 @@
 
 class Smithy : public Card, public Action  {
     public:
-        Smithy() : Card("Smithy", 4, "+3 Cards.", {CardType::ACTION}) {}
+        Smithy() : Card("Smithy", 4, "+3 Cards.", {CardType::ACTION}, Extension::DOMINION) {}
         void play(Game& g, Player& p) const;
 };

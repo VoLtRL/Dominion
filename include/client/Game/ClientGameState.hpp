@@ -27,6 +27,7 @@ struct ClientGameState {
 
     Hand hand;
     std::vector<const Card*> cardsInPlay;
+    std::map<const Card*, int> shop;
 
     int selfDrawStackSize{0};
     int selfDiscardStackSize{0};

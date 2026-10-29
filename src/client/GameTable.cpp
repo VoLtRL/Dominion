@@ -28,8 +28,80 @@ GameTable::GameTable(QWidget *parent) : QWidget(parent), ui(new Ui::GameTable) {
     scene->setSceneRect(ui->gameView->viewport()->rect());
 
     connect(ui->endTurnButton, &QPushButton::clicked, this, &GameTable::onEndTurnClicked);
+    connect(ui->playSelectedButton, &QPushButton::clicked, [this]() {
+        for (VisualCard* visualCard : visualCardsInHand) {
+            if (visualCard->isSelected()) {
+                emit visualCard->clicked(visualCard->getId());
+                visualCard->setSelectedEffect(false);
+            }
+        }
+    });
+
+    connect(ui->endPhaseButton, &QPushButton::clicked, [this]() {
+    });
+
+
+    connect(ui->switchShopButton, &QPushButton::clicked, this, &GameTable::switchShop);
 
 }
+
+void GameTable::startTurn() {
+    bool noActivePlayer = true;
+    setPhaseText(gameState.currentPhase);
+    for(const ClientPlayerState& player : gameState.otherPlayers) {
+        if(player.isActive) {
+            displayMessage(QString("%1's turn").arg(player.name));
+            noActivePlayer = false;
+            break;
+        }
+    }
+    if(noActivePlayer) {
+        displayMessage("It's your turn");
+        modifySelection(gameState.currentPhase, gameState.currentPlayerActions, gameState.currentPlayerPurchasesLeft, gameState.currentPlayerMoney);
+    }
+
+    switchShop();
+}
+
+void GameTable::changePhase(QString newPhase) {
+    gameState.currentPhase = newPhase;
+    
+    modifySelection(gameState.currentPhase, gameState.currentPlayerActions, gameState.currentPlayerPurchasesLeft, gameState.currentPlayerMoney);
+}
+
+void GameTable::switchShop() {
+    if (isShopVisible) {
+        const QList<QGraphicsItem*> items = scene->items();
+        for (QGraphicsItem *item : items) {
+            if (item->data(0).toString() == "shop-card") {
+                scene->removeItem(item);
+                delete item;
+            }
+        }
+        isShopVisible = false;
+    }else{
+
+        std::cout << "Drawing shop with " << gameState.shop.size() << " cards." << std::endl;
+        const qreal sceneWidth = scene->sceneRect().width();
+        const qreal sceneHeight = scene->sceneRect().height();
+        const qreal shopWidth = gameState.shop.empty() ? 0 : CardWidth + (gameState.shop.size() - 1) * CardSpacing;
+        const qreal shopHeight = CardHeight * 2 + CardSpacing;
+        drawShop((sceneWidth - shopWidth) / 2, (sceneHeight - shopHeight) / 2);
+        isShopVisible = true;
+
+    }
+
+
+    isShopVisible = !isShopVisible;
+}
+
+void GameTable::modifySelection(QString phase, int actions, int purchases, int money) {
+    ui->playSelectedButton->setEnabled(phase == "Action" && actions > 0);
+    ui->endTurnButton->setEnabled(phase == "Buy" && purchases > 0);
+
+    setPhaseText(phase);
+}
+
 
 void GameTable::updateGameState(ClientGameState newGameState) {
     gameState = newGameState;
@@ -47,6 +119,8 @@ void GameTable::drawTable() {
 
     const qreal sceneWidth = scene->sceneRect().width();
     const qreal sceneHeight = scene->sceneRect().height();
+
+    qDebug() << "Scene width: " << sceneWidth << ", Scene height: " << sceneHeight;
 
     const qreal handWidth = gameState.hand.getCards().empty() ? 0 : CardWidth + (gameState.hand.getCards().size() - 1) * CardSpacing;
 
@@ -68,7 +142,8 @@ void GameTable::resizeEvent(QResizeEvent *event) {
     QWidget::resizeEvent(event);
     scene->setSceneRect(ui->gameView->viewport()->rect());
     drawTable();
-    emit widgetResized(event->size());}
+    emit widgetResized(event->size());
+}
 
 void GameTable::drawPlayerHand(const std::vector<const Card*> hand, qreal x, qreal y) {
     visualCardsInHand.clear();
@@ -308,8 +383,33 @@ void GameTable::drawStacks(quint16 cardsInDraw, quint16 cardsInDiscard, const Ca
     discardText->setDefaultTextColor(Qt::white);
 }
 
+void GameTable::drawShop(qreal x, qreal y) {
+    const qreal shopWidth = gameState.shop.empty() ? 0 : CardWidth + (gameState.shop.size() - 1) * CardSpacing;
+    const qreal shopHeight = CardHeight * 2 + CardSpacing;
+
+    int index = 0;
+    for (auto pair : gameState.shop) {
+        std::cout << "Drawing shop card: " << pair.first->getName() << " with quantity: " << pair.second << std::endl;
+        const Card* card = pair.first;
+        const qreal offsetX = index * CardSpacing - shopWidth / 2 + CardWidth / 2;
+        const qreal offsetY = (index % 2 == 0) ? 0 : CardHeight + CardSpacing;
+        drawCard(scene, card, x + offsetX, y + offsetY)->setData(0, "shop-card");
+        QGraphicsTextItem* quantityText = scene->addText(QString::number(pair.second));
+        quantityText->setDefaultTextColor(Qt::white);
+        quantityText->setPos(x + offsetX, y + offsetY + CardHeight + 2);
+        quantityText->setData(0, "shop-card");
+        index++;
+    }
+}
+
+void GameTable::setPhaseText(const QString& phase) {
+    emit phaseChanged(phase);
+}
+
 void GameTable::displayMessage(QString message){
-    scene->addText(message);
+    QGraphicsTextItem* messageText = scene->addText(message);
+    messageText->setDefaultTextColor(Qt::white);
+    messageText->setPos(scene->sceneRect().width() / 2 - messageText->boundingRect().width() / 2, scene->sceneRect().height() / 4 - messageText->boundingRect().height() / 2);
 }
 
 GameTable::~GameTable() {

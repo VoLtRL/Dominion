@@ -5,6 +5,6 @@
 
 class Curse : public Card, public Cursed {
     public: 
-        Curse() : Card("Curse", 0, "", {CardType::CURSE}) {}
+        Curse() : Card("Curse", 0, "", {CardType::CURSE}, Extension::BASE_CARDS) {}
         int getCursePoints(const Player& p) const;
 };

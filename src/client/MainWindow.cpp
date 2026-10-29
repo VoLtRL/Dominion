@@ -87,6 +87,19 @@ void MainWindow::connectNetwork() {
     });
 }
 
+void MainWindow::connectGameTable() {
+    connect(gameTable, &GameTable::endTurnClicked, this, [this]() {
+        if (ensureConnected()) {
+            networkManager->sendAction(ActionType::END_TURN, Network::EmptyPayload());
+        }
+    });
+    connect(gameTable, &GameTable::phaseChanged, this, [this](const QString& newPhase) {
+        if (ensureConnected()) {
+            ui->statusbar->showMessage(QString("Phase changed to: %1").arg(newPhase));
+        }
+    });
+}
+
 void MainWindow::showPage(Page page) {
     switch (page) {
     case Page::MainMenu:
@@ -299,6 +312,7 @@ void MainWindow::handleGameStarted(const QJsonObject &data) {
     }
 
     showPage(Page::GameTable);
+    gameTable->startTurn();
 }
 
 void MainWindow::handleTurnState(const QJsonObject &data) {

@@ -239,13 +239,12 @@ void GameServer::handleStartGame(Client *client) {
     Network::StartGamePayload gameStarted(room->getName());
     for (Client *roomClient : room->getClients()) {
         sendAction(
-            QString::fromStdString(actionTypeToString(ActionType::START_GAME)),
-            gameStarted.toJson(),
-            roomClient->getSocket());
-
-        sendAction(
             QString::fromStdString(actionTypeToString(ActionType::GAME_STATE)),
             room->getGameStatePayload(roomClient).toJson(),
+            roomClient->getSocket());
+        sendAction(
+            QString::fromStdString(actionTypeToString(ActionType::START_GAME)),
+            gameStarted.toJson(),
             roomClient->getSocket());
     }
 }

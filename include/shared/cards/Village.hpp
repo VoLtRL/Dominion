@@ -6,6 +6,6 @@
 
 class Village : public Card, public Action {
     public:
-        Village() : Card("Village", 3," +1 Card; +2 Actions.", {CardType::ACTION}) {}
+        Village() : Card("Village", 3," +1 Card; +2 Actions.", {CardType::ACTION}, Extension::DOMINION) {}
         void play(Game& g, Player& p) const;
 };

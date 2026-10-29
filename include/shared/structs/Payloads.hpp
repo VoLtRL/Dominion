@@ -455,13 +455,16 @@ struct GameStatePayload : public Payload {
 
     Hand hand;
     std::vector<const Card*> cardsInPlay;
+
+    std::map<const Card*, int> cardsInShop;
+
     int drawStackCount;
     int discardStackCount;
     const Card* topCardDiscardPile;
     std::vector<PlayerState> otherPlayers;
 
-    GameStatePayload(const QString &selfName, const QString &currentPhase, int actions, int buys, int money, const Hand &hand, const std::vector<const Card*> &cardsInPlay, int drawStackCount, int discardStackCount, const Card* topCardDiscardPile, const std::vector<PlayerState> &otherPlayers)
-        : selfName(selfName), currentPhase(currentPhase), actions(actions), buys(buys), money(money), hand(hand), cardsInPlay(cardsInPlay), drawStackCount(drawStackCount), discardStackCount(discardStackCount), topCardDiscardPile(topCardDiscardPile), otherPlayers(otherPlayers) {}
+    GameStatePayload(const QString &selfName, const QString &currentPhase, int actions, int buys, int money, const Hand &hand, const std::vector<const Card*> &cardsInPlay, std::map<const Card*, int> cardsInShop, int drawStackCount, int discardStackCount, const Card* topCardDiscardPile, const std::vector<PlayerState> &otherPlayers)
+        : selfName(selfName), currentPhase(currentPhase), actions(actions), buys(buys), money(money), hand(hand), cardsInPlay(cardsInPlay), cardsInShop(cardsInShop), drawStackCount(drawStackCount), discardStackCount(discardStackCount), topCardDiscardPile(topCardDiscardPile), otherPlayers(otherPlayers) {}
 
     QJsonObject toJson() const {
         QJsonObject json;
@@ -479,6 +482,11 @@ struct GameStatePayload : public Payload {
         for (const auto &card : cardsInPlay) {
             cardsInPlayArray.append(card->getName().c_str());
         }
+        QJsonObject shopJson;
+        for (const auto &pair : cardsInShop) {
+            shopJson.insert(pair.first->getName().c_str(), pair.second);
+        }
+        json["shop"] = shopJson;
         json["cardsInPlay"] = cardsInPlayArray;
         json["drawStackCount"] = drawStackCount;
         json["discardStackCount"] = discardStackCount;
@@ -492,7 +500,7 @@ struct GameStatePayload : public Payload {
     }
 
     static std::optional<GameStatePayload> fromJson(const QJsonObject &json) {
-        if (!json.contains("selfName") || !json.contains("currentPhase") || !json.contains("actions") || !json.contains("buys") || !json.contains("money") || !json.contains("hand") || !json.contains("cardsInPlay") || !json.contains("drawStackCount") || !json.contains("discardStackCount") || !json.contains("topCardDiscardPile") || !json.contains("otherPlayers")) {
+        if (!json.contains("selfName") || !json.contains("currentPhase") || !json.contains("actions") || !json.contains("buys") || !json.contains("money") || !json.contains("hand") || !json.contains("cardsInPlay") || !json.contains("shop") || !json.contains("drawStackCount") || !json.contains("discardStackCount") || !json.contains("topCardDiscardPile") || !json.contains("otherPlayers")) {
             return std::nullopt;
         }
         Hand hand;
@@ -506,6 +514,15 @@ struct GameStatePayload : public Payload {
         for (const auto &cardJson : json["cardsInPlay"].toArray()) {
             cardsInPlay.push_back(Factory::get(cardJson.toString().toStdString()));
         }
+
+        std::map<const Card*, int> shop;
+        for (const auto &key : json["shop"].toObject().keys()) {
+            const Card *card = Factory::get(key.toStdString());
+            if (card) {
+                shop[card] = json["shop"].toObject()[key].toInt();
+            }
+        }
+
         const Card* topCardDiscardPile = nullptr;
         if (!json["topCardDiscardPile"].toString().isEmpty()) {
             topCardDiscardPile = Factory::get(json["topCardDiscardPile"].toString().toStdString());
@@ -525,6 +542,7 @@ struct GameStatePayload : public Payload {
             json["money"].toInt(),
             hand,
             cardsInPlay,
+            shop,
             json["drawStackCount"].toInt(),
             json["discardStackCount"].toInt(),
             topCardDiscardPile,

@@ -26,12 +26,15 @@ private:
 
     ClientGameState gameState;
 
+    bool isShopVisible{false};
+
     QVector<VisualCard*> visualCardsInHand;
     QVector<VisualCard*> visualCardsInPlay;
 
 signals:
     void endTurnClicked();
     void widgetResized(const QSize &newSize);
+    void phaseChanged(const QString& newPhase);
     
 private slots:
     void onEndTurnClicked();
@@ -42,6 +45,17 @@ public:
 
     void updateGameState(ClientGameState newGameState);
 
+    // Game Logic
+    void startTurn();
+    void changePhase(QString newPhase);
+    void switchShop();
+    void endTurn();
+
+    void modifySelection(QString phase, int actions, int purchases, int money);
+
+
+    // UI Logic
+
     void drawTable();
 
     void drawPlayerHand(const std::vector<const Card*> hand, qreal x, qreal y);
@@ -50,6 +64,10 @@ public:
     void drawOtherPlayersDrawAndDiscard(const std::vector<ClientPlayerState>& players);
     void drawCardsInPlay(const std::vector<const Card*> cardsInPlay, qreal x, qreal y);
     void drawStacks(quint16 cardsInDraw, quint16 cardsInDiscard, const Card* topDiscardCard);
+
+    void drawShop(qreal x, qreal y);
+
+    void setPhaseText(const QString& phase);
         
     void displayMessage(QString message);
     

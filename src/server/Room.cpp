@@ -12,7 +12,7 @@ Room::Room(int id, const QString &name, Client *host)
 Network::GameStatePayload Room::getGameStatePayload(const Client *client) const {
     const Player *self = client ? client->getAssociatedPlayer() : nullptr;
     if (!m_game || !self) {
-        return Network::GameStatePayload("", "", 0, 0, 0, Hand(), {}, 0, 0, nullptr, {});
+        return Network::GameStatePayload("", "", 0, 0, 0, Hand(), {}, {}, 0, 0, nullptr, {});
     }
 
     std::vector<Network::PlayerState> otherPlayers;
@@ -34,17 +34,18 @@ Network::GameStatePayload Room::getGameStatePayload(const Client *client) const 
     }
 
     Network::GameStatePayload payload(
-        self->getName().c_str(),
-        toString(m_game->getCurrentPhase()).c_str(),
-        m_game->getCurrentPlayerActions(),
-        m_game->getCurrentPlayerPurchasesLeft(),
-        m_game->getCurrentPlayerMoney(),
-        self->getHand(),
-        m_game->getCardsInPlay(),
-        self->getDrawStack().getSize(),
-        self->getDiscardStack().getSize(),
-        self->getDiscardStack().getStack().empty() ? nullptr : self->getDiscardStack().getStack().top(),
-        otherPlayers
+        self->getName().c_str(), // selfName
+        toString(m_game->getCurrentPhase()).c_str(), // currentPhase
+        m_game->getCurrentPlayerActions(), // actions
+        m_game->getCurrentPlayerPurchasesLeft(), // buys
+        m_game->getCurrentPlayerMoney(), // money
+        self->getHand(), // hand
+        m_game->getCardsInPlay(), // cardsInPlay
+        m_game->getCurrentCardDistribution(), // cardDistribution
+        self->getDrawStack().getSize(), // drawStackCount
+        self->getDiscardStack().getSize(), // discardStackCount
+        self->getDiscardStack().getStack().empty() ? nullptr : self->getDiscardStack().getStack().top(), // topCardDiscardPile
+        otherPlayers // otherPlayers
     );
     return payload;
 }

@@ -62,6 +62,8 @@ private:
     void connectNavigation();
     void connectNetwork();
 
+    void connectGameTable();
+
     bool ensureConnected();
     void leaveRoom();
 

@@ -5,6 +5,6 @@
 
 class Library : public Card, public Action  {
     public:
-        Library() : Card("Library", 5, "Draw until you have 7 cards in hand, skipping any Action cards you choose to set aside.", {CardType::ACTION}) {}
+        Library() : Card("Library", 5, "Draw until you have 7 cards in hand, skipping any Action cards you choose to set aside.", {CardType::ACTION}, Extension::DOMINION) {}
         void play(Game& g, Player& p) const;
 };

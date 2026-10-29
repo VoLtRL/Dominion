@@ -6,6 +6,6 @@
 
 class Province : public Card, public Victory  {
     public: 
-        Province() : Card("Province", 8, "", {CardType::VICTORY}) {}
+        Province() : Card("Province", 8, "", {CardType::VICTORY}, Extension::BASE_CARDS) {}
         int getVictoryPoints(const Player& p) const;
 };

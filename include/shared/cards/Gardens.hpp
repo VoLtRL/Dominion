@@ -5,6 +5,6 @@
 
 class Gardens : public Card, public Victory  {
     public:
-        Gardens() : Card("Gardens", 4, "Worth 1 Victory Point per 10 cards you have (rounded down).", {CardType::VICTORY}) {}
+        Gardens() : Card("Gardens", 4, "Worth 1 Victory Point per 10 cards you have (rounded down).", {CardType::VICTORY}, Extension::DOMINION) {}
         int getVictoryPoints(const Player& p) const;
 };

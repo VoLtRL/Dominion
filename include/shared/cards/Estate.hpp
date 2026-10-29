@@ -6,6 +6,6 @@
 
 class Estate : public Card, public Victory  {
     public: 
-        Estate() : Card("Estate", 2, "", {CardType::VICTORY}) {}
+        Estate() : Card("Estate", 2, "", {CardType::VICTORY}, Extension::BASE_CARDS) {}
         int getVictoryPoints(const Player& p) const;
 };
