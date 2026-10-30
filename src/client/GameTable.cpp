@@ -6,6 +6,8 @@
 
 #include <QResizeEvent>
 #include <QGraphicsTextItem>
+#include <QTimer>
+#include <algorithm>
 
 namespace {
     constexpr qreal CardWidth = 100;
@@ -27,11 +29,33 @@ GameTable::GameTable(QWidget *parent) : QWidget(parent), ui(new Ui::GameTable) {
     ui->gameView->setScene(scene);
     scene->setSceneRect(ui->gameView->viewport()->rect());
 
+    messageTimer = new QTimer(this);
+    messageTimer->setSingleShot(true);
+    connect(messageTimer, &QTimer::timeout, [this]() {
+        if(messageTextItem) {
+            scene->removeItem(messageTextItem);
+            delete messageTextItem;
+            messageTextItem = nullptr;
+        }
+        messageText.clear();
+    });
+
     connect(ui->endTurnButton, &QPushButton::clicked, this, &GameTable::onEndTurnClicked);
     connect(ui->playSelectedButton, &QPushButton::clicked, [this]() {
+        int selectedCount = 0;
         for (VisualCard* visualCard : visualCardsInHand) {
             if (visualCard->isSelected()) {
-                emit visualCard->clicked(visualCard->getId());
+                ++selectedCount;
+            }
+        }
+
+        if (!gameState.isSelectionValid(selectedCount)) {
+            displayMessage("Selection invalide.");
+            return;
+        }
+
+        for (VisualCard* visualCard : visualCardsInHand) {
+            if (visualCard->isSelected()) {
                 visualCard->setSelectedEffect(false);
             }
         }
@@ -46,24 +70,18 @@ GameTable::GameTable(QWidget *parent) : QWidget(parent), ui(new Ui::GameTable) {
 }
 
 void GameTable::startTurn() {
-    bool noActivePlayer = true;
     setPhaseText(gameState.currentPhase);
-    for(const ClientPlayerState& player : gameState.otherPlayers) {
-        if(player.isActive) {
-            displayMessage(QString("%1's turn").arg(player.name));
-            noActivePlayer = false;
-            break;
-        }
-    }
-    if(noActivePlayer) {
+    if(gameState.isLocalActivePlayer()) {
         displayMessage("It's your turn");
         modifySelection(gameState.currentPhase, gameState.currentPlayerActions, gameState.currentPlayerPurchasesLeft, gameState.currentPlayerMoney);
+    } else {
+        displayMessage(QString("%1's turn").arg(gameState.activePlayerName));
     }
 
     switchShop();
 }
 
-void GameTable::changePhase(QString newPhase) {
+void GameTable::changePhase(GamePhase newPhase) {
     gameState.currentPhase = newPhase;
     
     modifySelection(gameState.currentPhase, gameState.currentPlayerActions, gameState.currentPlayerPurchasesLeft, gameState.currentPlayerMoney);
@@ -78,28 +96,34 @@ void GameTable::switchShop() {
                 delete item;
             }
         }
-        isShopVisible = false;
-    }else{
-
-        std::cout << "Drawing shop with " << gameState.shop.size() << " cards." << std::endl;
-        const qreal sceneWidth = scene->sceneRect().width();
-        const qreal sceneHeight = scene->sceneRect().height();
-        const qreal shopWidth = gameState.shop.empty() ? 0 : CardWidth + (gameState.shop.size() - 1) * CardSpacing;
-        const qreal shopHeight = CardHeight * 2 + CardSpacing;
-        drawShop((sceneWidth - shopWidth) / 2, (sceneHeight - shopHeight) / 2);
-        isShopVisible = true;
-
     }
+    else drawShop();
+
 
 
     isShopVisible = !isShopVisible;
 }
 
-void GameTable::modifySelection(QString phase, int actions, int purchases, int money) {
-    ui->playSelectedButton->setEnabled(phase == "Action" && actions > 0);
-    ui->endTurnButton->setEnabled(phase == "Buy" && purchases > 0);
+void GameTable::modifySelection(GamePhase phase, int actions, int purchases, int money) {
+    ui->playSelectedButton->setEnabled(phase == GamePhase::ACTION && actions > 0);
+    ui->endTurnButton->setEnabled(phase == GamePhase::BUY && purchases > 0);
 
     setPhaseText(phase);
+}
+
+void GameTable::setSelection(SelectionMode mode,
+                             SelectionConstraint constraint,
+                             int numberOfCards,
+                             const std::vector<const Card*> &availableCards) {
+    gameState.selection.mode = mode;
+    gameState.selection.constraint = constraint;
+    gameState.selection.numberOfCards = std::max(0, numberOfCards);
+    gameState.selection.availableCards = availableCards;
+    gameState.selection.isPending = mode != SelectionMode::NONE;
+}
+
+bool GameTable::isLocalPlayerActive() const {
+    return gameState.isLocalActivePlayer();
 }
 
 
@@ -111,27 +135,47 @@ void GameTable::updateGameState(ClientGameState newGameState) {
 
 void GameTable::drawTable() {
     // Clear the scene
+    const bool shouldRestoreMessage =
+        messageTextItem != nullptr && messageTimer->isActive() && !messageText.isEmpty();
+    const QString messageToRestore = messageText;
+
     const QList<QGraphicsItem*> items = scene->items();
     for (QGraphicsItem *item : items) {
         scene->removeItem(item);
         delete item;
     }
+    messageTextItem = nullptr;
 
     const qreal sceneWidth = scene->sceneRect().width();
     const qreal sceneHeight = scene->sceneRect().height();
 
-    qDebug() << "Scene width: " << sceneWidth << ", Scene height: " << sceneHeight;
-
     const qreal handWidth = gameState.hand.getCards().empty() ? 0 : CardWidth + (gameState.hand.getCards().size() - 1) * CardSpacing;
+    const ClientPlayerState yourself = gameState.getYourself();
+    std::vector<ClientPlayerState> opponents;
+    for (const ClientPlayerState &player : gameState.players) {
+        if (!player.isYourself) {
+            opponents.push_back(player);
+        }
+    }
 
     // Draw the table
     drawPlayerHand(gameState.hand.getCards(), (sceneWidth - handWidth) / 2, sceneHeight - CardHeight - TableMargin);
-    drawStacks(gameState.selfDrawStackSize, gameState.selfDiscardStackSize, gameState.selfTopDiscardCard);
+    drawStacks(yourself.drawStackSize, yourself.discardStackSize, yourself.topDiscardCard);
     const qreal cardsInPlayWidth = gameState.cardsInPlay.empty() ? 0 : CardWidth + (gameState.cardsInPlay.size() - 1) * 90;
     drawCardsInPlay(gameState.cardsInPlay, (sceneWidth - cardsInPlayWidth) / 2, sceneHeight / 2 - CardHeight / 2);
-    drawOtherPlayersHands(gameState.otherPlayers);
-    drawOtherPlayersDrawAndDiscard(gameState.otherPlayers);
-    drawOtherCardsInPlay(gameState.otherPlayers);
+    drawOtherPlayersHands(opponents);
+    drawOtherPlayersDrawAndDiscard(opponents);
+    drawOtherCardsInPlay(opponents);
+
+    if(isShopVisible) drawShop();
+
+    if (shouldRestoreMessage) {
+        messageTextItem = scene->addText(messageToRestore);
+        messageTextItem->setDefaultTextColor(Qt::white);
+        messageTextItem->setPos(
+            (sceneWidth - messageTextItem->boundingRect().width()) / 2,
+            sceneHeight / 4 - messageTextItem->boundingRect().height() / 2);
+    }
 }
 
 void GameTable::onEndTurnClicked() {
@@ -150,8 +194,20 @@ void GameTable::drawPlayerHand(const std::vector<const Card*> hand, qreal x, qre
     std::vector<VisualCard*> visualCards = ::drawPlayerHand(scene, hand, x, y);
     for (VisualCard* visualCard : visualCards) {
         connect(visualCard, &VisualCard::clicked, [this, visualCard](int cardId) {
+            int selectedCount = 0;
+            for (VisualCard *selectedCard : visualCardsInHand) {
+                if (selectedCard->isSelected()) {
+                    ++selectedCount;
+                }
+            }
+
+            if (!visualCard->isSelected() &&
+                !gameState.canSelectAnotherCard(selectedCount)) {
+                displayMessage("Une seule carte peut être sélectionnée.");
+                return;
+            }
+
             visualCard->setSelectedEffect(!visualCard->isSelected());
-            visualCardsInHand.push_back(visualCard);
         });
     }
 }
@@ -383,33 +439,45 @@ void GameTable::drawStacks(quint16 cardsInDraw, quint16 cardsInDiscard, const Ca
     discardText->setDefaultTextColor(Qt::white);
 }
 
-void GameTable::drawShop(qreal x, qreal y) {
-    const qreal shopWidth = gameState.shop.empty() ? 0 : CardWidth + (gameState.shop.size() - 1) * CardSpacing;
+void GameTable::drawShop() {
+
+    const qreal shopWidth = ((gameState.shop.size() + 1) / 2) == 0 ? 0 : (CardWidth + (((gameState.shop.size() + 1) / 2) - 1) * CardSpacing);
     const qreal shopHeight = CardHeight * 2 + CardSpacing;
+
+    qreal startX = (scene->sceneRect().width() - shopWidth) / 2.0;
+    qreal startY = (scene->sceneRect().height() - shopHeight) / 2.0;
 
     int index = 0;
     for (auto pair : gameState.shop) {
-        std::cout << "Drawing shop card: " << pair.first->getName() << " with quantity: " << pair.second << std::endl;
         const Card* card = pair.first;
-        const qreal offsetX = index * CardSpacing - shopWidth / 2 + CardWidth / 2;
-        const qreal offsetY = (index % 2 == 0) ? 0 : CardHeight + CardSpacing;
-        drawCard(scene, card, x + offsetX, y + offsetY)->setData(0, "shop-card");
+        const qreal offsetX = index / 2 * CardSpacing;
+        const qreal offsetY = index % 2 * (CardHeight + CardSpacing);
+        drawCard(scene, card, startX + offsetX, startY + offsetY)->setData(0, "shop-card");
         QGraphicsTextItem* quantityText = scene->addText(QString::number(pair.second));
         quantityText->setDefaultTextColor(Qt::white);
-        quantityText->setPos(x + offsetX, y + offsetY + CardHeight + 2);
+        quantityText->setPos(startX + offsetX + (CardWidth / 2) - 10, startY + offsetY + CardHeight + 2);
         quantityText->setData(0, "shop-card");
         index++;
     }
 }
 
-void GameTable::setPhaseText(const QString& phase) {
+void GameTable::setPhaseText(GamePhase phase) {
     emit phaseChanged(phase);
 }
 
 void GameTable::displayMessage(QString message){
-    QGraphicsTextItem* messageText = scene->addText(message);
-    messageText->setDefaultTextColor(Qt::white);
-    messageText->setPos(scene->sceneRect().width() / 2 - messageText->boundingRect().width() / 2, scene->sceneRect().height() / 4 - messageText->boundingRect().height() / 2);
+    messageText = message;
+
+    if(messageTextItem){
+        scene->removeItem(messageTextItem);
+        delete messageTextItem;
+    }
+
+    messageTextItem = scene->addText(message);
+    messageTextItem->setDefaultTextColor(Qt::white);
+    messageTextItem->setPos((scene->sceneRect().width() - messageTextItem->boundingRect().width()) / 2, scene->sceneRect().height()/4 - messageTextItem->boundingRect().height()/2);
+
+    messageTimer->start(4000); // Display the message for 4 seconds
 }
 
 GameTable::~GameTable() {

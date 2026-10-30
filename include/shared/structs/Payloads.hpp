@@ -7,6 +7,8 @@
 #include "shared/gameplay/Factory.hpp"
 #include "shared/gameplay/GameMode.hpp"
 #include "shared/structs/EventType.hpp"
+#include "shared/structs/GamePhase.hpp"
+#include "shared/structs/Selection.hpp"
 
 namespace Network {
 
@@ -379,33 +381,36 @@ namespace Network {
     struct PlayCardServerPayload : public Payload {
         int roomId;
         int clientId;
-        std::string phase;
-        std::string selectionMode;
+        GamePhase phase;
+        SelectionMode selectionMode;
+        SelectionConstraint selectionConstraint;
         int numberOfCardsToSelect;
 
-        PlayCardServerPayload(int roomId, int clientId, const std::string &phase, const std::string &selectionMode, int numberOfCardsToSelect)
-            : roomId(roomId), clientId(clientId), phase(phase), selectionMode(selectionMode), numberOfCardsToSelect(numberOfCardsToSelect) {}
+        PlayCardServerPayload(int roomId, int clientId, GamePhase phase, SelectionMode selectionMode, SelectionConstraint selectionConstraint, int numberOfCardsToSelect)
+            : roomId(roomId), clientId(clientId), phase(phase), selectionMode(selectionMode), selectionConstraint(selectionConstraint), numberOfCardsToSelect(numberOfCardsToSelect) {}
 
         QJsonObject toJson() const {
             QJsonObject json;
             json["roomId"] = roomId;
             json["clientId"] = clientId;
-            json["phase"] = QString::fromStdString(phase);
-            json["selectionMode"] = QString::fromStdString(selectionMode);
+            json["phase"] = toString(phase).c_str();
+            json["selectionConstraint"] = toString(selectionConstraint).c_str();
+            json["selectionMode"] = toString(selectionMode).c_str();
             json["numberOfCardsToSelect"] = numberOfCardsToSelect;
 
             return json;
         }
 
         static std::optional<PlayCardServerPayload> fromJson(const QJsonObject &json) {
-            if (!json.contains("roomId") || !json.contains("clientId") || !json.contains("phase") || !json.contains("selectionMode") || !json.contains("numberOfCardsToSelect")) {
+            if (!json.contains("roomId") || !json.contains("clientId") || !json.contains("phase") || !json.contains("selectionMode") || !json.contains("selectionConstraint") || !json.contains("numberOfCardsToSelect")) {
                 return std::nullopt;
             }
             return PlayCardServerPayload(
                 json["roomId"].toInt(),
                 json["clientId"].toInt(),
-                json["phase"].toString().toStdString(),
-                json["selectionMode"].toString().toStdString(),
+                fromString(json["phase"].toString().toStdString()),
+                stringToSelectionMode(json["selectionMode"].toString().toStdString()),
+                stringToSelectionConstraint(json["selectionConstraint"].toString().toStdString()),
                 json["numberOfCardsToSelect"].toInt()
             );
         }
@@ -447,7 +452,8 @@ namespace Network {
 
 struct GameStatePayload : public Payload {
     QString selfName;
-    QString currentPhase;
+    QString activePlayerName;
+    GamePhase currentPhase;
 
     int actions;
     int buys;
@@ -458,18 +464,16 @@ struct GameStatePayload : public Payload {
 
     std::map<const Card*, int> cardsInShop;
 
-    int drawStackCount;
-    int discardStackCount;
-    const Card* topCardDiscardPile;
-    std::vector<PlayerState> otherPlayers;
+    std::vector<PlayerState> players;
 
-    GameStatePayload(const QString &selfName, const QString &currentPhase, int actions, int buys, int money, const Hand &hand, const std::vector<const Card*> &cardsInPlay, std::map<const Card*, int> cardsInShop, int drawStackCount, int discardStackCount, const Card* topCardDiscardPile, const std::vector<PlayerState> &otherPlayers)
-        : selfName(selfName), currentPhase(currentPhase), actions(actions), buys(buys), money(money), hand(hand), cardsInPlay(cardsInPlay), cardsInShop(cardsInShop), drawStackCount(drawStackCount), discardStackCount(discardStackCount), topCardDiscardPile(topCardDiscardPile), otherPlayers(otherPlayers) {}
+    GameStatePayload(const QString &selfName, const QString &activePlayerName,GamePhase currentPhase, int actions, int buys, int money, const Hand &hand, const std::vector<const Card*> &cardsInPlay, std::map<const Card*, int> cardsInShop, const std::vector<PlayerState> &players)
+        : selfName(selfName), activePlayerName(activePlayerName), currentPhase(currentPhase), actions(actions), buys(buys), money(money), hand(hand), cardsInPlay(cardsInPlay), cardsInShop(cardsInShop), players(players) {}
 
     QJsonObject toJson() const {
         QJsonObject json;
         json["selfName"] = selfName;
-        json["currentPhase"] = currentPhase;
+        json["activePlayerName"] = activePlayerName;
+        json["currentPhase"] = toString(currentPhase).c_str();
         json["actions"] = actions;
         json["buys"] = buys;
         json["money"] = money;
@@ -485,22 +489,20 @@ struct GameStatePayload : public Payload {
         QJsonObject shopJson;
         for (const auto &pair : cardsInShop) {
             shopJson.insert(pair.first->getName().c_str(), pair.second);
+            std::cout << "Adding card to shop JSON: " << pair.first->getName() << " with count: " << pair.second << std::endl;
         }
         json["shop"] = shopJson;
         json["cardsInPlay"] = cardsInPlayArray;
-        json["drawStackCount"] = drawStackCount;
-        json["discardStackCount"] = discardStackCount;
-        json["topCardDiscardPile"] = topCardDiscardPile ? topCardDiscardPile->getName().c_str() : QString();
-        QJsonArray otherPlayersArray;
-        for (const auto &playerState : otherPlayers) {
-            otherPlayersArray.append(playerState.toJson());
+        QJsonArray playersArray;
+        for (const auto &playerState : players) {
+            playersArray.append(playerState.toJson());
         }
-        json["otherPlayers"] = otherPlayersArray;
+        json["players"] = playersArray;
         return json;
     }
 
     static std::optional<GameStatePayload> fromJson(const QJsonObject &json) {
-        if (!json.contains("selfName") || !json.contains("currentPhase") || !json.contains("actions") || !json.contains("buys") || !json.contains("money") || !json.contains("hand") || !json.contains("cardsInPlay") || !json.contains("shop") || !json.contains("drawStackCount") || !json.contains("discardStackCount") || !json.contains("topCardDiscardPile") || !json.contains("otherPlayers")) {
+        if (!json.contains("selfName") || !json.contains("activePlayerName") || !json.contains("currentPhase") || !json.contains("actions") || !json.contains("buys") || !json.contains("money") || !json.contains("hand") || !json.contains("cardsInPlay") || !json.contains("shop") || !json.contains("players")) {
             return std::nullopt;
         }
         Hand hand;
@@ -523,30 +525,24 @@ struct GameStatePayload : public Payload {
             }
         }
 
-        const Card* topCardDiscardPile = nullptr;
-        if (!json["topCardDiscardPile"].toString().isEmpty()) {
-            topCardDiscardPile = Factory::get(json["topCardDiscardPile"].toString().toStdString());
-        }
-        std::vector<PlayerState> otherPlayers;
-        for (const auto &playerStateJson : json["otherPlayers"].toArray()) {
+        std::vector<PlayerState> players;
+        for (const auto &playerStateJson : json["players"].toArray()) {
             auto playerStateOpt = PlayerState::fromJson(playerStateJson.toObject());
             if (playerStateOpt) {
-                otherPlayers.push_back(*playerStateOpt);
+                players.push_back(*playerStateOpt);
             }
         }
         return GameStatePayload(
             json["selfName"].toString(),
-            json["currentPhase"].toString(),
+            json["activePlayerName"].toString(),
+            fromString(json["currentPhase"].toString().toStdString()),
             json["actions"].toInt(),
             json["buys"].toInt(),
             json["money"].toInt(),
             hand,
             cardsInPlay,
             shop,
-            json["drawStackCount"].toInt(),
-            json["discardStackCount"].toInt(),
-            topCardDiscardPile,
-            otherPlayers
+            players
         );
     }
 

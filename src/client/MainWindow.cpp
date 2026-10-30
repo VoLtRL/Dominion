@@ -93,9 +93,9 @@ void MainWindow::connectGameTable() {
             networkManager->sendAction(ActionType::END_TURN, Network::EmptyPayload());
         }
     });
-    connect(gameTable, &GameTable::phaseChanged, this, [this](const QString& newPhase) {
+    connect(gameTable, &GameTable::phaseChanged, this, [this](GamePhase newPhase) {
         if (ensureConnected()) {
-            ui->statusbar->showMessage(QString("Phase changed to: %1").arg(newPhase));
+            ui->statusbar->showMessage(QString("Phase changed to: %1").arg(toString(newPhase).c_str()));
         }
     });
 }
@@ -146,6 +146,9 @@ void MainWindow::showJoinRoom() {
 }
 
 void MainWindow::showMainMenu() {
+    gameStartReceived = false;
+    initialGameStateReceived = false;
+    initialTurnStarted = false;
     showPage(Page::MainMenu);
 }
 
@@ -311,8 +314,10 @@ void MainWindow::handleGameStarted(const QJsonObject &data) {
         return;
     }
 
+    gameStartReceived = true;
+    initialTurnStarted = false;
     showPage(Page::GameTable);
-    gameTable->startTurn();
+    startTurnWhenReady();
 }
 
 void MainWindow::handleTurnState(const QJsonObject &data) {
@@ -337,6 +342,7 @@ void MainWindow::updateGameState(const Network::GameStatePayload &payload) {
     ClientGameState instance;
 
     instance.selfName = payload.selfName;
+    instance.activePlayerName = payload.activePlayerName;
     instance.currentPhase = payload.currentPhase;
 
     instance.currentPlayerActions = payload.actions;
@@ -345,18 +351,15 @@ void MainWindow::updateGameState(const Network::GameStatePayload &payload) {
 
     instance.hand = payload.hand;
 
-    instance.selfDrawStackSize = payload.drawStackCount;
-
-    instance.selfDiscardStackSize = payload.discardStackCount;
-    instance.selfTopDiscardCard = payload.topCardDiscardPile;
-
     instance.cardsInPlay = payload.cardsInPlay;
+    instance.shop = payload.cardsInShop;
 
-    instance.otherPlayers.clear();
-    for (const auto &playerState : payload.otherPlayers) {
+    instance.players.clear();
+    for (const auto &playerState : payload.players) {
         ClientPlayerState clientPlayerState;
 
         clientPlayerState.name = playerState.playerName;
+        clientPlayerState.isYourself = playerState.playerName == payload.selfName;
 
         clientPlayerState.handSize = playerState.handSize;
         clientPlayerState.drawStackSize = playerState.drawStackSize;
@@ -368,10 +371,19 @@ void MainWindow::updateGameState(const Network::GameStatePayload &payload) {
 
         clientPlayerState.isActive = playerState.isActive;
 
-        instance.otherPlayers.push_back(clientPlayerState);
+        instance.players.push_back(clientPlayerState);
     }
 
     gameTable->updateGameState(instance);
+    initialGameStateReceived = true;
+    startTurnWhenReady();
+}
+
+void MainWindow::startTurnWhenReady() {
+    if (gameStartReceived && initialGameStateReceived && !initialTurnStarted) {
+        initialTurnStarted = true;
+        gameTable->startTurn();
+    }
 }
 
 void MainWindow::handleRoomList(const QJsonObject &data) {

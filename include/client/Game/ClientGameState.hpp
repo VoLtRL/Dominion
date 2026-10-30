@@ -1,11 +1,42 @@
 #pragma once
 
 #include <QString>
+#include <map>
 #include <vector>
 #include "shared/abstract/Card.hpp"
+#include "shared/structs/GamePhase.hpp"
+#include "shared/structs/Selection.hpp"
+
+struct ClientSelectionState {
+    SelectionMode mode{SelectionMode::PLAY_CARD};
+    SelectionConstraint constraint{SelectionConstraint::EXACTLY};
+    int numberOfCards{1};
+    bool isPending{false};
+    std::vector<const Card*> availableCards;
+
+    bool canSelectAnother(int selectedCount) const {
+        return constraint != SelectionConstraint::AT_MOST && constraint != SelectionConstraint::EXACTLY ? true : selectedCount < numberOfCards;
+    }
+
+    bool isValid(int selectedCount) const {
+        switch (constraint) {
+            case SelectionConstraint::NONE:
+                return selectedCount == 0;
+            case SelectionConstraint::AT_LEAST:
+                return selectedCount >= numberOfCards;
+            case SelectionConstraint::AT_MOST:
+                return selectedCount <= numberOfCards;
+            case SelectionConstraint::EXACTLY:
+                return selectedCount == numberOfCards;
+        }
+        return false;
+    }
+};
 
 struct ClientPlayerState {
     QString name;
+
+    bool isYourself{false};
 
     int handSize{0};
     int drawStackSize{0};
@@ -19,7 +50,8 @@ struct ClientPlayerState {
 
 struct ClientGameState {
     QString selfName;
-    QString currentPhase;
+    QString activePlayerName;
+    GamePhase currentPhase;
 
     int currentPlayerActions{0};
     int currentPlayerPurchasesLeft{0};
@@ -28,10 +60,46 @@ struct ClientGameState {
     Hand hand;
     std::vector<const Card*> cardsInPlay;
     std::map<const Card*, int> shop;
-
-    int selfDrawStackSize{0};
-    int selfDiscardStackSize{0};
-    const Card* selfTopDiscardCard{nullptr};
     
-    std::vector<ClientPlayerState> otherPlayers;
+    std::vector<ClientPlayerState> players;
+    ClientSelectionState selection;
+
+    ClientPlayerState getYourself() const {
+        for (const auto& player : players) {
+            if (player.isYourself) {
+                return player;
+            }
+        }
+        return ClientPlayerState();
+    }
+
+    bool isLocalActivePlayer() const {
+        const ClientPlayerState yourself = getYourself();
+        return yourself.isYourself && activePlayerName == yourself.name;
+    }
+
+    bool canPlayCard(const Card* card) const {
+
+        if (isLocalActivePlayer() && currentPhase == GamePhase::ACTION && currentPlayerActions > 0 && card->isA(CardType::ACTION)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    bool canBuyCard(const Card* card) const {
+        if (isLocalActivePlayer() && currentPhase == GamePhase::BUY && currentPlayerPurchasesLeft > 0 && currentPlayerMoney >= card->getCost()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    bool canSelectAnotherCard(int selectedCount) const {
+        return selection.canSelectAnother(selectedCount);
+    }
+
+    bool isSelectionValid(int selectedCount) const {
+        return selection.isValid(selectedCount);
+    }
 };

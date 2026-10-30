@@ -38,6 +38,9 @@ private:
     GameTable *gameTable;
     JoinRoom *joinRoom;
     QTimer reconnectTimer;
+    bool gameStartReceived{false};
+    bool initialGameStateReceived{false};
+    bool initialTurnStarted{false};
 
 private slots:
     void applySettings(const QString &newPlayerName, const QString &hostAddress, quint16 hostPort);
@@ -83,4 +86,5 @@ private:
     void handleGameState(const QJsonObject &data);
     
     void updateGameState(const Network::GameStatePayload &payload);
+    void startTurnWhenReady();
 };

@@ -7,6 +7,7 @@
 #include "shared/player/Player.hpp"
 #include "client/VisualCard.hpp"
 #include "client/Game/ClientGameState.hpp"
+#include "shared/structs/GamePhase.hpp"
 
 #include <QtGlobal>
 
@@ -31,10 +32,15 @@ private:
     QVector<VisualCard*> visualCardsInHand;
     QVector<VisualCard*> visualCardsInPlay;
 
+    QTimer* messageTimer{nullptr};
+    QString messageText;
+    QGraphicsTextItem* messageTextItem{nullptr};
+
+
 signals:
     void endTurnClicked();
     void widgetResized(const QSize &newSize);
-    void phaseChanged(const QString& newPhase);
+    void phaseChanged(GamePhase newPhase);
     
 private slots:
     void onEndTurnClicked();
@@ -47,11 +53,15 @@ public:
 
     // Game Logic
     void startTurn();
-    void changePhase(QString newPhase);
+    void changePhase(GamePhase newPhase);
     void switchShop();
     void endTurn();
 
-    void modifySelection(QString phase, int actions, int purchases, int money);
+    void modifySelection(GamePhase phase, int actions, int purchases, int money);
+    void setSelection(SelectionMode mode, SelectionConstraint constraint,
+                      int numberOfCards,
+                      const std::vector<const Card*> &availableCards = {});
+    bool isLocalPlayerActive() const;
 
 
     // UI Logic
@@ -65,9 +75,9 @@ public:
     void drawCardsInPlay(const std::vector<const Card*> cardsInPlay, qreal x, qreal y);
     void drawStacks(quint16 cardsInDraw, quint16 cardsInDiscard, const Card* topDiscardCard);
 
-    void drawShop(qreal x, qreal y);
+    void drawShop();
 
-    void setPhaseText(const QString& phase);
+    void setPhaseText(GamePhase phase);
         
     void displayMessage(QString message);
     

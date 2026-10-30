@@ -12,18 +12,18 @@ Room::Room(int id, const QString &name, Client *host)
 Network::GameStatePayload Room::getGameStatePayload(const Client *client) const {
     const Player *self = client ? client->getAssociatedPlayer() : nullptr;
     if (!m_game || !self) {
-        return Network::GameStatePayload("", "", 0, 0, 0, Hand(), {}, {}, 0, 0, nullptr, {});
+        return Network::GameStatePayload("", "", GamePhase::UNKNOWN, 0, 0, 0, Hand(), {}, {}, {});
     }
 
-    std::vector<Network::PlayerState> otherPlayers;
+    std::vector<Network::PlayerState> players;
     for (const Client *roomClient : m_players) {
-        if (roomClient == client || !roomClient->getAssociatedPlayer()) {
+        if (!roomClient->getAssociatedPlayer()) {
             continue;
         }
 
         const Player *player = roomClient->getAssociatedPlayer();
         const auto &discardStack = player->getDiscardStack();
-        otherPlayers.push_back(Network::PlayerState(
+        players.push_back(Network::PlayerState(
             player->getName().c_str(),
             static_cast<int>(player->getHand().getSize()),
             player->getDrawStack().getSize(),
@@ -35,17 +35,15 @@ Network::GameStatePayload Room::getGameStatePayload(const Client *client) const 
 
     Network::GameStatePayload payload(
         self->getName().c_str(), // selfName
-        toString(m_game->getCurrentPhase()).c_str(), // currentPhase
+        m_game->getActivePlayer().getName().c_str(), // activePlayerName
+        m_game->getCurrentPhase(), // currentPhase
         m_game->getCurrentPlayerActions(), // actions
         m_game->getCurrentPlayerPurchasesLeft(), // buys
         m_game->getCurrentPlayerMoney(), // money
         self->getHand(), // hand
-        m_game->getCardsInPlay(), // cardsInPlay
+        self->getCardsInPlay(), // cardsInPlay
         m_game->getCurrentCardDistribution(), // cardDistribution
-        self->getDrawStack().getSize(), // drawStackCount
-        self->getDiscardStack().getSize(), // discardStackCount
-        self->getDiscardStack().getStack().empty() ? nullptr : self->getDiscardStack().getStack().top(), // topCardDiscardPile
-        otherPlayers // otherPlayers
+        players
     );
     return payload;
 }
