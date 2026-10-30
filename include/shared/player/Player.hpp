@@ -144,6 +144,8 @@ public:
 
   void addCardToHand(const Card *card) { hand.addCard(card); }
 
+  void addCardToPlay(const Card *card) { cardsInPlay.push_back(card); }
+
   void addCardToDrawStack(const Card *card) { drawStack.putCard(card); }
 
   int getVictoryPoints() const;

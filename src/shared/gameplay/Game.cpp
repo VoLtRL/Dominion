@@ -659,6 +659,7 @@ bool Game::tryPlayAction(Player* p, const Card* card) {
 
   // Signal "ok"
   p->removeCardFromHand(card);
+  p->addCardToPlay(card);
   addCardToPlay(card);
   const Action* action = dynamic_cast<const Action*>(card);
   action->play(*this, *p);
@@ -681,6 +682,7 @@ bool Game::tryPlayTreasure(Player* p, const Card* card) {
   }
   // Signal "ok"
   p->removeCardFromHand(card);
+  p->addCardToPlay(card);
   addCardToPlay(card);
   const Treasure* treasure = dynamic_cast<const Treasure*>(card);
   addGold(treasure->getCoins());

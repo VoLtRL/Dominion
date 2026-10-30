@@ -41,37 +41,73 @@ GameTable::GameTable(QWidget *parent) : QWidget(parent), ui(new Ui::GameTable) {
     });
 
     connect(ui->endTurnButton, &QPushButton::clicked, this, &GameTable::onEndTurnClicked);
-    connect(ui->playSelectedButton, &QPushButton::clicked, [this]() {
-        int selectedCount = 0;
-        for (VisualCard* visualCard : visualCardsInHand) {
-            if (visualCard->isSelected()) {
-                ++selectedCount;
-            }
-        }
+    connect(ui->PlayCardButton, &QPushButton::clicked, this, &GameTable::onPlayCardClicked);
+    connect(ui->nextPhaseButton, &QPushButton::clicked, this, &GameTable::onNextPhaseClicked);
 
-        if (!gameState.isSelectionValid(selectedCount)) {
-            displayMessage("Selection invalide.");
-            return;
-        }
-
+    connect(ui->playAllTreasuresButton, &QPushButton::clicked, [this]() {
         for (VisualCard* visualCard : visualCardsInHand) {
-            if (visualCard->isSelected()) {
-                visualCard->setSelectedEffect(false);
+            for(auto type : visualCard->getAssociatedCard()->getTypes()) {
+                if(type == CardType::TREASURE) {
+                    tryPlayCard(visualCard->getAssociatedCard());
+                }
             }
         }
     });
-
-    connect(ui->endPhaseButton, &QPushButton::clicked, [this]() {
-    });
-
 
     connect(ui->switchShopButton, &QPushButton::clicked, this, &GameTable::switchShop);
 
 }
 
+void GameTable::onPlayCardClicked() {
+    const Card* cardToPlay = nullptr;
+    for (VisualCard* visualCard : visualCardsInHand) {
+        if (visualCard->isSelected()) {
+            cardToPlay = visualCard->getAssociatedCard();
+        }
+    }
+
+    if (!cardToPlay) {
+        displayMessage("No card selected.");
+        return;
+    }
+
+    tryPlayCard(cardToPlay);
+}
+
+void GameTable::tryPlayCard(const Card* card) {
+    if (!card) {
+        displayMessage("No card selected.");
+        return;
+    }
+
+    if (!gameState.canPlayCard(card)) {
+        displayMessage(QString("Cannot play card: %1").arg(QString::fromStdString(card->getName())));
+        return;
+    }
+
+    emit cardPlayed(card);
+}
+
+void GameTable::handleCardPlayed(const Card* card) {
+    if (!card) {
+        displayMessage("No card played.");
+        return;
+    }
+
+    if (gameState.isLocalPlayerActive()) {
+        displayMessage(QString("You played: %1, %2").arg(QString::fromStdString(card->getName())).arg(QString::fromStdString(card->getDescription())));
+    } else {
+        displayMessage(QString("%1 played: %2").arg(gameState.activePlayerName, QString::fromStdString(card->getName())));
+    }
+}
+
+void GameTable::onNextPhaseClicked() {
+    emit nextPhaseClicked();
+}
+
 void GameTable::startTurn() {
     setPhaseText(gameState.currentPhase);
-    if(gameState.isLocalActivePlayer()) {
+    if(gameState.isLocalPlayerActive()) {
         displayMessage("It's your turn");
         modifySelection(gameState.currentPhase, gameState.currentPlayerActions, gameState.currentPlayerPurchasesLeft, gameState.currentPlayerMoney);
     } else {
@@ -105,7 +141,12 @@ void GameTable::switchShop() {
 }
 
 void GameTable::modifySelection(GamePhase phase, int actions, int purchases, int money) {
-    ui->playSelectedButton->setEnabled(phase == GamePhase::ACTION && actions > 0);
+    ui->PlayCardButton->setEnabled(
+        phase == GamePhase::ACTION &&
+        actions > 0 &&
+        gameState.selection.mode == SelectionMode::PLAY_CARD &&
+        gameState.selection.constraint == SelectionConstraint::EXACTLY &&
+        gameState.selection.numberOfCards == 1);
     ui->endTurnButton->setEnabled(phase == GamePhase::BUY && purchases > 0);
 
     setPhaseText(phase);
@@ -123,7 +164,7 @@ void GameTable::setSelection(SelectionMode mode,
 }
 
 bool GameTable::isLocalPlayerActive() const {
-    return gameState.isLocalActivePlayer();
+    return gameState.isLocalPlayerActive();
 }
 
 
@@ -150,9 +191,15 @@ void GameTable::drawTable() {
     const qreal sceneHeight = scene->sceneRect().height();
 
     const qreal handWidth = gameState.hand.getCards().empty() ? 0 : CardWidth + (gameState.hand.getCards().size() - 1) * CardSpacing;
-    const ClientPlayerState yourself = gameState.getYourself();
+    const ClientPlayerState* yourself = gameState.getYourself();
+    if (!yourself) {
+        displayMessage("Local player state is unavailable.");
+        return;
+    }
+
     std::vector<ClientPlayerState> opponents;
     for (const ClientPlayerState &player : gameState.players) {
+        std::cout << "Player: " << player.name.toStdString() << ", is yourself: " << player.isYourself << std::endl;
         if (!player.isYourself) {
             opponents.push_back(player);
         }
@@ -160,7 +207,7 @@ void GameTable::drawTable() {
 
     // Draw the table
     drawPlayerHand(gameState.hand.getCards(), (sceneWidth - handWidth) / 2, sceneHeight - CardHeight - TableMargin);
-    drawStacks(yourself.drawStackSize, yourself.discardStackSize, yourself.topDiscardCard);
+    drawStacks(yourself->drawStackSize, yourself->discardStackSize, yourself->topDiscardCard);
     const qreal cardsInPlayWidth = gameState.cardsInPlay.empty() ? 0 : CardWidth + (gameState.cardsInPlay.size() - 1) * 90;
     drawCardsInPlay(gameState.cardsInPlay, (sceneWidth - cardsInPlayWidth) / 2, sceneHeight / 2 - CardHeight / 2);
     drawOtherPlayersHands(opponents);
@@ -193,21 +240,22 @@ void GameTable::drawPlayerHand(const std::vector<const Card*> hand, qreal x, qre
     visualCardsInHand.clear();
     std::vector<VisualCard*> visualCards = ::drawPlayerHand(scene, hand, x, y);
     for (VisualCard* visualCard : visualCards) {
+        visualCardsInHand.push_back(visualCard);
         connect(visualCard, &VisualCard::clicked, [this, visualCard](int cardId) {
             int selectedCount = 0;
-            for (VisualCard *selectedCard : visualCardsInHand) {
-                if (selectedCard->isSelected()) {
-                    ++selectedCount;
+            for (VisualCard *card : visualCardsInHand) {
+                if (card->isSelected()) {
+                    selectedCount++;
                 }
+                std::cout << "Card " << card->getId() << " selected: " << card->isSelected() << std::endl;
             }
-
             if (!visualCard->isSelected() &&
                 !gameState.canSelectAnotherCard(selectedCount)) {
-                displayMessage("Une seule carte peut être sélectionnée.");
+                displayMessage("Only one card can be selected.");
                 return;
             }
 
-            visualCard->setSelectedEffect(!visualCard->isSelected());
+            visualCard->setSelected(!visualCard->isSelected());
         });
     }
 }
@@ -309,6 +357,7 @@ void GameTable::drawOtherCardsInPlay(
                 const Card *card = cards[cardIndex];
                 VisualCard *visualCard = new VisualCard(
                     VisualCard::getNewId(),
+                    card,
                     QString::fromStdString(card->getName()),
                     card->getCost(),
                     QString(card->getPath().c_str()),
@@ -409,12 +458,6 @@ void GameTable::drawCardsInPlay(const std::vector<const Card*> cardsInPlay, qrea
     }
 
     std::vector<VisualCard*> visualCards = ::drawCardsInPlay(scene, cardsInPlay, x, y);
-    for (VisualCard* visualCard : visualCards) {
-        connect(visualCard, &VisualCard::clicked, [this, visualCard](int cardId) {
-            visualCard->setSelectedEffect(!visualCard->isSelected());
-            visualCardsInPlay.push_back(visualCard);
-        });
-    }
 }
 
 void GameTable::drawStacks(quint16 cardsInDraw, quint16 cardsInDiscard, const Card* topDiscardCard) {

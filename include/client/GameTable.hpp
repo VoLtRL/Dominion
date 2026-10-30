@@ -41,9 +41,13 @@ signals:
     void endTurnClicked();
     void widgetResized(const QSize &newSize);
     void phaseChanged(GamePhase newPhase);
+    void cardPlayed(const Card *card);
+    void nextPhaseClicked();
     
 private slots:
     void onEndTurnClicked();
+    void onPlayCardClicked();
+    void onNextPhaseClicked();
 
 public:
     explicit GameTable(QWidget *parent = nullptr);
@@ -56,12 +60,17 @@ public:
     void changePhase(GamePhase newPhase);
     void switchShop();
     void endTurn();
+    void tryPlayCard(const Card* card);
 
     void modifySelection(GamePhase phase, int actions, int purchases, int money);
     void setSelection(SelectionMode mode, SelectionConstraint constraint,
                       int numberOfCards,
                       const std::vector<const Card*> &availableCards = {});
     bool isLocalPlayerActive() const;
+
+    /// @brief Handles the event when a card is played after being validated by the server. This function is called when the server confirms that a card has been played successfully.
+    /// @param card The card that was played.
+    void handleCardPlayed(const Card* card);
 
 
     // UI Logic

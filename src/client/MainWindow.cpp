@@ -98,6 +98,13 @@ void MainWindow::connectGameTable() {
             ui->statusbar->showMessage(QString("Phase changed to: %1").arg(toString(newPhase).c_str()));
         }
     });
+
+    connect(gameTable, &GameTable::cardPlayed, this, &MainWindow::handlePlayCard);
+    connect(gameTable, &GameTable::nextPhaseClicked, this, [this]() {
+        if (ensureConnected()) {
+            networkManager->sendAction(ActionType::NEXT_PHASE, Network::EmptyPayload());
+        }
+    });
 }
 
 void MainWindow::showPage(Page page) {
@@ -232,7 +239,10 @@ void MainWindow::handleAction(const ActionType &action, const QJsonObject &data)
         break;
     case ActionType::GAME_STATE:
         handleGameState(data);
-        break;    
+        break;
+    case ActionType::PLAY_CARD:
+        handleCardPlayed(data);
+        break;
     case ActionType::REQUEST_ROOM_LIST:
         handleRoomList(data);
         break;
@@ -394,6 +404,27 @@ void MainWindow::handleRoomList(const QJsonObject &data) {
     }
 
     joinRoom->updateAvailableRooms(payload->rooms);
+}
+
+void MainWindow::handleCardPlayed(const QJsonObject &data) {
+    const auto payload = Network::PlayCardPayload::fromJson(data);
+    if (!payload) {
+        qWarning() << "Invalid PLAY_CARD payload:" << data;
+        return;
+    }
+    gameTable->handleCardPlayed(payload->cardToPlay);
+}
+
+void MainWindow::handlePlayCard(const Card *card) {
+    if (!card) {
+        return;
+    }
+
+    if (ensureConnected()) {
+        networkManager->sendAction(
+            ActionType::PLAY_CARD,
+            Network::PlayCardPayload(card));
+    }
 }
 
 void MainWindow::applySettings(

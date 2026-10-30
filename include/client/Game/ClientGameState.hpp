@@ -64,23 +64,23 @@ struct ClientGameState {
     std::vector<ClientPlayerState> players;
     ClientSelectionState selection;
 
-    ClientPlayerState getYourself() const {
+    const ClientPlayerState* getYourself() const {
         for (const auto& player : players) {
             if (player.isYourself) {
-                return player;
+                return &player;
             }
         }
-        return ClientPlayerState();
+        return nullptr;
     }
 
-    bool isLocalActivePlayer() const {
-        const ClientPlayerState yourself = getYourself();
-        return yourself.isYourself && activePlayerName == yourself.name;
+    bool isLocalPlayerActive() const {
+        const ClientPlayerState* yourself = getYourself();
+        return yourself && yourself->isYourself && activePlayerName == yourself->name;
     }
 
     bool canPlayCard(const Card* card) const {
 
-        if (isLocalActivePlayer() && currentPhase == GamePhase::ACTION && currentPlayerActions > 0 && card->isA(CardType::ACTION)) {
+        if (isLocalPlayerActive() && currentPhase == GamePhase::ACTION && currentPlayerActions > 0 && (card->isA(CardType::ACTION) || card->isA(CardType::TREASURE))) {
             return true;
         }
 
@@ -88,7 +88,7 @@ struct ClientGameState {
     }
 
     bool canBuyCard(const Card* card) const {
-        if (isLocalActivePlayer() && currentPhase == GamePhase::BUY && currentPlayerPurchasesLeft > 0 && currentPlayerMoney >= card->getCost()) {
+        if (isLocalPlayerActive() && currentPhase == GamePhase::BUY && currentPlayerPurchasesLeft > 0 && currentPlayerMoney >= card->getCost()) {
             return true;
         }
 

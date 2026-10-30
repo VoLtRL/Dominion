@@ -549,70 +549,50 @@ struct GameStatePayload : public Payload {
 };
 
 
-    // The client sends this payload to the server when he plays a card, it contains the roomId, the clientId and the selected cards.
-    // The server will then validate the cards and send this payload back to all players in the room to let them know a card was played.
-    struct CardsToBeInPlayPayload : public Payload {
-        int roomId;
-        int clientId;
-        std::vector<const Card*> selectedCards;
+    // Fired by the client when a card is played.
+    struct PlayCardPayload : public Payload {
+        const Card* cardToPlay;
 
-        CardsToBeInPlayPayload(int roomId, int clientId, const std::vector<const Card*> &selectedCards)
-            : roomId(roomId), clientId(clientId), selectedCards(selectedCards) {}
+        PlayCardPayload(const Card* cardToPlay)
+            : cardToPlay(cardToPlay) {}
 
         QJsonObject toJson() const {
-            QJsonObject json;
-            json["roomId"] = roomId;
-            json["clientId"] = clientId;  
-            QJsonArray cardsArray;
-            for (const auto &card : selectedCards) {
-                cardsArray.append(card->getName().c_str());
-            }
-            json["selectedCards"] = cardsArray;
+            QJsonObject json;  
+            json["cardToPlay"] = cardToPlay->getName().c_str();
             return json;
         }
 
-        static std::optional<CardsToBeInPlayPayload> fromJson(const QJsonObject &json) {
-            if (!json.contains("roomId") || !json.contains("clientId") || !json.contains("selectedCards")) {
+        static std::optional<PlayCardPayload> fromJson(const QJsonObject &json) {
+            if (!json.contains("cardToPlay")) {
                 return std::nullopt;
             }
-            std::vector<const Card*> selectedCards;
-            for (const auto &cardJson : json["selectedCards"].toArray()) {
-                selectedCards.push_back(Factory::get(cardJson.toString().toStdString()));
-            }
-            return CardsToBeInPlayPayload(
-                json["roomId"].toInt(),
-                json["clientId"].toInt(),
-                selectedCards
+            
+            return PlayCardPayload(
+                Factory::get(json["cardToPlay"].toString().toStdString())
             );
         }
     };
 
     // Fired by the server when a card was successfully played. Gives info regarding the card and the type it was used for (useful for double type cards like Witch)
     struct CardPlayed : public Payload {
-        int roomId;
-        int clientId;
         CardType type;
         const Card* card;
 
-        CardPlayed(int roomId, int clientId, CardType t, const Card* c)
-            : roomId(roomId), clientId(clientId), type(t), card(c) {}
+        CardPlayed(CardType t, const Card* c)
+            : type(t), card(c) {}
 
         QJsonObject toJson() const {
             QJsonObject json;
-            json["roomId"] = roomId;
-            json["clientId"] = clientId;  
             json["type"] = cardTypeToString(type).c_str();
             json["card"] = card->getName().c_str();
             return json;
         }
 
         static std::optional<CardPlayed> fromJson(const QJsonObject &json) {
-            if (!json.contains("roomId") || !json.contains("clientId") || !json.contains("type") || !json.contains("card")) {
+            if (!json.contains("type") || !json.contains("card")) {
                 return std::nullopt;
             }
             return CardPlayed(
-                json["roomId"].toInt(),
-                json["clientId"].toInt(),
                 stringToCardType(json["type"].toString().toStdString()),
                 Factory::get(json["card"].toString().toStdString())
             );
@@ -621,16 +601,14 @@ struct GameStatePayload : public Payload {
 
     // Fired by the server when an attack card was successfully played.
     struct AttackPlayed : public Payload {
-        int roomId;
-        int clientId;
         std::set<QString> targets;
         const Card* card;
 
-        AttackPlayed(int roomId, int clientId, std::set<QString> t, const Card* c)
-            : roomId(roomId), clientId(clientId), targets(t), card(c) {}
-        
-        AttackPlayed(int roomId, int clientId, std::set<Player*> t, const Card* c)
-            : roomId(roomId), clientId(clientId), card(c) {
+        AttackPlayed(std::set<QString> t, const Card* c)
+            : targets(t), card(c) {}
+
+        AttackPlayed(std::set<Player*> t, const Card* c)
+            : card(c) {
                 std::set<QString> ts;
                 for(Player* p : t){
                     ts.insert(p->getName().c_str());
@@ -640,8 +618,6 @@ struct GameStatePayload : public Payload {
 
         QJsonObject toJson() const {
             QJsonObject json;
-            json["roomId"] = roomId;
-            json["clientId"] = clientId;  
             QJsonArray targs;
             for(QString n : targets){
                 targs.append(n);
@@ -652,7 +628,7 @@ struct GameStatePayload : public Payload {
         }
 
         static std::optional<AttackPlayed> fromJson(const QJsonObject &json) {
-            if (!json.contains("roomId") || !json.contains("clientId") || !json.contains("targets") || !json.contains("card")) {
+            if (!json.contains("targets") || !json.contains("card")) {
                 return std::nullopt;
             }
 
@@ -662,8 +638,6 @@ struct GameStatePayload : public Payload {
             }
 
             return AttackPlayed(
-                json["roomId"].toInt(),
-                json["clientId"].toInt(),
                 ts,
                 Factory::get(json["card"].toString().toStdString())
             );
@@ -673,24 +647,20 @@ struct GameStatePayload : public Payload {
     // Fired by the client when a Reaction Card to an action is played.
     // Fired by the server once the action is valid.
     struct ReactionPlayed : public Payload {
-        int roomId;
-        int clientId;
         QString actorPlayer;
         const Card* reactionCard;
         EventType type;
 
-        ReactionPlayed(int roomId, int clientId, QString at, const Card* c, EventType t)
-            : roomId(roomId), clientId(clientId), actorPlayer(at), reactionCard(c), type(t) {}
+        ReactionPlayed(QString at, const Card* c, EventType t)
+            :actorPlayer(at), reactionCard(c), type(t) {}
         
-        ReactionPlayed(int roomId, int clientId, Player* at, const Card* c, EventType t)
-            : roomId(roomId), clientId(clientId), reactionCard(c), type(t) {
+        ReactionPlayed(Player* at, const Card* c, EventType t)
+            :reactionCard(c), type(t) {
                 actorPlayer = at->getName().c_str();
             }
 
         QJsonObject toJson() const {
             QJsonObject json;
-            json["roomId"] = roomId;
-            json["clientId"] = clientId;  
             json["actorPlayer"] = actorPlayer;
             json["reactionCard"] = reactionCard->getName().c_str();
             json["type"] = eventTypeToString(type).c_str();
@@ -698,13 +668,11 @@ struct GameStatePayload : public Payload {
         }
 
         static std::optional<ReactionPlayed> fromJson(const QJsonObject &json) {
-            if (!json.contains("roomId") || !json.contains("clientId") || !json.contains("actorPlayer") || !json.contains("card") || !json.contains("type")) {
+            if (!json.contains("actorPlayer") || !json.contains("card") || !json.contains("type")) {
                 return std::nullopt;
             }
 
             return ReactionPlayed(
-                json["roomId"].toInt(),
-                json["clientId"].toInt(),
                 json["actorPlayer"].toString(),
                 Factory::get(json["reactionCard"].toString().toStdString()),
                 stringToEventType(json["type"].toString().toStdString())
@@ -714,36 +682,30 @@ struct GameStatePayload : public Payload {
 
     // Fired by the server to clients that can react to a specific attack.
     struct ReactionNeeded : public Payload {
-        int roomId;
-        int clientId;
         QString actorPlayer;
         EventType type;
 
-        ReactionNeeded(int roomId, int clientId, QString at, EventType t)
-            : roomId(roomId), clientId(clientId), actorPlayer(at), type(t) {}
+        ReactionNeeded(QString at, EventType t)
+            : actorPlayer(at), type(t) {}
         
-        ReactionNeeded(int roomId, int clientId, Player* at, EventType t)
-            : roomId(roomId), clientId(clientId), type(t) {
+        ReactionNeeded(Player* at, EventType t)
+            : type(t) {
                 actorPlayer = at->getName().c_str();
             }
 
         QJsonObject toJson() const {
             QJsonObject json;
-            json["roomId"] = roomId;
-            json["clientId"] = clientId;  
             json["actorPlayer"] = actorPlayer;
             json["type"] = eventTypeToString(type).c_str();
             return json;
         }
 
         static std::optional<ReactionNeeded> fromJson(const QJsonObject &json) {
-            if (!json.contains("roomId") || !json.contains("clientId") || !json.contains("actorPlayer") || !json.contains("type")) {
+            if (!json.contains("actorPlayer") || !json.contains("type")) {
                 return std::nullopt;
             }
 
             return ReactionNeeded(
-                json["roomId"].toInt(),
-                json["clientId"].toInt(),
                 json["actorPlayer"].toString(),
                 stringToEventType(json["type"].toString().toStdString())
             );

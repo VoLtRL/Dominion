@@ -74,6 +74,8 @@ public:
 
   void playTurn(Player &player);
 
+  bool isPlayerTurn(Player *player) const { return player == activePlayer; }
+
   void addGold(int amount);
   void trashCard(const Card *card) { trash.push_back(card); }
 
@@ -137,7 +139,7 @@ public:
   bool canBuyCard(Player* p, const Card* card) const;
   bool tryBuyCard(Player* p, const Card* card);
 
-  bool tryNextPhase(Player* p); 
+  bool tryNextPhase(Player* p);
 
   bool trySendSelection(Player* p, const std::vector<const Card*>& selection);
 

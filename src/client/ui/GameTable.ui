@@ -27,6 +27,13 @@
       </widget>
      </item>
      <item>
+      <widget class="QPushButton" name="playAllTreasuresButton">
+       <property name="text">
+        <string>Play All Treasures</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <spacer name="horizontalSpacer_2">
        <property name="orientation">
         <enum>Qt::Orientation::Horizontal</enum>
@@ -40,9 +47,9 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="endPhaseButton">
+      <widget class="QPushButton" name="nextPhaseButton">
        <property name="text">
-        <string>End Phase</string>
+        <string>Next Phase</string>
        </property>
       </widget>
      </item>
@@ -60,7 +67,7 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="playSelectedButton">
+      <widget class="QPushButton" name="PlayCardButton">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
          <horstretch>0</horstretch>
@@ -68,7 +75,7 @@
         </sizepolicy>
        </property>
        <property name="text">
-        <string>Play Selected</string>
+        <string>Play Card</string>
        </property>
       </widget>
      </item>

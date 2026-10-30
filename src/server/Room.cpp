@@ -1,6 +1,7 @@
     #include "server/Room.hpp"
 #include <algorithm>
-#include "shared/structs/GamePhase.hpp"
+    #include <set>
+    #include "shared/structs/GamePhase.hpp"
 
 Room::Room(int id, const QString &name, Client *host)
     : m_id(id), m_name(name), m_host(host) {
@@ -17,10 +18,6 @@ Network::GameStatePayload Room::getGameStatePayload(const Client *client) const 
 
     std::vector<Network::PlayerState> players;
     for (const Client *roomClient : m_players) {
-        if (!roomClient->getAssociatedPlayer()) {
-            continue;
-        }
-
         const Player *player = roomClient->getAssociatedPlayer();
         const auto &discardStack = player->getDiscardStack();
         players.push_back(Network::PlayerState(
@@ -85,12 +82,23 @@ bool Room::startGame(Client *requester) {
 
     m_game = std::make_unique<Game>();
     std::vector<QString> playerNames;
-    for (const Client *player : m_players) {
-        playerNames.push_back(player->getName());
+    std::set<QString> usedNames;
+    for (Client *player : m_players) {
+        const QString baseName = player->getName();
+        QString uniqueName = baseName;
+        int suffix = 1;
+        while (usedNames.count(uniqueName) != 0) {
+            uniqueName = baseName + "_" + QString::number(suffix++);
+        }
+
+        player->setName(uniqueName);
+        usedNames.insert(uniqueName);
+        playerNames.push_back(uniqueName);
     }
     m_game->initialize(*chosenGameMode, playerNames);
     for (Client *player : m_players) {
-        player->setAssociatedPlayer(m_game->getPlayerByName(player->getName().toStdString()));
+        player->setAssociatedPlayer(
+            m_game->getPlayerByName(player->getName().toStdString()));
     }
     return true;
 }

@@ -5,6 +5,7 @@
 VisualCard* drawCard(QGraphicsScene *scene, const Card* card, qreal x, qreal y, Location location) {
     VisualCard *visualCard = new VisualCard(
         VisualCard::getNewId(),
+        card,
         QString::fromStdString(card->getName()),
         card->getCost(),
         QString(card->getPath().c_str()),
@@ -20,14 +21,16 @@ std::vector<VisualCard*> drawPlayerHand(QGraphicsScene *scene, const std::vector
     std::vector<VisualCard*> visualCardsInHand;
     for (QGraphicsItem* item : items) {
         VisualCard* visualCard = dynamic_cast<VisualCard*>(item);
-        if (visualCard && visualCard->getLocation() == Location::HAND) { // ça marche pas, il faut que je trouve un moyen de savoir si la carte est dans la main du joueur
+        if (visualCard && visualCard->data(0) == "hand-card") {
             scene->removeItem(visualCard);
             delete visualCard;
         }
     }
 
     for (const Card* card : hand) {
-        visualCardsInHand.push_back(drawCard(scene, card, x, y, Location::HAND));
+        VisualCard* visualCard = drawCard(scene, card, x, y, Location::HAND);
+        visualCard->setData(0, "hand-card"); // this is a hand card.
+        visualCardsInHand.push_back(visualCard);
         x += 110; // Move to the right for the next card
     }
     return visualCardsInHand;

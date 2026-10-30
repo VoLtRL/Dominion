@@ -1,5 +1,8 @@
 #pragma once
 
+#include <stdexcept>
+#include <string>
+
 enum class SelectionMode {
     NONE,
     PLAY_CARD,
