@@ -106,7 +106,7 @@ const std::string Card::getString(size_t maxWidth) const {
     return "| " + std::string(left, ' ') + s + std::string(right, ' ') + " |\n";
   };
 
-  std::string out = border('_');
+  std::string out = border('-');
   for (const auto &block : blocks) {
     for (const auto &line : block) {
       out += row(line);

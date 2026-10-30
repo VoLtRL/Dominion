@@ -290,7 +290,7 @@ void Game::BuyPhase() {
     }
 
     for (auto pair : display) {
-      std::cout << pair.first;
+      std::cout << pair.first << std::endl;
       displaySelection(pair.second);
     }
 
