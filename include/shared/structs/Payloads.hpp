@@ -712,6 +712,28 @@ struct GameStatePayload : public Payload {
         }
     };
 
+    struct PhaseChangedPayload : public Payload {
+        GamePhase newPhase;
+
+        PhaseChangedPayload(GamePhase newPhase)
+            : newPhase(newPhase) {}
+
+        QJsonObject toJson() const {
+            QJsonObject json;
+            json["newPhase"] = toString(newPhase).c_str();
+            return json;
+        }
+
+        static std::optional<PhaseChangedPayload> fromJson(const QJsonObject &json) {
+            if (!json.contains("newPhase")) {
+                return std::nullopt;
+            }
+            return PhaseChangedPayload(
+                fromString(json["newPhase"].toString().toStdString())
+            );
+        }
+    };
+
 
     // A payload sent by the server to notify the client that the requeted action ended up not working.
     struct ErrorPayload : public Payload {

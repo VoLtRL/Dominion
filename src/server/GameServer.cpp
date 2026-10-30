@@ -215,7 +215,7 @@ void GameServer::handleNextPhase(Client *client) {
     for (Client *roomClient : room->getClients()) {
         sendAction(
             QString::fromStdString(actionTypeToString(ActionType::NEXT_PHASE)),
-            room->getGameStatePayload(roomClient).toJson(),
+            Network::PhaseChangedPayload(game->getCurrentPhase()).toJson(),
             roomClient->getSocket());
     }
 }

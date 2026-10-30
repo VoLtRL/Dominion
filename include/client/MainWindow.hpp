@@ -85,12 +85,16 @@ private:
     void handleTurnState(const QJsonObject &data);
     void handleGameState(const QJsonObject &data);
 
+
     /// @brief Handles the server's request to play a card. This function is called when the server sends a PLAY_CARD action.
     /// @param data The data associated with the PLAY_CARD action, which should contain the card to be played.
     void handleCardPlayed(const QJsonObject &data);
     /// @brief Handles the client's request to play a card. This function is called when the client plays a card in the game table.
     /// @param card The card that the client wants to play. This function sends a PLAY_CARD action to the server with the card information.
     void handlePlayCard(const Card *card);
+
+    void handlePhaseChanged(const QJsonObject &data);
+    void handleTurnEnded(const QJsonObject &data);
     
     void updateGameState(const Network::GameStatePayload &payload);
     void startTurnWhenReady();

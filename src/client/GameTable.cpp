@@ -117,6 +117,15 @@ void GameTable::startTurn() {
     switchShop();
 }
 
+void GameTable::updatePhase(GamePhase newPhase) {
+    changePhase(newPhase);
+    if(gameState.isLocalPlayerActive()) {
+        displayMessage(QString("Phase changed to: %1").arg(QString::fromStdString(toString(newPhase))));
+    } else {
+        displayMessage(QString("%1's phase changed to: %2").arg(gameState.activePlayerName, QString::fromStdString(toString(newPhase))));
+    }
+}
+
 void GameTable::changePhase(GamePhase newPhase) {
     gameState.currentPhase = newPhase;
     
@@ -495,7 +504,26 @@ void GameTable::drawShop() {
         const Card* card = pair.first;
         const qreal offsetX = index / 2 * CardSpacing;
         const qreal offsetY = index % 2 * (CardHeight + CardSpacing);
-        drawCard(scene, card, startX + offsetX, startY + offsetY)->setData(0, "shop-card");
+        VisualCard* visualCard = drawCard(scene, card, startX + offsetX, startY + offsetY);
+        visualCard->setData(0, "shop-card");
+        visualCardsInShop.push_back(visualCard);
+        connect(visualCard, &VisualCard::clicked, [this, visualCard]() {
+            int selectedCount = 0;
+            for (VisualCard *card : visualCardsInShop) {
+                if (card->isSelected()) {
+                    selectedCount++;
+                }
+                std::cout << "Card " << card->getId() << " selected: " << card->isSelected() << std::endl;
+            }
+            if (!visualCard->isSelected() &&
+                !gameState.canSelectAnotherCard(selectedCount)) {
+                displayMessage("Only one card can be selected.");
+                return;
+            }
+
+            visualCard->setSelected(!visualCard->isSelected());
+        });
+
         QGraphicsTextItem* quantityText = scene->addText(QString::number(pair.second));
         quantityText->setDefaultTextColor(Qt::white);
         quantityText->setPos(startX + offsetX + (CardWidth / 2) - 10, startY + offsetY + CardHeight + 2);

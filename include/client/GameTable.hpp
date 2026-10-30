@@ -31,6 +31,7 @@ private:
 
     QVector<VisualCard*> visualCardsInHand;
     QVector<VisualCard*> visualCardsInPlay;
+    QVector<VisualCard*> visualCardsInShop;
 
     QTimer* messageTimer{nullptr};
     QString messageText;
@@ -71,6 +72,8 @@ public:
     /// @brief Handles the event when a card is played after being validated by the server. This function is called when the server confirms that a card has been played successfully.
     /// @param card The card that was played.
     void handleCardPlayed(const Card* card);
+
+    void updatePhase(GamePhase newPhase);
 
 
     // UI Logic

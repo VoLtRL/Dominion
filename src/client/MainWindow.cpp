@@ -243,6 +243,12 @@ void MainWindow::handleAction(const ActionType &action, const QJsonObject &data)
     case ActionType::PLAY_CARD:
         handleCardPlayed(data);
         break;
+    case ActionType::END_TURN:
+        handleTurnEnded(data);
+        break;
+    case ActionType::NEXT_PHASE:
+        handlePhaseChanged(data);
+        break;
     case ActionType::REQUEST_ROOM_LIST:
         handleRoomList(data);
         break;
@@ -346,6 +352,16 @@ void MainWindow::handleGameState(const QJsonObject &data) {
     }
 
     updateGameState(*payload);
+}
+
+void MainWindow::handlePhaseChanged(const QJsonObject &data) {
+    const auto payload = Network::PhaseChangedPayload::fromJson(data);
+    if (!payload) {
+        qWarning() << "Invalid NEXT_PHASE payload:" << data;
+        return;
+    }
+
+    gameTable->updatePhase(payload->newPhase);
 }
 
 void MainWindow::updateGameState(const Network::GameStatePayload &payload) {
