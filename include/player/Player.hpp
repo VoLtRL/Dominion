@@ -38,12 +38,14 @@ private:
 
   int turnsPlayed = 0;
 
+  bool human;
+
 public:
   Player(Hand a_hand, CardStack a_drawStack, CardStack a_discardStack,
-         std::string playerName)
+         std::string playerName, bool h = true)
       : name(playerName), hand(std::move(a_hand)),
         drawStack(std::move(a_drawStack)),
-        discardStack(std::move(a_discardStack)) {
+        discardStack(std::move(a_discardStack)), human(h) {
 
         };
 
@@ -156,5 +158,5 @@ public:
 
   std::set<const Reaction *> getAvailableReactions() const;
 
-  virtual bool isHuman() const {return true;}
+  virtual bool isHuman() const {return human;}
 };

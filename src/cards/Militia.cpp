@@ -15,7 +15,7 @@ void Militia::attack(Game& g, Player& p, std::set<Player*> targets) const{
       Hand h = player->getHand();
       int nb = std::max(0,static_cast<int>(h.getSize())-3);
       if(nb > 0){
-          std::vector<const Card*> cardsToDiscard = g.chooseCardsFromSelection(h.getCards(), nb, "discard", "exact", {CardType::ALL});
+          std::vector<const Card*> cardsToDiscard = g.chooseCardsFromSelection(h.getCards(), nb, "discard", "exact", {CardType::ALL}, player, DecisionType::DISCARD);
           std::cout << "Discarding cards." << std::endl;
           for(const Card* c : cardsToDiscard){
               player->discardCard(c);

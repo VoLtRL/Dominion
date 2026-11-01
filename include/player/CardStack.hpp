@@ -3,6 +3,7 @@
 #include "../abstract/Card.hpp"
 #include <memory>
 #include <stack>
+#include <map>
 
 /**
  * @brief Represents a stack of cards.

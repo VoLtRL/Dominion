@@ -4,11 +4,11 @@
 #include <limits>
 #include <ostream>
 
-const std::vector<Player> &Game::getPlayers() const { return players; }
+const std::vector<Player*> &Game::getPlayers() const { return players; }
 
-const Player &Game::getActivePlayer() const { return *activePlayer; }
+const Player* Game::getActivePlayer() const { return activePlayer; }
 
-void Game::addPlayer(Player player) { players.push_back(player); }
+void Game::addPlayer(Player *player) { players.push_back(player); }
 
 void Game::setActivePlayer(Player *player) { activePlayer = player; }
 
@@ -103,7 +103,8 @@ std::vector<const Card *>
 Game::chooseCardsFromSelection(const std::vector<const Card *> &selection,
                                size_t numberOfCardsToChoose,
                                const std::string &action, std::string mode,
-                               const std::set<CardType> &allowedTypes) const {
+                               const std::set<CardType> &allowedTypes, Player* target, DecisionType decisionType) const {
+
   if (mode != "exact" && mode != "most" && mode != "least") {
     mode = "exact";
   }
@@ -119,6 +120,19 @@ Game::chooseCardsFromSelection(const std::vector<const Card *> &selection,
           validSelection.push_back(card);
         }
       }
+    }
+  }
+
+  if(target) {
+    if(!target->isHuman()) {
+      Bot* bot = dynamic_cast<Bot*>(target);
+      GameView view(*this, *bot);
+      SelectionParameters params;
+      params.nbToSelect = numberOfCardsToChoose;
+      params.label = action;
+      params.mode = (mode == "exact") ? SelectionMode::EXACTLY : (mode == "most") ? SelectionMode::AT_MOST : SelectionMode::AT_LEAST;
+      params.selection = validSelection;
+      return bot->chooseFromList(view, decisionType, params);
     }
   }
 
@@ -245,12 +259,12 @@ void Game::ActionPhase() {
     std::cout << "You have " << currentPlayerActions << " actions left."
               << std::endl;
     auto card = chooseCardsFromSelection(activePlayer->getHand().getCards(), 1,
-                                         "play", "most", {CardType::ACTION});
+                                         "play", "most", {CardType::ACTION}, activePlayer, DecisionType::PLAY);
     if (card.empty()) {
       break;
     }
     std::cout << "You played the " << card[0]->getName() << std::endl;
-    playAction(*activePlayer, card[0]);
+    playAction(activePlayer, card[0]);
     if (card[0]->isA(CardType::ATTACK)) {
       std::cout << "Attacking other players" << std::endl;
       playAttackCard(card[0]);
@@ -267,9 +281,9 @@ void Game::useTreasureCards() {
 
   std::vector<const Card *> treasureCards = chooseCardsFromSelection(
       activePlayer->getHand().getCards(), activePlayer->getHand().getSize(),
-      "play", "most", {CardType::TREASURE});
+      "play", "most", {CardType::TREASURE}, activePlayer, DecisionType::PLAY);
   for (const Card *card : treasureCards) {
-    playTreasure(*activePlayer, card);
+    playTreasure(activePlayer, card);
     continue;
   }
 }
@@ -347,7 +361,7 @@ void Game::hasGameEnded() {
       std::cout << "Game over! The game has ended due to the Province stack "
                    "being empty."
                 << std::endl;
-      std::cout << "The winner is: " << getWinner().getString() << std::endl;
+      std::cout << "The winner is: " << getWinner()->getString() << std::endl;
       exit(0);
     }
   }
@@ -355,22 +369,32 @@ void Game::hasGameEnded() {
   if (emptyStacks >= 3) {
     std::cout << "Game over! The game has ended due to three empty stacks."
               << std::endl;
-    std::cout << "The winner is: " << getWinner().getString() << std::endl;
+    std::cout << "The winner is: " << getWinner()->getString() << std::endl;
     exit(0);
   }
 }
 
-void Game::playTurn(Player &player) {
-  setActivePlayer(&player);
-  player.addTurnPlayed();
-  displaySelection(activePlayer->getHand().getCards());
-  std::cout << "It is " << activePlayer->getName() << "'s turn." << std::endl;
-  ActionPhase();
-  BuyPhase();
+void Game::playTurn(Player *player) {
+  setActivePlayer(player);
+  player->addTurnPlayed();
+  if(!player->isHuman()){
+    Bot* bot = dynamic_cast<Bot*>(player);
+    botPlayTurn(bot);
+  }
+  else {
+    displaySelection(activePlayer->getHand().getCards());
+    std::cout << "It is " << activePlayer->getName() << "'s turn." << std::endl;
+    ActionPhase();
+    BuyPhase();
+  }
+
   discardCardsInPlay();
-  player.discardHand();
-  player.drawCardsToHand(5);
+  player->discardHand();
+  player->drawCardsToHand(5);
   hasGameEnded();
+
+  std::cout << "Turn ended for " << activePlayer->getName() << std::endl;
+  std::cout << "------------------------------------------------" << std::endl;
 }
 
 void Game::addGold(int amount) { currentPlayerMoney += amount; }
@@ -382,13 +406,13 @@ void Game::discardCardsInPlay() {
   CardsInPlay.clear();
 }
 
-Player Game::getWinner() {
-  Player winner = players[0];
+Player* Game::getWinner() {
+  Player* winner = players[0];
   int maxScore = 0;
 
-  for (const Player &player : players) {
-    if (player.getVictoryPoints() > maxScore) {
-      maxScore = player.getVictoryPoints();
+  for (Player* player : players) {
+    if (player->getVictoryPoints() > maxScore) {
+      maxScore = player->getVictoryPoints();
       winner = player;
     }
   }
@@ -463,6 +487,10 @@ void Game::launchGame() {
     std::string playerName;
     std::cin >> playerName;
     std::cin.ignore();
+    std::cout << "Is " << playerName << " a bot? (y/n): ";
+    std::string isBotInput;
+    std::cin >> isBotInput;
+    std::cin.ignore();
     CardStack drawStack = CardStack(
         {Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
          Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
@@ -473,12 +501,20 @@ void Game::launchGame() {
     Hand hand;
     CardStack discardStack = CardStack();
     hand.refillHandFromDrawStack(drawStack, discardStack);
-    Player player(hand, drawStack, discardStack, playerName);
-    addPlayer(player);
+    if (isBotInput == "y" || isBotInput == "Y") {
+      Bot* bot = new Bot(hand, drawStack, discardStack, playerName, Strategy::bigMoney(currentCardDistribution), DifficultyProfile::Easy(), (std::uint32_t)0);
+      addPlayer(bot);
+      std::cout << "Bot " << playerName << " has been added to the game." << std::endl;
+    }
+    else {
+      Player* player = new Player(hand, drawStack, discardStack, playerName);
+      addPlayer(player);
+    }
+
   }
 
   while (true) {
-    for (Player &player : players) {
+    for (Player *player : players) {
       currentPlayerActions = 1;
       currentPlayerPurchaseLeft = 1;
       currentPlayerMoney = 0;
@@ -487,7 +523,7 @@ void Game::launchGame() {
   }
 
   std::cout << "Game is over!" << std::endl;
-  std::cout << "The winner is:" << getWinner().getString() << std::endl;
+  std::cout << "The winner is:" << getWinner()->getString() << std::endl;
 }
 
 const std::vector<TableStack> &Game::getKingdomStacks() {
@@ -543,22 +579,22 @@ std::string Game::HUDFormat() const {
 }
 
 void Game::activateReactions(GameEvent *event) {
-  for (Player &player : players) {
-    auto possibleReactions = player.getAvailableReactions();
+  for (Player *player : players) {
+    auto possibleReactions = player->getAvailableReactions();
 
     for (const Reaction *reactionCard : possibleReactions) {
-      if (reactionCard->canReact(event, this, &player)) {
-        reactionCard->react(event, this, &player);
+      if (reactionCard->canReact(event, this, player)) {
+        reactionCard->react(event, this, player);
       }
     }
   }
 }
 
-std::vector<Player *> Game::getOtherPlayers() {
+std::vector<Player *> Game::getOtherPlayers() const {
   std::vector<Player *> res;
-  for (Player &player : players) {
-    if (player != *activePlayer) {
-      res.push_back(&player);
+  for (const Player *player : players) {
+    if (player != activePlayer) {
+      res.push_back(const_cast<Player *>(player));
     }
   }
   return res;
@@ -582,14 +618,49 @@ void Game::playAttackCard(const Card *card) {
   attack->attack(*this, *activePlayer, newTargets);
 }
 
-void Game::playAction(Player &p, const Card *card) {
-  p.removeCardFromHand(card);
+void Game::playAction(Player *p, const Card *card) {
+  p->removeCardFromHand(card);
   addCardToPlay(card);
   const Action* action = dynamic_cast<const Action*>(card);
-  action->play(*this, p);
+  action->play(*this, *p);
 }
 
-void Game::playTreasure(Player&p, const Card* card){
+void Game::playTreasure(Player* p, const Card* card){
   const Treasure* treasure = dynamic_cast<const Treasure*>(card);
   addGold(treasure->getCoins());
+}
+
+void Game::botPlayTurn(Bot* bot){
+  GameView view(*this, *bot);
+  bot->ResolvePhase(view);
+  std::cout << "It is " << bot->getName() << "'s turn. (bot)" << std::endl;
+  for (int i = 0 ; view.getActions() > 0 ; i++){
+    const Card* action = bot->chooseAction(view);
+    if(action == nullptr){
+      break;
+    }
+    bot->showDecisionTrace();
+    playAction(bot, action);
+    view = GameView(*this, *bot);
+  }
+
+  for (const Card* treasure : bot->getHand().getCards()){
+    if(treasure->isA(CardType::TREASURE)){
+      playTreasure(bot, treasure);
+    }
+  }
+  std::cout << "Bot " << bot->getName() << " has " << currentPlayerMoney << " coins." << std::endl;
+
+  for (int i = 0 ; view.getPurchases() > 0 ; i++){
+    view = GameView(*this, *bot);
+    const Card* buy = bot->chooseBuy(view);
+    if(buy == nullptr){
+      break;
+    }
+    bot->showDecisionTrace();
+    currentCardDistribution[buy]--;
+    currentPlayerMoney -= buy->getCost();
+    bot->addCardToDiscardStack(buy);
+    addPlayerPurchases(-1);
+  }
 }

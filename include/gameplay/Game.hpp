@@ -7,10 +7,11 @@
 #include "Factory.hpp"
 #include "GameMode.hpp"
 #include "TableStack.hpp"
+#include "../ai/Bot.hpp"
 
 class Game {
 private:
-  std::vector<Player> players;
+  std::vector<Player*> players;
   const std::vector<GameMode> gameModes = {
       GameMode("Les premières parties",
                "Configuration recommandée pour découvrir le jeu",
@@ -104,10 +105,10 @@ public:
   const std::vector<TableStack> &getKingdomStacks();
   const std::vector<TableStack> &getBasicStacks();
 
-  void addPlayer(Player player);
-  const std::vector<Player> &getPlayers() const;
+  void addPlayer(Player* player);
+  const std::vector<Player*> &getPlayers() const;
 
-  const Player &getActivePlayer() const;
+  const Player* getActivePlayer() const;
   void setActivePlayer(Player *player);
 
   void setCurrentGameMode(const GameMode *gameMode);
@@ -128,7 +129,7 @@ public:
 
   void BuyPhase();
 
-  void playTurn(Player &player);
+  void playTurn(Player* player);
 
   void addGold(int amount);
   void trashCard(const Card *card) { trash.push_back(card); }
@@ -139,7 +140,7 @@ public:
 
   void discardCardsInPlay();
 
-  Player getWinner();
+  Player* getWinner();
 
   void launchGame();
 
@@ -149,7 +150,7 @@ public:
   chooseCardsFromSelection(const std::vector<const Card *> &selection,
                            size_t numberOfCardsToChoose,
                            const std::string &action, std::string mode,
-                           const std::set<CardType> &allowedTypes) const;
+                           const std::set<CardType> &allowedTypes, Player* target = nullptr, DecisionType decisionType = DecisionType::GAIN) const;
   void displaySelection(const std::vector<const Card *> &selection) const;
 
   const std::vector<const Card *> &getRevealedCards() const {
@@ -173,11 +174,11 @@ public:
 
   void playAttackCard(const Card *card);
 
-  std::vector<Player *> getOtherPlayers();
+  std::vector<Player *> getOtherPlayers() const;
 
-  void playAction(Player& p, const Card* card);
+  void playAction(Player* p, const Card* card);
 
-  void playTreasure(Player& p, const Card* card);
+  void playTreasure(Player* p, const Card* card);
 
   const std::map<const Card*, int> getCurrentCardDistrib() const {
     return currentCardDistribution;
@@ -194,4 +195,6 @@ public:
   int getCoins() const {
     return currentPlayerMoney;
   }
+
+  void botPlayTurn(Bot* bot);
 };

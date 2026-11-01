@@ -6,6 +6,22 @@ void Bot::beginDecision(const GameView& view){
     trace.phase = strat.getCurrentPhase().getName();
 }
 
+void Bot::showDecisionTrace() const {
+    std::cout << "Decision trace for " << getName() << ":\n";
+    std::cout << "Phase: " << trace.phase << "\n";
+    std::cout << "Rule: " << trace.rule << "\n";
+    std::cout << "Noise applied: " << (trace.noiseApplied ? "Yes" : "No") << "\n";
+    std::cout << "Cards chosen: ";
+    if(trace.cardsChosen.empty()){
+        std::cout << "None";
+    } else {
+        for(const Card* card : trace.cardsChosen){
+            std::cout << card->getName() << ", ";
+        }
+    }
+    std::cout << "\n";
+}
+
 std::vector<Rule> Bot::collect(const GameView& view, bool buy) const {
     std::vector<Rule> res;
     std::set<std::string> seen;
@@ -202,8 +218,4 @@ std::vector<const Card*> Bot::chooseFromList(const GameView& v, DecisionType typ
         label = params.label.empty() ? "default-first" : params.label;
     }
     return finishList(std::move(res), label);
-}
-
-void Bot::playTurn(GameView& view) {
-    
 }

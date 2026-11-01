@@ -3,9 +3,11 @@
 
 void Hand::addCard(const Card *card) {
   hand.push_back(card);
+  /*
   for (auto card : hand) {
     card->display();
   }
+  */
 }
 
 void Hand::removeCard(const Card *to_rem) {

@@ -4,12 +4,8 @@
 #include <map>
 #include <algorithm>
 
-#include "../abstract/Card.hpp"
 #include "../abstract/Treasure.hpp"
-#include "../gameplay/Game.hpp"
-
-class Player;
-
+#include "../gameplay/Factory.hpp"
 
 struct PlayerView {
     int HandCount=0,DrawCount=0,DiscardCount = 0;
@@ -22,51 +18,21 @@ class GameView {
         std::map<const Card*, int> supplies ;
         std::map<Player*, PlayerView> otherPlayersStats;
         std::map<const Card*, int> cardCount;
-        Hand hand;
-        int turnCount;
-        int victoryPoints;
         int purchases;
         int actions;
         int coins;
+        Player* currentPlayer;
 
     public:
 
-        GameView(Game& g, Player& p) {
-            for(auto data : g.getCurrentCardDistrib()){
-                supplies[data.first] = data.second;
-            }
-
-            for(Player* p : g.getOtherPlayers()){
-                PlayerView view = {p->getHand().getSize(), p->getDrawStack().getSize(), p->getDiscardStack().getSize(), p->getVictoryPoints()};
-                otherPlayersStats[p] = view;
-            }
-
-            for(const Card* c : p.getHand().getCards()){
-                cardCount[c]++;
-            }
-
-            for(auto data : p.getDrawStack().getCardCount()){
-                cardCount[data.first] += data.second;
-            }
-
-            for(auto data : p.getDiscardStack().getCardCount()){
-                cardCount[data.first] += data.second;
-            }
-
-            hand = p.getHand();
-            turnCount = p.getTurnsPlayed();
-            victoryPoints = p.getVictoryPoints();
-            purchases = g.getPurchaseCount();
-            actions = g.getActionCount();
-            coins = g.getCoins();
-        }
+        GameView(const Game& g, Player& p);
 
         bool isOwned(const Card* card) const {
             return cardCount.find(card) != cardCount.end();
         }
 
         int inHand(const Card* card) const {
-            std::vector<const Card*> cards = hand.getCards();
+            std::vector<const Card*> cards = currentPlayer->getHand().getCards();
             std::string name = card->getName();
             int count = 0;
             for(const Card* c : cards){
@@ -78,33 +44,37 @@ class GameView {
         }
 
         int getSupplyCount(const Card* card) const {
-            if(isOwned(card)){
+            return supplies.at(card);
+            return 0;
+        }
+
+        int getOwnedCount(const Card* card) const {
+            if(cardCount.find(card) != cardCount.end()){
                 return cardCount.at(card);
             }
             return 0;
         }
 
-        int getTurn() const {
-            return turnCount;
-        }
-
-        int getCoins() const{
+        int getCoinsInDeck() const{
             int c = 0;
             for (auto data : cardCount){
                 const Card* card = data.first;
                 int count = data.second;
                 if(card->isA(CardType::TREASURE)){
                     const Treasure* t = dynamic_cast<const Treasure*>(card);
-                    c += t->getCoins();
+                    c += count * t->getCoins();
                 }
             }
             return c;
         }
 
+        int getCoins() const {
+            return coins;
+        }
+
         int getDeckSize() const {
             int c = 0;
             for (auto data : cardCount){
-                const Card* card = data.first;
                 int count = data.second;
                 c += count;
             }
@@ -112,14 +82,13 @@ class GameView {
         }
 
         double getMoneyDensity() const {
-            double coins = getCoins(), nb = getDeckSize();
+            double coins = getCoinsInDeck(), nb = getDeckSize();
             return coins/nb;
         }
 
         int getEmptyPilesCount() const {
             int c = 0;
             for(auto data : supplies){
-                const Card* card = data.first;
                 int count = data.second;
                 if (count == 0) { c+= 1; }
             }
@@ -130,12 +99,12 @@ class GameView {
             return supplies.find(card) != supplies.end();
         }
 
-        int getScoreDiff() const {
+        int getScoreDiff(const Player& p) const {
             int max = 0;
             for(auto data : otherPlayersStats){
                 max = std::max(max, data.second.victoryPoints);
             }
-            return victoryPoints-max;
+            return p.getVictoryPoints() - max;
         }
 
         int getPurchases() const {
@@ -144,5 +113,25 @@ class GameView {
 
         int getActions() const {
             return actions;
+        }
+
+        int getTurn() const {
+            return currentPlayer->getTurnsPlayed();
+        }
+
+        int getScoreDiff() const {
+            int max = 0;
+            for(auto data : otherPlayersStats){
+                max = std::max(max, data.second.victoryPoints);
+            }
+            return currentPlayer->getVictoryPoints() - max;
+        }
+
+        Player* getCurrentPlayer() const {
+            return currentPlayer;
+        }
+
+        std::map<const Card*, int> getSupply() const {
+            return supplies;
         }
 };

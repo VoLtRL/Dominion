@@ -6,7 +6,7 @@
 void Chapel::play(Game& g, Player& p) const {
 
     std::cout << "You may trash up to 4 cards from your hand." << std::endl;
-    auto selection = g.chooseCardsFromSelection(p.getHand().getCards(), p.getHand().getSize(), "trash", "most", {CardType::ALL});
+    auto selection = g.chooseCardsFromSelection(p.getHand().getCards(), p.getHand().getSize(), "trash", "most", {CardType::ALL}, &p, DecisionType::TRASH);
     if(!selection.empty()){
         std::cout << "Trashing the following cards : " << std::endl;
         g.displaySelection(selection);

@@ -3,7 +3,6 @@
 #include <string>
 
 #include "GameView.hpp"
-#include "../gameplay/Factory.hpp"
 
 // Boolean class used to organize the bot's behavior
 class Condition
@@ -21,7 +20,7 @@ public:
     Condition(FN fun, std::string n) : f(std::move(fun)), name(n) {}
 
     bool operator()(const GameView &v, int i = 0) const { return f(v, i); }
-    const std::string &name() const { return name; }
+    const std::string &getName() const { return name; }
 
     friend Condition operator&&(Condition a, Condition b)
     {
@@ -121,4 +120,31 @@ namespace cond
                          "aheadBy>=" + std::to_string(points));
     }
 
+    inline Condition enoughForCard(const Card *c)
+    {
+        return Condition([c](const GameView &v, int)
+                         { return v.getCoins() >= c->getCost(); },
+                         "enoughFor(" + c->getName() + ")");
+    }
+
+    inline Condition canBuyCard(const Card *c)
+    {
+        return Condition([c](const GameView &v, int)
+                         { return v.getPurchases() > 0 && v.getSupplyCount(c) > 0 && v.getCoins() >= c->getCost(); },
+                         "canBuy(" + c->getName() + ")");
+    }
+
+    inline Condition canEmptyPile(const Card* c)
+    {
+        return Condition([c](const GameView &v, int)
+                         { return v.getPurchases() >= v.getSupplyCount(c) && v.getCoins() >= c->getCost() * v.getSupplyCount(c); },
+                         "canEmptyPile(" + c->getName() + ")");
+    }
+
+    inline Condition leftAtMost(const Card* c, int n)
+    {
+        return Condition([c, n](const GameView &v, int)
+                         { return v.getSupplyCount(c) <= n; },
+                         "leftAtMost(" + c->getName() + "," + std::to_string(n) + ")");
+    }
 }

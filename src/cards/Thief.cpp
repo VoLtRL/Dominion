@@ -34,7 +34,7 @@ void Thief::attack(Game& g, Player& p, std::set<Player*> targets) const {
                     break;
                 default:
                     std::cout << "Player " << p.getName() << ", choose the one you want to trash !" << std::endl;
-                    selected = g.chooseCardsFromSelection(localTreasures, 1, "trash", "exact", {CardType::TREASURE})[0];
+                    selected = g.chooseCardsFromSelection(localTreasures, 1, "trash", "exact", {CardType::TREASURE}, &p, DecisionType::TRASH)[0];
                     break;
             }
             if(selected){

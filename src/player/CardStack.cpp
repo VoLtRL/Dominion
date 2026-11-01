@@ -29,6 +29,7 @@ void CardStack::shuffle() {
 std::map<const Card*, int> CardStack::getCardCount() const {
   std::map<const Card*, int> res;
   std::stack<const Card*> clone(stack);
+  if(clone.empty()){return res;}
   for(const Card* c = clone.top(); !clone.empty(); clone.pop()){
     res[c]++;
   }
