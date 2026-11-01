@@ -4,11 +4,11 @@
 #include <limits>
 #include <ostream>
 
-const std::vector<Player*> &Game::getPlayers() const { return players; }
+const std::vector<std::unique_ptr<Player>> &Game::getPlayers() const { return players; }
 
 const Player* Game::getActivePlayer() const { return activePlayer; }
 
-void Game::addPlayer(Player *player) { players.push_back(player); }
+void Game::addPlayer(std::unique_ptr<Player> player) { players.push_back(std::move(player)); }
 
 void Game::setActivePlayer(Player *player) { activePlayer = player; }
 
@@ -407,13 +407,13 @@ void Game::discardCardsInPlay() {
 }
 
 Player* Game::getWinner() {
-  Player* winner = players[0];
+  Player* winner = players[0].get();
   int maxScore = 0;
 
-  for (Player* player : players) {
+  for (const std::unique_ptr<Player>& player : players) {
     if (player->getVictoryPoints() > maxScore) {
       maxScore = player->getVictoryPoints();
-      winner = player;
+      winner = player.get();
     }
   }
 
@@ -502,23 +502,23 @@ void Game::launchGame() {
     CardStack discardStack = CardStack();
     hand.refillHandFromDrawStack(drawStack, discardStack);
     if (isBotInput == "y" || isBotInput == "Y") {
-      Bot* bot = new Bot(hand, drawStack, discardStack, playerName, Strategy::bigMoney(currentCardDistribution), DifficultyProfile::Easy(), (std::uint32_t)0);
-      addPlayer(bot);
+      auto bot = std::make_unique<Bot>(hand, drawStack, discardStack, playerName, Strategy::bigMoney(currentCardDistribution), DifficultyProfile::Easy(), (std::uint32_t)0);
+      addPlayer(std::move(bot));
       std::cout << "Bot " << playerName << " has been added to the game." << std::endl;
     }
     else {
-      Player* player = new Player(hand, drawStack, discardStack, playerName);
-      addPlayer(player);
+      auto player = std::make_unique<Player>(hand, drawStack, discardStack, playerName);
+      addPlayer(std::move(player));
     }
 
   }
 
   while (true) {
-    for (Player *player : players) {
+    for (const std::unique_ptr<Player>& player : players) {
       currentPlayerActions = 1;
       currentPlayerPurchaseLeft = 1;
       currentPlayerMoney = 0;
-      playTurn(player);
+      playTurn(player.get());
     }
   }
 
@@ -579,12 +579,12 @@ std::string Game::HUDFormat() const {
 }
 
 void Game::activateReactions(GameEvent *event) {
-  for (Player *player : players) {
+  for (const std::unique_ptr<Player>& player : players) {
     auto possibleReactions = player->getAvailableReactions();
 
     for (const Reaction *reactionCard : possibleReactions) {
-      if (reactionCard->canReact(event, this, player)) {
-        reactionCard->react(event, this, player);
+      if (reactionCard->canReact(event, this, player.get())) {
+        reactionCard->react(event, this, player.get());
       }
     }
   }
@@ -592,9 +592,9 @@ void Game::activateReactions(GameEvent *event) {
 
 std::vector<Player *> Game::getOtherPlayers() const {
   std::vector<Player *> res;
-  for (const Player *player : players) {
-    if (player != activePlayer) {
-      res.push_back(const_cast<Player *>(player));
+  for (const std::unique_ptr<Player>& player : players) {
+    if (player.get() != activePlayer) {
+      res.push_back(player.get());
     }
   }
   return res;
@@ -636,10 +636,12 @@ void Game::botPlayTurn(Bot* bot){
   std::cout << "It is " << bot->getName() << "'s turn. (bot)" << std::endl;
   for (int i = 0 ; view.getActions() > 0 ; i++){
     const Card* action = bot->chooseAction(view);
+    if(bot->hasDecided()){
+      bot->showDecisionTrace();
+    }
     if(action == nullptr){
       break;
     }
-    bot->showDecisionTrace();
     playAction(bot, action);
     view = GameView(*this, *bot);
   }
@@ -654,10 +656,12 @@ void Game::botPlayTurn(Bot* bot){
   for (int i = 0 ; view.getPurchases() > 0 ; i++){
     view = GameView(*this, *bot);
     const Card* buy = bot->chooseBuy(view);
+    if(bot->hasDecided()){
+      bot->showDecisionTrace();
+    }
     if(buy == nullptr){
       break;
     }
-    bot->showDecisionTrace();
     currentCardDistribution[buy]--;
     currentPlayerMoney -= buy->getCost();
     bot->addCardToDiscardStack(buy);

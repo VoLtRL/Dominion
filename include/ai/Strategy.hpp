@@ -101,7 +101,7 @@ class Strategy{
                 Rule(cond::always(), Factory::get("Copper"), 0, "buy(Copper)"),
             };
 
-            Phase green("green", cond::moneyDensityAtLeast(4.0), buyRules, playRules, decisionRules);
+            Phase green("green", cond::moneyDensityAtLeast(2.0), buyRules, playRules, decisionRules);
 
             // Phase 4 : On achète des provinces et des duchés
 

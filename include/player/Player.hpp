@@ -49,6 +49,8 @@ public:
 
         };
 
+  virtual ~Player() = default;
+
   /**
    * @brief Gets the player's hand.
    * @return A reference to the player's hand.

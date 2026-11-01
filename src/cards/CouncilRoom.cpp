@@ -7,8 +7,8 @@ void CouncilRoom::play(Game& g, Player& p) const {
     p.drawCardsToHand(4);
     g.addPlayerPurchases(1);
     std::cout << "Every other player draws one card." << std::endl;
-    for(auto player : g.getPlayers()){
-        if(p!=*player){
+    for(const std::unique_ptr<Player>& player : g.getPlayers()){
+        if(&p!=player.get()){
             player->drawCardToHand();
         }
     }

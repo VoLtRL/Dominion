@@ -11,7 +11,7 @@
 
 class Game {
 private:
-  std::vector<Player*> players;
+  std::vector<std::unique_ptr<Player>> players;
   const std::vector<GameMode> gameModes = {
       GameMode("Les premières parties",
                "Configuration recommandée pour découvrir le jeu",
@@ -105,8 +105,8 @@ public:
   const std::vector<TableStack> &getKingdomStacks();
   const std::vector<TableStack> &getBasicStacks();
 
-  void addPlayer(Player* player);
-  const std::vector<Player*> &getPlayers() const;
+  void addPlayer(std::unique_ptr<Player> player);
+  const std::vector<std::unique_ptr<Player>> &getPlayers() const;
 
   const Player* getActivePlayer() const;
   void setActivePlayer(Player *player);

@@ -68,6 +68,7 @@ class Bot : public Player {
         const Card* chooseAction(const GameView& v);
         std::vector<const Card*> chooseFromList(const GameView& v, DecisionType type, SelectionParameters params);
         void showDecisionTrace() const;
+        bool hasDecided() const { return !trace.rule.empty() && trace.rule != "none"; }
         void ResolvePhase(const GameView& v) {
             strat.resolvePhase(v, jitter);
         }

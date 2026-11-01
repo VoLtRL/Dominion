@@ -7,19 +7,24 @@ void Bot::beginDecision(const GameView& view){
 }
 
 void Bot::showDecisionTrace() const {
-    std::cout << "Decision trace for " << getName() << ":\n";
-    std::cout << "Phase: " << trace.phase << "\n";
-    std::cout << "Rule: " << trace.rule << "\n";
-    std::cout << "Noise applied: " << (trace.noiseApplied ? "Yes" : "No") << "\n";
+    std::cout << "Decision trace for " << getName() << ":" << std::endl;
+    std::cout << "Phase: " << trace.phase << std::endl;
+    std::cout << "Rule: " << trace.rule << std::endl;
+    std::cout << "Noise applied: " << (trace.noiseApplied ? "Yes" : "No") << std::endl;
     std::cout << "Cards chosen: ";
     if(trace.cardsChosen.empty()){
         std::cout << "None";
     } else {
         for(const Card* card : trace.cardsChosen){
-            std::cout << card->getName() << ", ";
+            if(card){
+                std::cout << card->getName() << ", ";
+            } else {
+                std::cout << "nullptr, ";
+            }
         }
     }
-    std::cout << "\n";
+    std::cout << std::endl;
+    std::cout << "----------------" << std::endl;
 }
 
 std::vector<Rule> Bot::collect(const GameView& view, bool buy) const {
@@ -77,7 +82,10 @@ size_t Bot::randomIndex(size_t n) const {
 }
 
 const Card* Bot::finish(const Card* c, const std::string& why) {
-    trace.cardsChosen = {c};
+    trace.cardsChosen.clear();
+    if(c != nullptr){
+        trace.cardsChosen.push_back(c);
+    }
     trace.rule = why;
     return c;
 }
