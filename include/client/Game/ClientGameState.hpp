@@ -97,6 +97,14 @@ struct ClientGameState {
         return false;
     }
 
+    bool canReact(const Card* card) const {
+        if (isLocalPlayerActive() && currentPhase == GamePhase::REACTION && (card == nullptr || card->isA(CardType::REACTION))) {
+            return true;
+        }
+
+        return false;
+    }
+
     bool canSelectAnotherCard(int selectedCount) const {
         return selection.canSelectAnother(selectedCount);
     }

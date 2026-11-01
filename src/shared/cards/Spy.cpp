@@ -17,31 +17,17 @@ void Spy::attack(Game& g, Player& p, std::set<Player*> targets) const {
         targets.insert(&p);
     }
 
-  for (Player *player : targets) {
-    std::cout << "Player " << player->getName()
-              << ", here is your card : " << std::endl;
-    const Card *c = player->drawCard();
-    c->display();
-
-    std::string input;
-    while (true) {
-      std::cout << "Player " << p.getName()
-                << ", do you want to send it to the draw pile or the discard "
-                   "pile ? (draw/discard)"
-                << std::endl;
-      std::cin >> input;
-      std::cin.ignore();
-      if (input == "discard" || input == "Discard") {
-        std::cout << "Sent to the discard pile!" << std::endl;
-        player->addCardToDiscardStack(c);
-        break;
-      }
-      if (input == "draw" || input == "Draw") {
-        std::cout << "Sent to the draw pile!" << std::endl;
-        player->addCardToDrawStack(c);
-        break;
-      }
-      std::cout << "Please enter a valid response (draw/discard)" << std::endl;
-    }
+  if (targets.empty()) return;
+  Player *player = *targets.begin();
+  targets.erase(targets.begin());
+  const Card *card = player->drawCard();
+  if (!card) {
+    attack(g, p, targets);
+    return;
   }
+  g.setPendingPlayers(std::vector<Player*>(targets.begin(), targets.end()));
+  g.setPendingSelectionTarget(player);
+  g.requestSelection(&p, {card}, 1, SelectionMode::DISCARD,
+                     SelectionConstraint::AT_MOST,
+                     Game::SelectionContext::SPY_CARD);
 }

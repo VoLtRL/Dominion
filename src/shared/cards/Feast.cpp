@@ -9,11 +9,10 @@ void Feast::play(Game& g, Player& p) const {
     g.trashCard(this);
 
     std::cout << "You now gain a card costing up to 5 coins!" << std::endl;
-    std::vector<const Card*> selection = g.getBuyableCardsBelowCost(5);
-    if(!selection.empty()){
-        selection = g.chooseCardsFromSelection(selection, 1, "gain", "exact", {CardType::ALL});
-        if(!selection.empty()){
-            p.addCardToDiscardStack(g.getCardFromCardDistrib(selection[0]->getName()));
-        }
+    const std::vector<const Card*> buyable = g.getBuyableCardsBelowCost(5);
+    if (!buyable.empty()) {
+        g.requestSelection(&p, buyable, 1, SelectionMode::GAIN,
+                           SelectionConstraint::EXACTLY,
+                           Game::SelectionContext::FEAST_GAIN);
     }
 }

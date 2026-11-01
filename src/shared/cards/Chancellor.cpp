@@ -6,19 +6,13 @@ void Chancellor::play(Game &g, Player &p) const
 {
     std::cout << "You gain 2 coins for this turn and you may immediately discard your entire draw pile." << std::endl;
     g.addGold(2);
-    std::string input;
-    while (true) {
-        std::cout << "Do you want to discard your entire draw pile ? (Y/N)" << std::endl;
-        std::getline(std::cin, input);
-
-        if (input == "Y" || input == "y") { 
-            p.discardDrawStack();
-            break; 
-        }
-        if (input == "N" || input == "n") {
-            break; 
-        }
-
-        std::cout << "Please answer Y or N." << std::endl;
+    std::vector<const Card*> cards;
+    auto drawStack = p.getDrawStack().getStack();
+    while (!drawStack.empty()) {
+        cards.push_back(drawStack.top());
+        drawStack.pop();
     }
+    g.requestSelection(&p, cards, cards.size(), SelectionMode::DISCARD,
+                       SelectionConstraint::AT_MOST,
+                       Game::SelectionContext::CHANCELLOR_DISCARD);
 }

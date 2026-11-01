@@ -20,8 +20,6 @@ VisualCard* drawCard(
 
 std::vector<VisualCard*> drawPlayerHand(QGraphicsScene *scene, const std::vector<const Card*> hand, qreal x, qreal y);
 
-std::vector<VisualCard*> drawCardsInPlay(QGraphicsScene *scene, const std::vector<const Card*> cardsInPlay, qreal x, qreal y);
-
 QGraphicsPixmapItem* drawBackCard(QGraphicsScene *scene, qreal x, qreal y, int width = 100, int height = 150);
 
 void drawStack(QGraphicsScene *scene, qreal x, qreal y,int rotation, quint16 count);

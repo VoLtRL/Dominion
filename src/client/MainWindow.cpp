@@ -117,6 +117,16 @@ void MainWindow::connectGameTable() {
         networkManager->sendAction(ActionType::SELECTION_REQUEST,
                                     Network::SelectionResponsePayload(cards));
     });
+
+    connect(gameTable, &GameTable::reactionPlayed, this, [this](const Card *card) {
+        networkManager->sendAction(ActionType::REACTION,
+                                    Network::ReactionResponsePayload(clientPreferences->getPlayerName(), true, card));
+    });
+
+    connect(gameTable, &GameTable::reactionPassed, this, [this]() {
+        networkManager->sendAction(ActionType::REACTION,
+                                    Network::ReactionResponsePayload(clientPreferences->getPlayerName(), false, nullptr));
+    });
 }
 
 void MainWindow::showPage(Page page) {
@@ -275,6 +285,9 @@ void MainWindow::handleAction(const ActionType &action, const QJsonObject &data)
     }
     case ActionType::SELECTION_REQUEST:
         handleSelectionRequest(data);
+        break;
+    case ActionType::REACTION:
+        handleReaction(data);
         break;
     case ActionType::ERROR: {
         const auto payload = Network::ErrorPayload::fromJson(data);
@@ -512,6 +525,30 @@ void MainWindow::handleCardBought(const QJsonObject &data) {
         return;
     }
     gameTable->handleCardBought(payload->cardToBuy);
+}
+
+void MainWindow::handleReaction(const QJsonObject &data){
+    if (data.contains("reactions")) {
+        const auto payload = Network::ReactionPayload::fromJson(data);
+        if (!payload) {
+            qWarning() << "Invalid REACTION request payload:" << data;
+            return;
+        }
+        gameTable->handleReactionRequest(payload->reactions);
+        return;
+    }
+
+    const auto payload = Network::ReactionResponsePayload::fromJson(data);
+    if (!payload) {
+        qWarning() << "Invalid REACTION response payload:" << data;
+        return;
+    }
+    if (payload->playerName == clientPreferences->getPlayerName()) {
+        gameTable->handleReactionCompleted();
+    }
+    gameTable->displayMessage(payload->isReacting
+        ? QString("%1 played a reaction.").arg(payload->playerName)
+        : QString("%1 passed the reaction.").arg(payload->playerName));
 }
 
 void MainWindow::handleTurnEnded(const QJsonObject &data) {

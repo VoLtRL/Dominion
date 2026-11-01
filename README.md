@@ -6,6 +6,6 @@
 - Création de compte
 - Système de points et de classement
 
-- Ajouter un truc au début de la phrase des tours [.. coins | .. Actions | .. Purchases]
-
-- Revoir le code 'shared' pour qu'il devienne asynchrone et qu'il puisse être utilisé par le serveur et le client. On stockera la phase du jeu dans le serveur et on enverra les informations nécessaires au client pour qu'il puisse afficher correctement l'état du jeu. Le client ne fera que des requêtes au serveur pour effectuer des actions.
+- Voir pour le fonctionnement des réactions et des attaques, pour l'instant, les sélections fonctionnent. Revoir également le placement des cardsInPlay, des mains et des piles de défausse.
+- Faire en sorte que le shop ne se load plus à chaque fois sans raison.
+- Revoir les différents boutons et leur activation/désactivation selon le tour du joueur et la phase du jeu. Maybe les faire apparaître/disparaître selon le tour du joueur et la phase du jeu.

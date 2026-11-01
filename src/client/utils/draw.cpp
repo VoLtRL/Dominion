@@ -36,17 +36,6 @@ std::vector<VisualCard*> drawPlayerHand(QGraphicsScene *scene, const std::vector
     return visualCardsInHand;
 }
 
-std::vector<VisualCard*> drawCardsInPlay(QGraphicsScene *scene, const std::vector<const Card*> cardsInPlay, qreal x, qreal y) {
-    std::vector<VisualCard*> visualCardsInPlay;
-    for (const Card* card : cardsInPlay) {
-        visualCardsInPlay.push_back(drawCard(scene, card, x, y, Location::IN_PLAY));
-        visualCardsInPlay.back()->setData(0, "in-play-card"); // this is a card in play.
-        x += 90; // Move to the right for the next card
-    }
-    return visualCardsInPlay;
-}
-
-
 QGraphicsPixmapItem* drawBackCard(QGraphicsScene *scene, qreal x, qreal y, int width, int height) {
     QPixmap backPixmap(":/images/back_card.png");
 

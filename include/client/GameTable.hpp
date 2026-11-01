@@ -40,6 +40,13 @@ private:
     QGraphicsTextItem* playerInfosTextItem{nullptr};
     bool cardPlayPending{false};
     bool selectionPending{false};
+    bool reactionPending{false};
+    bool reactionResponsePending{false};
+
+    VisualCard* cardBeingRightClicked{nullptr};
+    VisualCard* zoomedInCardItem{nullptr};
+
+    void mousePressEvent(QMouseEvent *event) override;
 
 
 signals:
@@ -48,6 +55,10 @@ signals:
     void phaseChanged(GamePhase newPhase);
     void cardPlayed(const Card *card);
     void cardBought(const Card *card);
+
+    void reactionPlayed(const Card *card);
+    void reactionPassed();
+
     void nextPhaseClicked();
     void allTreasuresPlayed();
     void selectionSubmitted(const std::vector<const Card*> &cards);
@@ -57,6 +68,8 @@ private slots:
     void onPlayCardClicked();
     void onBuyCardClicked();
     void onNextPhaseClicked();
+    void onPlayReactionClicked();
+    void onPassReactionClicked();
 
 public:
     explicit GameTable(QWidget *parent = nullptr);
@@ -82,6 +95,9 @@ public:
     void handleCardPlayed(const Card* card);
     void handleCardPlayRejected(const QString &message);
 
+    void handleReactionRequest(const std::vector<const Card*> &reactions);
+    void handleReactionCompleted();
+
     void handleCardBought(const Card* card);
     void handleGameEnded(const QString &winnerName);
     void handleSelectionRequest(SelectionMode mode, SelectionConstraint constraint,
@@ -101,6 +117,9 @@ public:
     void drawOtherPlayersDrawAndDiscard(const std::vector<ClientPlayerState>& players);
     void drawCardsInPlay(const std::vector<const Card*> cardsInPlay, qreal x, qreal y);
     void drawStacks(quint16 cardsInDraw, quint16 cardsInDiscard, const Card* topDiscardCard);
+
+    void drawZoomedInCard();
+    void clearZoomedInCard();
 
     void clearCardsInPlay();
 

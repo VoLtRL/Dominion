@@ -171,6 +171,8 @@ public:
 
   bool hasCardInHand(const Card *) const;
 
+  std::vector<const Card *> getCardsInHandOfType(const CardType &) const;
+
   std::set<EventType> getReactionTypes() const;
   bool canReactToEvent(EventType t) const;
 };

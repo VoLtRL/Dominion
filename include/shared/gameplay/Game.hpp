@@ -23,7 +23,15 @@ public:
     CHAPEL_TRASH,
     CELLAR_DISCARD,
     MILITIA_DISCARD,
-    BUREAUCRAT_TOPDECK
+    BUREAUCRAT_TOPDECK,
+    FEAST_GAIN,
+    THRONE_ROOM_PLAY,
+    THIEF_TRASH,
+    THIEF_GAIN,
+    SPY_CARD,
+    LIBRARY_ACTION,
+    CHANCELLOR_DISCARD,
+    MONEYLENDER_TRASH
   };
 
 private:
@@ -48,11 +56,15 @@ private:
 
   const Card* pendingCard = nullptr;
   Player* pendingActor = nullptr;
+  EventType pendingEvent = EventType::INVALID_EVENT;
   std::vector<Player*> pendingPlayers;
   std::set<Player*> currentTargets;
   CardType currentType;
   Player* selectionPlayer = nullptr;
   std::vector<const Card*> selectionCards;
+  std::vector<const Card*> pendingThiefTreasures;
+  std::vector<const Card*> pendingLibrarySkipped;
+  Player *pendingSelectionTarget = nullptr;
   SelectionMode selectionMode = SelectionMode::NONE;
   SelectionConstraint selectionConstraint = SelectionConstraint::NONE;
   size_t selectionCount = 0;
@@ -179,6 +191,17 @@ public:
   SelectionContext getSelectionContext() const { return selectionContext; }
   int getSelectionLimitCost() const { return selectionLimitCost; }
   void clearSelection();
+  void setPendingThiefTreasures(const std::vector<const Card*> &cards) {
+    pendingThiefTreasures = cards;
+  }
+  const std::vector<const Card*> &getPendingThiefTreasures() const {
+    return pendingThiefTreasures;
+  }
+  void clearPendingThiefTreasures() { pendingThiefTreasures.clear(); }
+  std::vector<const Card*> &getPendingLibrarySkipped() { return pendingLibrarySkipped; }
+  void clearPendingLibrarySkipped() { pendingLibrarySkipped.clear(); }
+  void setPendingSelectionTarget(Player *p) { pendingSelectionTarget = p; }
+  Player *getPendingSelectionTarget() const { return pendingSelectionTarget; }
 
   void passToNextPlayer();
   bool performCleanup();
@@ -203,12 +226,23 @@ public:
     return pendingActor;
   }
 
+  void setPendingEvent(EventType event) {
+    pendingEvent = event;
+  }
+
+  EventType getPendingEvent() const {
+    return pendingEvent;
+  }
+
   void setPendingPlayers(std::vector<Player*> p){
     pendingPlayers = p;
   }
 
   void clearPendingPlayers() {
     pendingPlayers.clear();
+  }
+  const std::vector<Player*> &getPendingPlayers() const {
+    return pendingPlayers;
   }
 
   bool isPlayerTargetted(Player* p) const {

@@ -29,6 +29,7 @@ public:
 
 signals:
     void clicked(int cardId);
+    void rightClicked(int cardId);
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;

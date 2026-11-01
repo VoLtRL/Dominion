@@ -765,70 +765,78 @@ struct GameStatePayload : public Payload {
         }
     };
 
-    // Fired by the client when a Reaction Card to an action is played.
-    // Fired by the server once the action is valid.
-    struct ReactionPlayed : public Payload {
-        QString actorPlayer;
-        const Card* reactionCard;
-        EventType type;
 
-        ReactionPlayed(QString at, const Card* c, EventType t)
-            :actorPlayer(at), reactionCard(c), type(t) {}
+    struct ReactionPayload : public Payload {
+        QString playerName;
+        const Card* attackCard;
+        std::vector<const Card*> reactions;
+
+        ReactionPayload(const QString &playerName, const Card* attackCard, const std::vector<const Card*> &reactions)
+            : playerName(playerName), attackCard(attackCard), reactions(reactions) {}
         
-        ReactionPlayed(Player* at, const Card* c, EventType t)
-            :reactionCard(c), type(t) {
-                actorPlayer = at->getName().c_str();
-            }
-
         QJsonObject toJson() const {
             QJsonObject json;
-            json["actorPlayer"] = actorPlayer;
-            json["reactionCard"] = reactionCard->getName().c_str();
-            json["type"] = eventTypeToString(type).c_str();
+            json["playerName"] = playerName;
+            json["attackCard"] = attackCard->getName().c_str();
+            QJsonArray reactionsArray;
+            for (const auto &reaction : reactions) {
+                reactionsArray.append(reaction->getName().c_str());
+            }
+            json["reactions"] = reactionsArray;
             return json;
         }
 
-        static std::optional<ReactionPlayed> fromJson(const QJsonObject &json) {
-            if (!json.contains("actorPlayer") || !json.contains("card") || !json.contains("type")) {
+        static std::optional<ReactionPayload> fromJson(const QJsonObject &json) {
+            if (!json.contains("playerName") || !json.contains("attackCard") || !json.contains("reactions")) {
                 return std::nullopt;
             }
-
-            return ReactionPlayed(
-                json["actorPlayer"].toString(),
-                Factory::get(json["reactionCard"].toString().toStdString()),
-                stringToEventType(json["type"].toString().toStdString())
+            std::vector<const Card*> reactions;
+            for (const auto &reactionJson : json["reactions"].toArray()) {
+                const Card* reaction = Factory::get(reactionJson.toString().toStdString());
+                if (reaction) {
+                    reactions.push_back(reaction);
+                }
+            }
+            return ReactionPayload(
+                json["playerName"].toString(),
+                Factory::get(json["attackCard"].toString().toStdString()),
+                reactions
             );
         }
     };
 
-    // Fired by the server to clients that can react to a specific attack.
-    struct ReactionNeeded : public Payload {
-        QString actorPlayer;
-        EventType type;
+    struct ReactionResponsePayload : public Payload {
+        QString playerName;
+        bool isReacting;
+        const Card* reactionCard;
 
-        ReactionNeeded(QString at, EventType t)
-            : actorPlayer(at), type(t) {}
-        
-        ReactionNeeded(Player* at, EventType t)
-            : type(t) {
-                actorPlayer = at->getName().c_str();
-            }
+        ReactionResponsePayload(const QString &playerName, bool isReacting, const Card* reactionCard)
+            : playerName(playerName), isReacting(isReacting), reactionCard(reactionCard) {}
 
         QJsonObject toJson() const {
             QJsonObject json;
-            json["actorPlayer"] = actorPlayer;
-            json["type"] = eventTypeToString(type).c_str();
+            json["playerName"] = playerName;
+            json["isReacting"] = isReacting;
+            if (reactionCard) {
+                json["reactionCard"] = reactionCard->getName().c_str();
+            } else {
+                json["reactionCard"] = QJsonValue::Null;
+            }
             return json;
         }
 
-        static std::optional<ReactionNeeded> fromJson(const QJsonObject &json) {
-            if (!json.contains("actorPlayer") || !json.contains("type")) {
+        static std::optional<ReactionResponsePayload> fromJson(const QJsonObject &json) {
+            if (!json.contains("playerName") || !json.contains("isReacting")) {
                 return std::nullopt;
             }
-
-            return ReactionNeeded(
-                json["actorPlayer"].toString(),
-                stringToEventType(json["type"].toString().toStdString())
+            const Card* reactionCard = nullptr;
+            if (json.contains("reactionCard") && !json["reactionCard"].isNull()) {
+                reactionCard = Factory::get(json["reactionCard"].toString().toStdString());
+            }
+            return ReactionResponsePayload(
+                json["playerName"].toString(),
+                json["isReacting"].toBool(),
+                reactionCard
             );
         }
     };

@@ -103,6 +103,16 @@ std::set<EventType> Player::getReactionTypes() const {
   return res;
 }
 
+std::vector<const Card *> Player::getCardsInHandOfType(const CardType &type) const {
+  std::vector<const Card *> cardsOfType;
+  for (const Card *card : hand.getCards()) {
+    if (card->isA(type)) {
+      cardsOfType.push_back(card);
+    }
+  }
+  return cardsOfType;
+}
+
 bool Player::canReactToEvent(EventType t) const {
   EventTypeSet set = getReactionTypes();
   return isEventTriggered(set, t);

@@ -86,6 +86,32 @@
        </property>
       </widget>
      </item>
+          <item>
+      <widget class="QPushButton" name="playReactionButton">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Play Reaction</string>
+       </property>
+      </widget>
+     </item>
+    <item>
+      <widget class="QPushButton" name="passReactionButton">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Pass Reaction</string>
+       </property>
+      </widget>
+     </item>
      <item>
       <widget class="QPushButton" name="endTurnButton">
        <property name="sizePolicy">

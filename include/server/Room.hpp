@@ -10,6 +10,14 @@
 #include "shared/structs/Payloads.hpp"
 
 class Room {
+private:
+    int m_id;
+    QString m_name;
+    Client *m_host{nullptr};
+    std::vector<Client*> m_players;
+    std::unique_ptr<Game> m_game{nullptr};
+    std::optional<GameMode> chosenGameMode;
+
 public:
     Room(int id, const QString &name, Client *host);
     ~Room() = default;
@@ -37,11 +45,5 @@ public:
     void removePlayer(Client *player);
     bool startGame(Client *requester);
 
-private:
-    int m_id;
-    QString m_name;
-    Client *m_host{nullptr};
-    std::vector<Client*> m_players;
-    std::unique_ptr<Game> m_game{nullptr};
-    std::optional<GameMode> chosenGameMode;
+
 };

@@ -15,13 +15,8 @@ void ThroneRoom::play(Game& g, Player& p) const {
         std::cout << "You don't have any action card..." << std::endl;
     }
     else{
-        std::vector<const Card*> toPlay = g.chooseCardsFromSelection(actions, 1, "play twice", "exact", {CardType::ACTION});
-        if (toPlay.empty()){
-            return;
-        }
-        const Action* action = dynamic_cast<const Action*>(toPlay[0]);
-        action->play(g, p);
-        std::cout << "One more time !" << std::endl;
-        g.playAction(p, toPlay[0]);
+        g.requestSelection(&p, actions, 1, SelectionMode::PLAY_CARD,
+                           SelectionConstraint::EXACTLY,
+                           Game::SelectionContext::THRONE_ROOM_PLAY);
     }
 }

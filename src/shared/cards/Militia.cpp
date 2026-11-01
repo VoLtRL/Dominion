@@ -3,6 +3,7 @@
 #include "shared/player/Player.hpp"
 
 #include <algorithm>
+#include <iterator>
 
 void Militia::play(Game& g, Player& p) const {
     std::cout << "You gain 2 coins this turn!" << std::endl;
@@ -10,19 +11,17 @@ void Militia::play(Game& g, Player& p) const {
 }
 
 void Militia::attack(Game& g, Player& p, std::set<Player*> targets) const{
-  for(Player* player : targets){
-      std::cout << "Player " << player->getName() << ", discard until you hold 3 cards!" << std::endl;
-      Hand h = player->getHand();
-      int nb = std::max(0,static_cast<int>(h.getSize())-3);
+  for(auto it = targets.begin(); it != targets.end(); ++it){
+      Player* player = *it;
+      const int nb = std::max(0, static_cast<int>(player->getHand().getSize()) - 3);
       if(nb > 0){
-          std::vector<const Card*> cardsToDiscard = g.chooseCardsFromSelection(h.getCards(), nb, "discard", "exact", {CardType::ALL});
-          std::cout << "Discarding cards." << std::endl;
-          for(const Card* c : cardsToDiscard){
-              player->discardCard(c);
-          }
-      }
-      else{
-          std::cout << "You already have at most 3 cards!" << std::endl;
+          std::vector<Player*> remaining;
+          for(auto next = std::next(it); next != targets.end(); ++next) remaining.push_back(*next);
+          g.setPendingPlayers(remaining);
+          g.requestSelection(player, player->getHand().getCards(), nb,
+                             SelectionMode::DISCARD, SelectionConstraint::EXACTLY,
+                             Game::SelectionContext::MILITIA_DISCARD);
+          return;
       }
   }
 }

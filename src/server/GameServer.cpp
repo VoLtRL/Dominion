@@ -1,6 +1,9 @@
 #include "server/GameServer.hpp"
 #include "server/Client.hpp"
 #include "shared/structs/ActionType.hpp"
+#include "shared/abstract/Action.hpp"
+#include "shared/abstract/Attack.hpp"
+#include "shared/cards/Library.hpp"
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QDebug>
@@ -333,6 +336,11 @@ void GameServer::handlePlayCard(const QJsonObject &data, Client *client) {
                         );
                         return;
                     }
+                    game->setPendingCard(cardToPlay);
+                    game->setPendingActor(client->getAssociatedPlayer());
+                    if (cardToPlay->getName() == "Library") {
+                        game->clearPendingLibrarySkipped();
+                    }
 
                     for(Client* cl : room->getClients()){
                         sendAction(
@@ -359,6 +367,12 @@ void GameServer::handlePlayCard(const QJsonObject &data, Client *client) {
                         std::set<Player*> targets;
                         for(Player &p : game->getPlayers()) {
                             targets.insert(&p);
+                        }
+                        game->setCurrentTargets(targets);
+                        game->setPendingCard(cardToPlay);
+                        game->setPendingActor(client->getAssociatedPlayer());
+                        if (cardToPlay->getName() == "Thief") {
+                            game->clearPendingThiefTreasures();
                         }
                         std::vector<Player*> canReact;
                         for(Player* target : targets) {
@@ -401,9 +415,7 @@ void GameServer::handlePlayCard(const QJsonObject &data, Client *client) {
                             return;
                         }
 
-                        game->setCurrentTargets(targets);
-                        game->setPendingCard(cardToPlay);
-                        game->setPendingActor(client->getAssociatedPlayer());
+                        game->setPendingEvent(EventType::ATTACK_PLAYED_SELF);
                         game->setPendingPlayers(canReact);
                         game->setCurrentType(CardType::ATTACK);
 
@@ -411,9 +423,10 @@ void GameServer::handlePlayCard(const QJsonObject &data, Client *client) {
                             if(std::find(canReact.begin(), canReact.end(), cl->getAssociatedPlayer()) != canReact.end()){
                                 sendAction(
                                     QString::fromStdString(actionTypeToString(ActionType::REACTION)),
-                                    Network::ReactionNeeded(
-                                        client->getAssociatedPlayer(),
-                                        (client == cl) ? EventType::ATTACK_PLAYED_SELF : EventType::ATTACK_PLAYED_OTHER
+                                    Network::ReactionPayload(
+                                        cl->getAssociatedPlayer()->getName().c_str(),
+                                        cardToPlay,
+                                        cl->getAssociatedPlayer()->getCardsInHandOfType(CardType::REACTION)
                                     ).toJson(),
                                     cl->getSocket()
                                 );
@@ -445,6 +458,7 @@ void GameServer::handlePlayCard(const QJsonObject &data, Client *client) {
                     );
                     }
                 sendGameStateToRoom(room);
+                sendSelectionRequest(room, game);
                 }
                 else {
                     const std::string message = "PLAY CARD ERROR : " + cardToPlay->getName() + " FROM PLAYER " + client->getAssociatedPlayer()->getName();
@@ -488,17 +502,13 @@ void GameServer::handleSelection(const QJsonObject &data, Client *client) {
 
     Game *game = room->getGame();
     auto payload = Network::SelectionResponsePayload::fromJson(data);
-    if (!payload || !game->hasPendingSelection() ||
-        client->getAssociatedPlayer() != game->getSelectionPlayer() ||
-        !game->trySendSelection(client->getAssociatedPlayer(), payload->cards)) {
-        sendAction(
-            QString::fromStdString(actionTypeToString(ActionType::ERROR)),
-            Network::ErrorPayload("Invalid card selection.").toJson(),
-            client->getSocket());
+    if (!payload || !game->hasPendingSelection() || client->getAssociatedPlayer() != game->getSelectionPlayer() || !game->trySendSelection(client->getAssociatedPlayer(), payload->cards)) {
+        sendAction( QString::fromStdString(actionTypeToString(ActionType::ERROR)), Network::ErrorPayload("Invalid card selection.").toJson(), client->getSocket());
         return;
     }
 
     const auto selected = payload->cards;
+    const auto offered = game->getSelectionCards();
     const auto context = game->getSelectionContext();
     Player *player = game->getSelectionPlayer();
     game->clearSelection();
@@ -565,6 +575,107 @@ void GameServer::handleSelection(const QJsonObject &data, Client *client) {
                 player->addCardToHand(game->getCardFromCardDistrib(selected.front()->getName()));
             }
             break;
+        case Game::SelectionContext::FEAST_GAIN:
+            if (!selected.empty()) {
+                player->addCardToDiscardStack(game->getCardFromCardDistrib(selected.front()->getName()));
+            }
+            break;
+        case Game::SelectionContext::THRONE_ROOM_PLAY:
+            if (!selected.empty()) {
+                const Action *action = dynamic_cast<const Action *>(selected.front());
+                if (action) {
+                    action->play(*game, *player);
+                    if (!game->hasPendingSelection()) {
+                        action->play(*game, *player);
+                    }
+                }
+            }
+            break;
+        case Game::SelectionContext::MILITIA_DISCARD:
+            for (const Card *card : selected) player->discardCard(card);
+            if (!game->getPendingPlayers().empty()) {
+                const std::set<Player*> remaining(game->getPendingPlayers().begin(),
+                                                   game->getPendingPlayers().end());
+                game->clearPendingPlayers();
+                const Attack *attack = dynamic_cast<const Attack *>(game->getPendingCard());
+                if (attack) attack->attack(*game, *game->getPendingActor(), remaining);
+            }
+            break;
+        case Game::SelectionContext::BUREAUCRAT_TOPDECK:
+            if (!selected.empty()) {
+                player->removeCardFromHand(selected.front());
+                player->addCardToDrawStack(selected.front());
+            }
+            if (!game->getPendingPlayers().empty()) {
+                const std::set<Player*> remaining(game->getPendingPlayers().begin(),
+                                                   game->getPendingPlayers().end());
+                game->clearPendingPlayers();
+                const Attack *attack = dynamic_cast<const Attack *>(game->getPendingCard());
+                if (attack) attack->attack(*game, *game->getPendingActor(), remaining);
+            }
+            break;
+        case Game::SelectionContext::THIEF_TRASH: {
+            std::vector<const Card*> kept;
+            for (const Card *card : game->getPendingThiefTreasures()) {
+                if (std::find(selected.begin(), selected.end(), card) != selected.end()) kept.push_back(card);
+                else game->trashCard(card);
+            }
+            game->setPendingThiefTreasures(kept);
+            if (!game->getPendingPlayers().empty()) {
+                const std::set<Player*> remaining(game->getPendingPlayers().begin(),
+                                                   game->getPendingPlayers().end());
+                game->clearPendingPlayers();
+                const Attack *attack = dynamic_cast<const Attack *>(game->getPendingCard());
+                if (attack) attack->attack(*game, *game->getPendingActor(), remaining);
+            } else if (!kept.empty()) {
+                game->requestSelection(game->getPendingActor(), kept, kept.size(),
+                                       SelectionMode::GAIN, SelectionConstraint::AT_MOST,
+                                       Game::SelectionContext::THIEF_GAIN);
+            }
+            break;
+        }
+        case Game::SelectionContext::THIEF_GAIN:
+            for (const Card *card : game->getPendingThiefTreasures()) {
+                if (std::find(selected.begin(), selected.end(), card) != selected.end()) {
+                    player->addCardToDiscardStack(card);
+                } else {
+                    game->trashCard(card);
+                }
+            }
+            game->clearPendingThiefTreasures();
+            break;
+        case Game::SelectionContext::SPY_CARD: {
+            Player *target = game->getPendingSelectionTarget();
+            if (target && !selected.empty()) target->addCardToDiscardStack(selected.front());
+            else if (target && !offered.empty()) target->addCardToDrawStack(offered.front());
+            if (!game->getPendingPlayers().empty()) {
+                const std::set<Player*> remaining(game->getPendingPlayers().begin(),
+                                                   game->getPendingPlayers().end());
+                game->clearPendingPlayers();
+                const Attack *attack = dynamic_cast<const Attack*>(game->getPendingCard());
+                if (attack) attack->attack(*game, *game->getPendingActor(), remaining);
+            }
+            game->setPendingSelectionTarget(nullptr);
+            break;
+        }
+        case Game::SelectionContext::LIBRARY_ACTION: {
+            const Card *card = offered.front();
+            if (selected.empty()) player->addCardToHand(card);
+            else game->getPendingLibrarySkipped().push_back(card);
+            const Action *library = dynamic_cast<const Action*>(game->getPendingCard());
+            if (library) library->play(*game, *player);
+            break;
+        }
+        case Game::SelectionContext::CHANCELLOR_DISCARD:
+            if (!selected.empty()) player->discardDrawStack();
+            break;
+        case Game::SelectionContext::MONEYLENDER_TRASH:
+            if (!selected.empty()) {
+                player->removeCardFromHand(selected.front());
+                game->trashCard(selected.front());
+                game->addGold(3);
+            }
+            break;
         default:
             sendAction(
                 QString::fromStdString(actionTypeToString(ActionType::ERROR)),
@@ -574,6 +685,7 @@ void GameServer::handleSelection(const QJsonObject &data, Client *client) {
     }
 
     sendGameStateToRoom(room);
+    sendSelectionRequest(room, game);
 }
 
 void GameServer::handlePlayAllTreasures(Client *client) {
@@ -637,28 +749,41 @@ void GameServer::handleBuyCard(const QJsonObject &data, Client *client) {
 void GameServer::handleReaction(const QJsonObject &data, Client* client){
     if (Room *room = RoomManager::getInstance().getRoomByClient(client)) {
         if (Game *game = room->getGame()) {
-            auto payload = Network::ReactionPlayed::fromJson(data);
-            if (!payload || !payload->reactionCard) {
+            auto payload = Network::ReactionResponsePayload::fromJson(data);
+            if (!payload || !game->isPlayerPending(client->getAssociatedPlayer())) {
                 qWarning() << "Invalid data given" << data;
                 return;
             }
-            if(!game->tryPlayReaction(client->getAssociatedPlayer(), payload->reactionCard, payload->type, game->getPlayerFromName(payload->actorPlayer.toStdString()))) {
-                const std::string message = "REACTION CARD ERROR : " + payload->reactionCard->getName() + " FROM PLAYER " + client->getAssociatedPlayer()->getName();
-                sendAction(
-                    QString::fromStdString(actionTypeToString(ActionType::ERROR)),
-                    Network::ErrorPayload(QString::fromStdString(message)).toJson(),
-                    client->getSocket()
-                );
-                return;
+            const EventType event = client->getAssociatedPlayer() == game->getPendingActor()
+                ? EventType::ATTACK_PLAYED_SELF
+                : EventType::ATTACK_PLAYED_OTHER;
+
+            if (payload->isReacting) {
+                if (!payload->reactionCard ||
+                    !game->tryPlayReaction(client->getAssociatedPlayer(),
+                                           payload->reactionCard,
+                                           event,
+                                           game->getPendingActor())) {
+                    const std::string message = "REACTION CARD ERROR FROM PLAYER " +
+                        client->getAssociatedPlayer()->getName();
+                    sendAction(
+                        QString::fromStdString(actionTypeToString(ActionType::ERROR)),
+                        Network::ErrorPayload(QString::fromStdString(message)).toJson(),
+                        client->getSocket()
+                    );
+                    return;
+                }
+            } else {
+                game->removePendingPlayers(client->getAssociatedPlayer());
             }
 
             for(Client* cl : room->getClients()) {
                 sendAction(
                     QString::fromStdString(actionTypeToString(ActionType::REACTION)),
-                    Network::ReactionPlayed(
-                        payload->actorPlayer,
-                        payload->reactionCard,
-                        payload->type
+                    Network::ReactionResponsePayload(
+                        payload->playerName,
+                        payload->isReacting,
+                        payload->reactionCard
                     ).toJson(),
                     cl->getSocket()
                 );
@@ -669,6 +794,7 @@ void GameServer::handleReaction(const QJsonObject &data, Client* client){
                 Player* actor = game->getPendingActor();
                 game->setPendingCard(nullptr);
                 game->setPendingActor(nullptr);
+                game->setPendingEvent(EventType::INVALID_EVENT);
                 game->clearPendingPlayers();
                 switch(game->getCurrentType()) {
                     case CardType::ATTACK:

@@ -13,8 +13,16 @@ VisualCard::~VisualCard() {
 }
 
 void VisualCard::mousePressEvent(QGraphicsSceneMouseEvent *event) {
-    event->accept();
-    emit clicked(m_id);
+    if (event->button() == Qt::RightButton) {
+        event->accept();
+        emit rightClicked(m_id);
+        return;
+    } else {
+        event->ignore();
+        emit clicked(m_id);
+        return;
+    }
+
 }
 
 QRectF VisualCard::boundingRect() const {

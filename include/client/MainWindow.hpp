@@ -101,6 +101,8 @@ private:
     /// @param data The data associated with the BUY_CARD action, which should contain the card to be bought.
     void handleCardBought(const QJsonObject &data);
 
+    void handleReaction(const QJsonObject &data);
+    
     void handleAllTreasuresPlayed();
 
     void handlePhaseChanged(const QJsonObject &data);
