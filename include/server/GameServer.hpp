@@ -8,6 +8,7 @@
 
 #include "server/Client.hpp"
 #include "shared/structs/Payloads.hpp"
+#include "server/RoomManager.hpp"
 
 class GameServer : public QObject {
     Q_OBJECT
@@ -21,16 +22,22 @@ private:
     void handleLeaveRoom(Client *client);
     void handleStartGame(Client *client);
     void handlePlayCard(const QJsonObject &data, Client *client);
+    void handlePlayAllTreasures(Client *client);
+    void handleBuyCard(const QJsonObject &data, Client *client);
     void handleNextPhase(Client *client);
     void handleEndTurn(Client *client);
     void handleSelection(const QJsonObject &data, Client *client);
     void handleReaction(const QJsonObject &data, Client *client);
+    void sendSelectionRequest(Room *room, Game *game);
 
 public:
     explicit GameServer(QObject *parent = nullptr);
     ~GameServer() = default;
     void startServer(quint16 port = 4040);
     void stopServer();
+
+    void sendGameStateToRoom(Room *room);
+
     void receiveAction(const QString &action, const QJsonObject &data, QTcpSocket *clientSocket);
 
     void sendAction(const QString &action, const QJsonObject &data, QTcpSocket *clientSocket);

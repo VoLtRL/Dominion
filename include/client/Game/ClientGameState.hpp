@@ -80,7 +80,9 @@ struct ClientGameState {
 
     bool canPlayCard(const Card* card) const {
 
-        if (isLocalPlayerActive() && currentPhase == GamePhase::ACTION && currentPlayerActions > 0 && (card->isA(CardType::ACTION) || card->isA(CardType::TREASURE))) {
+        if (isLocalPlayerActive() &&
+            ((currentPhase == GamePhase::ACTION && currentPlayerActions > 0 && card->isA(CardType::ACTION)) ||
+             (currentPhase == GamePhase::BUY && card->isA(CardType::TREASURE)))) {
             return true;
         }
 

@@ -28,6 +28,7 @@ public:
        std::set<CardType> cardTypes, Extension cardExtension = Extension::BASE_CARDS)
       : name(cardName), cost(goldCost), description(cardDescription),
         types(cardTypes), extension(cardExtension) {}
+  virtual ~Card() = default;
   /**
    * @brief Gets the name of the card.
    * @return The name of the card.

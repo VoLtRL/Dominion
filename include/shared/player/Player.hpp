@@ -145,6 +145,7 @@ public:
   void addCardToHand(const Card *card) { hand.addCard(card); }
 
   void addCardToPlay(const Card *card) { cardsInPlay.push_back(card); }
+  void clearCardsInPlay() { cardsInPlay.clear(); }
 
   void addCardToDrawStack(const Card *card) { drawStack.putCard(card); }
 

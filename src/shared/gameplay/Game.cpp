@@ -85,6 +85,8 @@ Player* Game::getPlayerByName(const std::string& name) {
   return nullptr;
 }
 
+std::vector<Player> &Game::getPlayers() { return players; }
+
 const std::vector<Player> &Game::getPlayers() const { return players; }
 
 const Player &Game::getActivePlayer() const { return *activePlayer; }
@@ -427,15 +429,19 @@ void Game::playTurn(Player &player) {
 void Game::addGold(int amount) { currentPlayerMoney += amount; }
 
 void Game::discardCardsInPlay() {
-  for (auto card : CardsInPlay) {
-    activePlayer->addCardToDiscardStack(card);
+  for (Player &player : players) {
+    for (const Card *card : player.getCardsInPlay()) {
+      player.addCardToDiscardStack(card);
+    }
+    player.clearCardsInPlay();
   }
+
   CardsInPlay.clear();
 }
 
 Player Game::getWinner() const {
   Player winner = players[0];
-  int maxScore = 0;
+  int maxScore = std::numeric_limits<int>::min();
 
   for (const Player &player : players) {
     if (player.getVictoryPoints() > maxScore) {
@@ -645,6 +651,7 @@ void Game::playTreasure(Player&p, const Card* card){
 
 bool Game::canPlayAction(Player* p, const Card* card) const {
   if(currentPlayerActions <= 0) { return false; }
+  if(currentPhase != GamePhase::ACTION) { return false; }
   if(!p->hasCardInHand(card)) { return false; }
   if(p != activePlayer) { return false; }
   if(!card->isA(CardType::ACTION)) { return false; }
@@ -663,16 +670,15 @@ bool Game::tryPlayAction(Player* p, const Card* card) {
   addCardToPlay(card);
   const Action* action = dynamic_cast<const Action*>(card);
   action->play(*this, *p);
+  currentPlayerActions--;
   return true;
 }
 
 bool Game::canPlayTreasure(Player* p, const Card* card) const {
+  if(currentPhase != GamePhase::BUY && currentPhase != GamePhase::ACTION) { return false; }
   if(!p->hasCardInHand(card)) { return false; }
   if(p != activePlayer) { return false; }
   if(!card->isA(CardType::TREASURE)) { return false; }
-  const Treasure* treasure = dynamic_cast<const Treasure*>(card);
-  const Treasure* secondTreasure = dynamic_cast<const Treasure*>(Factory::get(card->getName()));
-  if(treasure->getCoins() != secondTreasure->getCoins()) { return false ;}  // Si d'une manière ou d'une autre les coins de la carte ont changés, jsp comment tu gères l'envoi des cartes
   return true;
 }
 bool Game::tryPlayTreasure(Player* p, const Card* card) {
@@ -689,18 +695,30 @@ bool Game::tryPlayTreasure(Player* p, const Card* card) {
   return true;
 }
 bool Game::tryPlayAllTreasures(Player* p) {
-  if(p != activePlayer) {
-    // Signal "erreur"
+  if(p == nullptr || p != activePlayer) {
     return false;
   }
-  for(const Card* card : p->getHand().getCards()){
-    if(!canPlayTreasure(p, card)){
+
+  std::vector<const Card*> treasures;
+  for (const Card* card : p->getHand().getCards()) {
+    if (card->isA(CardType::TREASURE)) {
+      if (!canPlayTreasure(p, card)) {
+        return false;
+      }
+      treasures.push_back(card);
+    }
+  }
+
+  if (treasures.empty()) {
+    return false;
+  }
+
+  for (const Card* card : treasures) {
+    if (!tryPlayTreasure(p, card)) {
       return false;
     }
   }
-  for(const Card* card : p->getHand().getCards()){
-    tryPlayTreasure(p, card);
-  }
+
   return true;
 }
 
@@ -749,9 +767,11 @@ bool Game::applyProtection(Player* p, Player* attacker, const Card* card) {
 }
 
 bool Game::canBuyCard(Player* p, const Card* card) const {
+  if (p == nullptr || card == nullptr) { return false; }
   if(currentPlayerPurchaseLeft <= 0) { return false; }
   if(p != activePlayer) { return false; }
-  if(!currentCardDistribution.at(card)) { return false ;}
+  auto stack = currentCardDistribution.find(card);
+  if(stack == currentCardDistribution.end() || stack->second <= 0) { return false; }
   if(card->getCost() > currentPlayerMoney) { return false; }
   if(!Factory::get(card->getName())){ return false ;}
   return true;
@@ -761,8 +781,11 @@ bool Game::tryBuyCard(Player* p, const Card* card) {
     // Signal erreur
     return false;
   }
-  currentCardDistribution.at(card) -= 1;
+  auto stack = currentCardDistribution.find(card);
+  if (stack == currentCardDistribution.end()) { return false; }
+  stack->second -= 1;
   currentPlayerMoney -= card->getCost();
+  currentPlayerPurchaseLeft--;
   const Card* newCard = Factory::get(card->getName());
   p->addCardToDiscardStack(newCard);
   return true;
@@ -770,33 +793,67 @@ bool Game::tryBuyCard(Player* p, const Card* card) {
 
 // Là pour le coup je sais pas ce que tu comptes faire ou en tout cas comment le faire
 bool Game::tryNextPhase(Player* p) {
-  if(p != activePlayer) {
-    // Signal erreur
+  if(p == nullptr || p != activePlayer) {
     return false;
   }
   switch(currentPhase) {
     case GamePhase::ACTION :
-      
-      break;
-
-    case GamePhase::BUY :
-      
-      break;
-
-    case GamePhase::REACTION :
-      
-      break;
-    
-    case GamePhase::SELECTION :
-      
-      break;
+      currentPhase = GamePhase::BUY;
+      return true;
+    default:
+      return false;
   }
-  return false;
 }
 
 // Pareil jsp, c'est dans le cadre d'une demande de sélection, d'une réponse ?
 bool Game::trySendSelection(Player* p, const std::vector<const Card*>& selection) {
-  return false;
+  if (!p || p != selectionPlayer) {
+    return false;
+  }
+
+  const size_t count = selection.size();
+  if ((selectionConstraint == SelectionConstraint::EXACTLY && count != selectionCount) ||
+      (selectionConstraint == SelectionConstraint::AT_LEAST && count < selectionCount) ||
+      (selectionConstraint == SelectionConstraint::AT_MOST && count > selectionCount)) {
+    return false;
+  }
+
+  std::set<std::string> availableNames;
+  for (const Card *card : selectionCards) {
+    availableNames.insert(card->getName());
+  }
+  std::set<std::string> selectedNames;
+  for (const Card *card : selection) {
+    if (!card || availableNames.count(card->getName()) == 0 ||
+        !selectedNames.insert(card->getName()).second) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+void Game::requestSelection(Player *p, const std::vector<const Card*> &cards,
+                             size_t count, SelectionMode mode,
+                             SelectionConstraint constraint,
+                             SelectionContext context, int limitCost) {
+  selectionPlayer = p;
+  selectionCards = cards;
+  selectionCount = count;
+  selectionMode = mode;
+  selectionConstraint = constraint;
+  selectionContext = context;
+  selectionLimitCost = limitCost;
+}
+
+void Game::clearSelection() {
+  selectionPlayer = nullptr;
+  selectionCards.clear();
+  selectionCount = 0;
+  selectionMode = SelectionMode::NONE;
+  selectionConstraint = SelectionConstraint::NONE;
+  selectionContext = SelectionContext::NONE;
+  selectionLimitCost = 0;
 }
 
 bool Game::hasGameEnded() const {
@@ -823,17 +880,29 @@ bool Game::hasGameEnded() const {
 }
 
 bool Game::performCleanup() {
+
   discardCardsInPlay();
   activePlayer->discardHand();
   activePlayer->drawCardsToHand(5);
+
   if(hasGameEnded()){
     //fin du jeu
     return true;
   }
   else {
+
     passToNextPlayer();
+    resetCurrentPlayerStats();
+
     return false;
   }
+}
+
+void Game::resetCurrentPlayerStats() {
+  currentPlayerActions = 1;
+  currentPlayerPurchaseLeft = 1;
+  currentPlayerMoney = 0;
+  currentPhase = GamePhase::ACTION;
 }
 
 void Game::passToNextPlayer() {

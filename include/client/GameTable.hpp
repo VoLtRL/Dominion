@@ -2,6 +2,7 @@
 
 #include <QWidget>
 #include <QGraphicsScene>
+#include <QString>
 
 #include "shared/abstract/Card.hpp"
 #include "shared/player/Player.hpp"
@@ -9,7 +10,6 @@
 #include "client/Game/ClientGameState.hpp"
 #include "shared/structs/GamePhase.hpp"
 
-#include <QtGlobal>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class GameTable; }
@@ -37,17 +37,25 @@ private:
     QString messageText;
     QGraphicsTextItem* messageTextItem{nullptr};
 
+    QGraphicsTextItem* playerInfosTextItem{nullptr};
+    bool cardPlayPending{false};
+    bool selectionPending{false};
+
 
 signals:
     void endTurnClicked();
     void widgetResized(const QSize &newSize);
     void phaseChanged(GamePhase newPhase);
     void cardPlayed(const Card *card);
+    void cardBought(const Card *card);
     void nextPhaseClicked();
+    void allTreasuresPlayed();
+    void selectionSubmitted(const std::vector<const Card*> &cards);
     
 private slots:
     void onEndTurnClicked();
     void onPlayCardClicked();
+    void onBuyCardClicked();
     void onNextPhaseClicked();
 
 public:
@@ -72,6 +80,13 @@ public:
     /// @brief Handles the event when a card is played after being validated by the server. This function is called when the server confirms that a card has been played successfully.
     /// @param card The card that was played.
     void handleCardPlayed(const Card* card);
+    void handleCardPlayRejected(const QString &message);
+
+    void handleCardBought(const Card* card);
+    void handleGameEnded(const QString &winnerName);
+    void handleSelectionRequest(SelectionMode mode, SelectionConstraint constraint,
+                                int numberOfCards,
+                                const std::vector<const Card*> &cards);
 
     void updatePhase(GamePhase newPhase);
 
@@ -86,6 +101,8 @@ public:
     void drawOtherPlayersDrawAndDiscard(const std::vector<ClientPlayerState>& players);
     void drawCardsInPlay(const std::vector<const Card*> cardsInPlay, qreal x, qreal y);
     void drawStacks(quint16 cardsInDraw, quint16 cardsInDiscard, const Card* topDiscardCard);
+
+    void clearCardsInPlay();
 
     void drawShop();
 

@@ -2,6 +2,7 @@
 #include <QMainWindow>
 #include <QTimer>
 #include <QJsonObject>
+#include <QString>
 
 #include "client/network/NetworkManager.hpp"
 #include "shared/gameplay/Game.hpp"
@@ -93,8 +94,18 @@ private:
     /// @param card The card that the client wants to play. This function sends a PLAY_CARD action to the server with the card information.
     void handlePlayCard(const Card *card);
 
+    /// @brief  Handles the client's request to buy a card. This function is called when the client buys a card in the game table.
+    /// @param card The card that the client wants to buy. This function sends a BUY_CARD action to the server with the card information.
+    void handleBuyCard(const Card *card);
+    /// @brief Handles the client's request to buy a card. This function is called when the client buys a card in the game table.
+    /// @param data The data associated with the BUY_CARD action, which should contain the card to be bought.
+    void handleCardBought(const QJsonObject &data);
+
+    void handleAllTreasuresPlayed();
+
     void handlePhaseChanged(const QJsonObject &data);
     void handleTurnEnded(const QJsonObject &data);
+    void handleSelectionRequest(const QJsonObject &data);
     
     void updateGameState(const Network::GameStatePayload &payload);
     void startTurnWhenReady();

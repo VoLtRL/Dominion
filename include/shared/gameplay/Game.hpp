@@ -9,8 +9,23 @@
 #include "shared/gameplay/GameMode.hpp"
 #include "shared/gameplay/TableStack.hpp"
 #include "shared/structs/GamePhase.hpp"
+#include "shared/structs/Selection.hpp"
 
 class Game {
+public:
+  enum class SelectionContext {
+    NONE,
+    WORKSHOP_GAIN,
+    REMODEL_TRASH,
+    REMODEL_GAIN,
+    MINE_TRASH,
+    MINE_GAIN,
+    CHAPEL_TRASH,
+    CELLAR_DISCARD,
+    MILITIA_DISCARD,
+    BUREAUCRAT_TOPDECK
+  };
+
 private:
   std::vector<Player> players;
   
@@ -31,10 +46,18 @@ private:
 
   std::vector<const Card *> trash;
 
-  const Card* pendingCard;
+  const Card* pendingCard = nullptr;
+  Player* pendingActor = nullptr;
   std::vector<Player*> pendingPlayers;
   std::set<Player*> currentTargets;
   CardType currentType;
+  Player* selectionPlayer = nullptr;
+  std::vector<const Card*> selectionCards;
+  SelectionMode selectionMode = SelectionMode::NONE;
+  SelectionConstraint selectionConstraint = SelectionConstraint::NONE;
+  size_t selectionCount = 0;
+  SelectionContext selectionContext = SelectionContext::NONE;
+  int selectionLimitCost = 0;
 
 public:
   Game() = default;
@@ -46,6 +69,7 @@ public:
   const std::vector<TableStack> &getBasicStacks();
 
   void addPlayer(Player player);
+  std::vector<Player> &getPlayers();
   const std::vector<Player> &getPlayers() const;
 
   const Player &getActivePlayer() const;
@@ -142,9 +166,24 @@ public:
   bool tryNextPhase(Player* p);
 
   bool trySendSelection(Player* p, const std::vector<const Card*>& selection);
+  void requestSelection(Player *p, const std::vector<const Card*> &cards,
+                        size_t count, SelectionMode mode,
+                        SelectionConstraint constraint, SelectionContext context,
+                        int limitCost = 0);
+  bool hasPendingSelection() const { return selectionPlayer != nullptr; }
+  Player *getSelectionPlayer() const { return selectionPlayer; }
+  const std::vector<const Card*> &getSelectionCards() const { return selectionCards; }
+  SelectionMode getSelectionMode() const { return selectionMode; }
+  SelectionConstraint getSelectionConstraint() const { return selectionConstraint; }
+  size_t getSelectionCount() const { return selectionCount; }
+  SelectionContext getSelectionContext() const { return selectionContext; }
+  int getSelectionLimitCost() const { return selectionLimitCost; }
+  void clearSelection();
 
   void passToNextPlayer();
   bool performCleanup();
+  void resetCurrentPlayerStats(); 
+
   bool hasGameEnded() const;
   Player getWinner() const;
 
@@ -156,8 +195,20 @@ public:
     pendingCard = card;
   }
 
+  void setPendingActor(Player* player) {
+    pendingActor = player;
+  }
+
+  Player* getPendingActor() const {
+    return pendingActor;
+  }
+
   void setPendingPlayers(std::vector<Player*> p){
     pendingPlayers = p;
+  }
+
+  void clearPendingPlayers() {
+    pendingPlayers.clear();
   }
 
   bool isPlayerTargetted(Player* p) const {

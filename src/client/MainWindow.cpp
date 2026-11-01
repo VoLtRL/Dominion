@@ -33,6 +33,7 @@ MainWindow::MainWindow(QWidget *parent, NetworkManager *networkManager, ClientPr
     gameLobby->setCurrentPlayerName(clientPreferences->getPlayerName());
     connectNavigation();
     connectNetwork();
+    connectGameTable();
     showPage(Page::MainMenu);
 }
 
@@ -96,14 +97,25 @@ void MainWindow::connectGameTable() {
     connect(gameTable, &GameTable::phaseChanged, this, [this](GamePhase newPhase) {
         if (ensureConnected()) {
             ui->statusbar->showMessage(QString("Phase changed to: %1").arg(toString(newPhase).c_str()));
+        } else {
+            gameTable->displayMessage("Not connected to server. Cannot change phase.");
         }
     });
 
     connect(gameTable, &GameTable::cardPlayed, this, &MainWindow::handlePlayCard);
     connect(gameTable, &GameTable::nextPhaseClicked, this, [this]() {
         if (ensureConnected()) {
+            qDebug() << "Sending NEXT_PHASE action to server.";
             networkManager->sendAction(ActionType::NEXT_PHASE, Network::EmptyPayload());
+        } else {
+            gameTable->displayMessage("Not connected to server. Cannot proceed to next phase.");
         }
+    });
+    connect(gameTable, &GameTable::cardBought, this, &MainWindow::handleBuyCard);
+    connect(gameTable, &GameTable::allTreasuresPlayed, this, &MainWindow::handleAllTreasuresPlayed);
+    connect(gameTable, &GameTable::selectionSubmitted, this, [this](const std::vector<const Card*> &cards) {
+        networkManager->sendAction(ActionType::SELECTION_REQUEST,
+                                    Network::SelectionResponsePayload(cards));
     });
 }
 
@@ -243,12 +255,36 @@ void MainWindow::handleAction(const ActionType &action, const QJsonObject &data)
     case ActionType::PLAY_CARD:
         handleCardPlayed(data);
         break;
+    case ActionType::BUY_CARD:
+        handleCardBought(data);
+        break;
     case ActionType::END_TURN:
         handleTurnEnded(data);
         break;
     case ActionType::NEXT_PHASE:
         handlePhaseChanged(data);
         break;
+    case ActionType::GAME_ENDED: {
+        const auto payload = Network::GameEndedPayload::fromJson(data);
+        if (!payload) {
+            qWarning() << "Invalid GAME_ENDED payload:" << data;
+            break;
+        }
+        gameTable->handleGameEnded(payload->winnerName);
+        break;
+    }
+    case ActionType::SELECTION_REQUEST:
+        handleSelectionRequest(data);
+        break;
+    case ActionType::ERROR: {
+        const auto payload = Network::ErrorPayload::fromJson(data);
+        if (!payload) {
+            qWarning() << "Invalid ERROR payload:" << data;
+            break;
+        }
+        gameTable->handleCardPlayRejected(payload->message);
+        break;
+    }
     case ActionType::REQUEST_ROOM_LIST:
         handleRoomList(data);
         break;
@@ -423,12 +459,23 @@ void MainWindow::handleRoomList(const QJsonObject &data) {
 }
 
 void MainWindow::handleCardPlayed(const QJsonObject &data) {
-    const auto payload = Network::PlayCardPayload::fromJson(data);
+    const auto payload = Network::CardPlayed::fromJson(data);
     if (!payload) {
         qWarning() << "Invalid PLAY_CARD payload:" << data;
         return;
     }
-    gameTable->handleCardPlayed(payload->cardToPlay);
+
+    gameTable->handleCardPlayed(payload->card);
+}
+
+void MainWindow::handleSelectionRequest(const QJsonObject &data) {
+    const auto payload = Network::SelectionRequestPayload::fromJson(data);
+    if (!payload) {
+        qWarning() << "Invalid SELECTION_REQUEST payload:" << data;
+        return;
+    }
+    gameTable->handleSelectionRequest(
+        payload->mode, payload->constraint, payload->numberOfCards, payload->cards);
 }
 
 void MainWindow::handlePlayCard(const Card *card) {
@@ -437,10 +484,45 @@ void MainWindow::handlePlayCard(const Card *card) {
     }
 
     if (ensureConnected()) {
-        networkManager->sendAction(
-            ActionType::PLAY_CARD,
-            Network::PlayCardPayload(card));
+        networkManager->sendAction(ActionType::PLAY_CARD,Network::PlayCardPayload(card));
     }
+}
+
+void MainWindow::handleAllTreasuresPlayed() {
+    if (ensureConnected()) {
+        networkManager->sendAction(ActionType::PLAY_ALL_TREASURES, Network::EmptyPayload());
+    }
+}
+
+void MainWindow::handleBuyCard(const Card *card) {
+    if (card == nullptr) {
+        return;
+    }
+
+    if (ensureConnected()) {
+        networkManager->sendAction(ActionType::BUY_CARD,Network::BuyCardPayload(card));
+    }
+    
+}
+
+void MainWindow::handleCardBought(const QJsonObject &data) {
+    const auto payload = Network::BuyCardPayload::fromJson(data);
+    if (!payload) {
+        qWarning() << "Invalid BUY_CARD payload:" << data;
+        return;
+    }
+    gameTable->handleCardBought(payload->cardToBuy);
+}
+
+void MainWindow::handleTurnEnded(const QJsonObject &data) {
+    const auto payload = Network::TurnEndedPayload::fromJson(data);
+    if (!payload) {
+        qWarning() << "Invalid END_TURN payload:" << data;
+        return;
+    }
+    gameTable->displayMessage(QString("Turn ended. Next player: %1").arg(payload->nextPlayerName));
+    gameTable->updatePhase(GamePhase::ACTION);
+    gameTable->clearCardsInPlay();
 }
 
 void MainWindow::applySettings(

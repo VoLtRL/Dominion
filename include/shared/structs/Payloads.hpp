@@ -416,6 +416,82 @@ namespace Network {
         }
     };
 
+    struct SelectionRequestPayload : public Payload {
+        SelectionMode mode;
+        SelectionConstraint constraint;
+        int numberOfCards;
+        std::vector<const Card*> cards;
+
+        SelectionRequestPayload(SelectionMode mode, SelectionConstraint constraint,
+                                int numberOfCards, const std::vector<const Card*> &cards)
+            : mode(mode), constraint(constraint), numberOfCards(numberOfCards), cards(cards) {}
+
+        QJsonObject toJson() const {
+            QJsonObject json;
+            json["mode"] = toString(mode).c_str();
+            json["constraint"] = toString(constraint).c_str();
+            json["numberOfCards"] = numberOfCards;
+            QJsonArray cardsJson;
+            for (const Card *card : cards) {
+                cardsJson.append(card->getName().c_str());
+            }
+            json["cards"] = cardsJson;
+            return json;
+        }
+
+        static std::optional<SelectionRequestPayload> fromJson(const QJsonObject &json) {
+            if (!json.contains("mode") || !json.contains("constraint") ||
+                !json.contains("numberOfCards") || !json.contains("cards")) {
+                return std::nullopt;
+            }
+            std::vector<const Card*> cards;
+            for (const auto &value : json["cards"].toArray()) {
+                const Card *card = Factory::get(value.toString().toStdString());
+                if (!card) {
+                    return std::nullopt;
+                }
+                cards.push_back(card);
+            }
+            return SelectionRequestPayload(
+                stringToSelectionMode(json["mode"].toString().toStdString()),
+                stringToSelectionConstraint(json["constraint"].toString().toStdString()),
+                json["numberOfCards"].toInt(),
+                cards);
+        }
+    };
+
+    struct SelectionResponsePayload : public Payload {
+        std::vector<const Card*> cards;
+
+        explicit SelectionResponsePayload(const std::vector<const Card*> &cards)
+            : cards(cards) {}
+
+        QJsonObject toJson() const {
+            QJsonObject json;
+            QJsonArray cardsJson;
+            for (const Card *card : cards) {
+                cardsJson.append(card->getName().c_str());
+            }
+            json["cards"] = cardsJson;
+            return json;
+        }
+
+        static std::optional<SelectionResponsePayload> fromJson(const QJsonObject &json) {
+            if (!json.contains("cards")) {
+                return std::nullopt;
+            }
+            std::vector<const Card*> cards;
+            for (const auto &value : json["cards"].toArray()) {
+                const Card *card = Factory::get(value.toString().toStdString());
+                if (!card) {
+                    return std::nullopt;
+                }
+                cards.push_back(card);
+            }
+            return SelectionResponsePayload(cards);
+        }
+    };
+
     struct TurnStatePayload : public Payload {
         QString activePlayerName;
         QString phase;
@@ -573,6 +649,29 @@ struct GameStatePayload : public Payload {
         }
     };
 
+    struct BuyCardPayload : public Payload {
+        const Card* cardToBuy;
+
+        BuyCardPayload(const Card* cardToBuy)
+            : cardToBuy(cardToBuy) {}
+
+        QJsonObject toJson() const {
+            QJsonObject json;  
+            json["cardToBuy"] = cardToBuy->getName().c_str();
+            return json;
+        }
+
+        static std::optional<BuyCardPayload> fromJson(const QJsonObject &json) {
+            if (!json.contains("cardToBuy")) {
+                return std::nullopt;
+            }
+            
+            return BuyCardPayload(
+                Factory::get(json["cardToBuy"].toString().toStdString())
+            );
+        }
+    };
+
     // Fired by the server when a card was successfully played. Gives info regarding the card and the type it was used for (useful for double type cards like Witch)
     struct CardPlayed : public Payload {
         CardType type;
@@ -594,6 +693,28 @@ struct GameStatePayload : public Payload {
             }
             return CardPlayed(
                 stringToCardType(json["type"].toString().toStdString()),
+                Factory::get(json["card"].toString().toStdString())
+            );
+        }
+    };
+
+    struct CardBought : public Payload {
+        const Card* card;
+
+        CardBought(const Card* c)
+            : card(c) {}
+
+        QJsonObject toJson() const {
+            QJsonObject json;
+            json["card"] = card->getName().c_str();
+            return json;
+        }
+
+        static std::optional<CardBought> fromJson(const QJsonObject &json) {
+            if (!json.contains("card")) {
+                return std::nullopt;
+            }
+            return CardBought(
                 Factory::get(json["card"].toString().toStdString())
             );
         }
@@ -730,6 +851,50 @@ struct GameStatePayload : public Payload {
             }
             return PhaseChangedPayload(
                 fromString(json["newPhase"].toString().toStdString())
+            );
+        }
+    };
+
+    struct TurnEndedPayload : public Payload {
+        QString nextPlayerName;
+
+        TurnEndedPayload(const QString &nextPlayerName)
+            : nextPlayerName(nextPlayerName) {}
+
+        QJsonObject toJson() const {
+            QJsonObject json;
+            json["nextPlayerName"] = nextPlayerName;
+            return json;
+        }
+
+        static std::optional<TurnEndedPayload> fromJson(const QJsonObject &json) {
+            if (!json.contains("nextPlayerName")) {
+                return std::nullopt;
+            }
+            return TurnEndedPayload(
+                json["nextPlayerName"].toString()
+            );
+        }
+    };
+
+    struct GameEndedPayload : public Payload {
+        QString winnerName;
+
+        GameEndedPayload(const QString &winnerName)
+            : winnerName(winnerName) {}
+
+        QJsonObject toJson() const {
+            QJsonObject json;
+            json["winnerName"] = winnerName;
+            return json;
+        }
+
+        static std::optional<GameEndedPayload> fromJson(const QJsonObject &json) {
+            if (!json.contains("winnerName")) {
+                return std::nullopt;
+            }
+            return GameEndedPayload(
+                json["winnerName"].toString()
             );
         }
     };

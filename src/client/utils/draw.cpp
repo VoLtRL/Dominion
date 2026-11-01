@@ -40,6 +40,7 @@ std::vector<VisualCard*> drawCardsInPlay(QGraphicsScene *scene, const std::vecto
     std::vector<VisualCard*> visualCardsInPlay;
     for (const Card* card : cardsInPlay) {
         visualCardsInPlay.push_back(drawCard(scene, card, x, y, Location::IN_PLAY));
+        visualCardsInPlay.back()->setData(0, "in-play-card"); // this is a card in play.
         x += 90; // Move to the right for the next card
     }
     return visualCardsInPlay;
