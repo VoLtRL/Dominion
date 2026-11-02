@@ -3,8 +3,8 @@
     #include <set>
     #include "shared/structs/GamePhase.hpp"
 
-Room::Room(int id, const QString &name, Client *host)
-    : m_id(id), m_name(name), m_host(host) {
+Room::Room(int id, const QString &name, Client *host, int count)
+    : m_id(id), m_name(name), m_host(host), botCount(count) {
     if (host) {
         m_players.push_back(host);
     }

@@ -8,7 +8,7 @@
 bool Game::initialize(const GameMode& gameMode,const std::vector<QString> &playerNames) {
   setCurrentCardDistribution(gameMode.getCardDistribution());
   for (const QString &name : playerNames) {
-    addPlayer(Player(name.toStdString()));
+    addPlayer(std::make_unique<Player>(name.toStdString()));
   }
 
   std::cout << "Game initialized with " << players.size() << " players." << std::endl;
@@ -17,7 +17,7 @@ bool Game::initialize(const GameMode& gameMode,const std::vector<QString> &playe
 
   std::shuffle(players.begin(), players.end(), seed);
 
-  activePlayer = &players[0];
+  activePlayer = players[0].get();
   currentPhase = GamePhase::ACTION;
 
   currentPlayerMoney = 0;
@@ -58,7 +58,7 @@ bool Game::initialize(const GameMode& gameMode,const std::vector<QString> &playe
 
   setCurrentCardDistribution(combinedDistribution);
 
-  for (Player &player : players) {
+  for (const auto& player : players) {
     CardStack drawStack = CardStack(
         {Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
          Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
@@ -68,30 +68,30 @@ bool Game::initialize(const GameMode& gameMode,const std::vector<QString> &playe
     Hand hand;
     CardStack discardStack = CardStack();
     hand.refillHandFromDrawStack(drawStack, discardStack);
-    player.setHand(hand);
-    player.setDrawStack(drawStack);
-    player.setDiscardStack(discardStack);
+    player->setHand(hand);
+    player->setDrawStack(drawStack);
+    player->setDiscardStack(discardStack);
   }
 
   return true;
 }
 
 Player* Game::getPlayerByName(const std::string& name) {
-  for (auto& player : players) {
-    if (player.getString() == name) {
-      return &player;
+  for (const auto& player : players) {
+    if (player->getString() == name) {
+      return player.get();
     }
   }
   return nullptr;
 }
 
-std::vector<Player> &Game::getPlayers() { return players; }
+const std::vector<std::unique_ptr<Player>>& Game::getPlayers() const { return players; }
 
-const std::vector<Player> &Game::getPlayers() const { return players; }
+const std::vector<std::unique_ptr<Player>>& Game::getPlayers() const { return players; }
 
-const Player &Game::getActivePlayer() const { return *activePlayer; }
+const Player* Game::getActivePlayer() const { return activePlayer; }
 
-void Game::addPlayer(Player player) { players.push_back(player); }
+void Game::addPlayer(std::unique_ptr<Player> player) { players.push_back(std::move(player)); }
 
 void Game::setActivePlayer(Player *player) { activePlayer = player; }
 
@@ -429,24 +429,24 @@ void Game::playTurn(Player &player) {
 void Game::addGold(int amount) { currentPlayerMoney += amount; }
 
 void Game::discardCardsInPlay() {
-  for (Player &player : players) {
-    for (const Card *card : player.getCardsInPlay()) {
-      player.addCardToDiscardStack(card);
+  for (const auto& player : players) {
+    for (const Card *card : player->getCardsInPlay()) {
+      player->addCardToDiscardStack(card);
     }
-    player.clearCardsInPlay();
+    player->clearCardsInPlay();
   }
 
   CardsInPlay.clear();
 }
 
-Player Game::getWinner() const {
-  Player winner = players[0];
+Player* Game::getWinner() const {
+  Player* winner = players[0].get();
   int maxScore = std::numeric_limits<int>::min();
 
-  for (const Player &player : players) {
-    if (player.getVictoryPoints() > maxScore) {
-      maxScore = player.getVictoryPoints();
-      winner = player;
+  for (const auto& player : players) {
+    if (player->getVictoryPoints() > maxScore) {
+      maxScore = player->getVictoryPoints();
+      winner = player.get();
     }
   }
 
@@ -615,9 +615,9 @@ void Game::activateReactions(GameEvent *event) {
 
 std::vector<Player *> Game::getOtherPlayers() {
   std::vector<Player *> res;
-  for (Player &player : players) {
-    if (player != *activePlayer) {
-      res.push_back(&player);
+  for (const auto& player : players) {
+    if (player.get() != activePlayer) {
+      res.push_back(player.get());
     }
   }
   return res;
@@ -639,14 +639,6 @@ void Game::playAttackCard(const Card *card) {
   attack->attack(*this, *activePlayer, newTargets);
 }
 */
-
-void Game::playAction(Player &p, const Card *card) {
-
-}
-
-void Game::playTreasure(Player&p, const Card* card){
-
-}
 
 
 bool Game::canPlayAction(Player* p, const Card* card) const {
@@ -906,7 +898,7 @@ void Game::resetCurrentPlayerStats() {
 }
 
 void Game::passToNextPlayer() {
-  auto index = std::find(players.begin(), players.end(), *activePlayer);
+  auto index = std::find(players.begin(), players.end(), activePlayer);
   if(index == players.end()){
     // Pas normal
     return;
@@ -915,5 +907,5 @@ void Game::passToNextPlayer() {
   if(index == players.end()){
     index = players.begin();
   }
-  activePlayer = &*index;
+  activePlayer = index->get();
 }

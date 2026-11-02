@@ -35,7 +35,7 @@ public:
   };
 
 private:
-  std::vector<Player> players;
+  std::vector<std::unique_ptr<Player>> players;
   
   std::vector<TableStack> KingdomStacks;
   std::vector<TableStack> BasicStacks;
@@ -80,11 +80,11 @@ public:
   const std::vector<TableStack> &getKingdomStacks();
   const std::vector<TableStack> &getBasicStacks();
 
-  void addPlayer(Player player);
-  std::vector<Player> &getPlayers();
-  const std::vector<Player> &getPlayers() const;
+  void addPlayer(std::unique_ptr<Player> player);
+  std::vector<std::unique_ptr<Player>> getPlayers();
+  const std::vector<std::unique_ptr<Player>> &getPlayers() const;
 
-  const Player &getActivePlayer() const;
+  const Player* getActivePlayer() const;
   GamePhase getCurrentPhase() const { return currentPhase; }
   int getCurrentPlayerMoney() const { return currentPlayerMoney; }
   int getCurrentPlayerActions() const { return currentPlayerActions; }
@@ -108,7 +108,7 @@ public:
 
   void BuyPhase();
 
-  void playTurn(Player &player);
+  void playTurn(Player* player);
 
   bool isPlayerTurn(Player *player) const { return player == activePlayer; }
 
@@ -154,9 +154,9 @@ public:
 
   std::vector<Player *> getOtherPlayers();
 
-  void playAction(Player& p, const Card* card);
+  void playAction(Player* p, const Card* card);
 
-  void playTreasure(Player& p, const Card* card);
+  void playTreasure(Player* p, const Card* card);
 
   bool canPlayAction(Player* p, const Card* card) const;
   bool tryPlayAction(Player* p, const Card* card);
@@ -208,7 +208,7 @@ public:
   void resetCurrentPlayerStats(); 
 
   bool hasGameEnded() const;
-  Player getWinner() const;
+  Player* getWinner() const;
 
   void setCurrentTargets(std::set<Player*> targets){
     currentTargets = targets;
@@ -269,8 +269,8 @@ public:
   }
 
   Player* getPlayerFromName(std::string name) const {
-    for(const Player& p : players) {
-      if(p.getName() == name) { return const_cast<Player*>(&p);}
+    for(const std::unique_ptr<Player>& p : players) {
+      if(p->getName() == name) { return p.get(); }
     }
     return nullptr;
   }
@@ -285,5 +285,9 @@ public:
 
   std::set<Player*> getCurrentTargets() const {
     return currentTargets;
+  }
+
+  std::map<const Card*, int> getCurrentCardDistrib() const {
+    return currentCardDistribution;
   }
 };
