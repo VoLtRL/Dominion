@@ -19,7 +19,6 @@ void JoinRoom::updateAvailableRooms(const std::vector<Network::RoomInfo>& rooms)
     for (const auto& room : rooms) {
         QString roomText = QString("%1 (ID: %2, Places left: %3)").arg(room.roomName).arg(room.roomId).arg(room.placesLeft);
         ui->availableRoomsList->addItem(roomText);
-        availableRooms.push_back(room);
     }
 }
 

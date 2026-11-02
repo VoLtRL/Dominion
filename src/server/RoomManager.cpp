@@ -20,7 +20,7 @@ Room* RoomManager::createRoom(const Network::CreateRoomPayload &payload, Client 
     QString roomName;
 
     if(payload.roomName.isEmpty()){
-        roomName = "Room " + roomId;
+        roomName = "Room " + QString::number(roomId);
     } else{
         roomName = payload.roomName;
     }

@@ -530,6 +530,7 @@ struct GameStatePayload : public Payload {
     QString selfName;
     QString activePlayerName;
     GamePhase currentPhase;
+    PendingInteractionPhase pendingInteractionPhase;
 
     int actions;
     int buys;
@@ -542,14 +543,15 @@ struct GameStatePayload : public Payload {
 
     std::vector<PlayerState> players;
 
-    GameStatePayload(const QString &selfName, const QString &activePlayerName,GamePhase currentPhase, int actions, int buys, int money, const Hand &hand, const std::vector<const Card*> &cardsInPlay, std::map<const Card*, int> cardsInShop, const std::vector<PlayerState> &players)
-        : selfName(selfName), activePlayerName(activePlayerName), currentPhase(currentPhase), actions(actions), buys(buys), money(money), hand(hand), cardsInPlay(cardsInPlay), cardsInShop(cardsInShop), players(players) {}
+    GameStatePayload(const QString &selfName, const QString &activePlayerName,GamePhase currentPhase,PendingInteractionPhase pendingInteractionPhase, int actions, int buys, int money, const Hand &hand, const std::vector<const Card*> &cardsInPlay, std::map<const Card*, int> cardsInShop, const std::vector<PlayerState> &players)
+        : selfName(selfName), activePlayerName(activePlayerName), currentPhase(currentPhase), pendingInteractionPhase(pendingInteractionPhase), actions(actions), buys(buys), money(money), hand(hand), cardsInPlay(cardsInPlay), cardsInShop(cardsInShop), players(players) {}
 
     QJsonObject toJson() const {
         QJsonObject json;
         json["selfName"] = selfName;
         json["activePlayerName"] = activePlayerName;
         json["currentPhase"] = toString(currentPhase).c_str();
+        json["pendingInteractionPhase"] = toString(pendingInteractionPhase).c_str();
         json["actions"] = actions;
         json["buys"] = buys;
         json["money"] = money;
@@ -578,7 +580,7 @@ struct GameStatePayload : public Payload {
     }
 
     static std::optional<GameStatePayload> fromJson(const QJsonObject &json) {
-        if (!json.contains("selfName") || !json.contains("activePlayerName") || !json.contains("currentPhase") || !json.contains("actions") || !json.contains("buys") || !json.contains("money") || !json.contains("hand") || !json.contains("cardsInPlay") || !json.contains("shop") || !json.contains("players")) {
+        if (!json.contains("selfName") || !json.contains("activePlayerName") || !json.contains("currentPhase") || !json.contains("pendingInteractionPhase") || !json.contains("actions") || !json.contains("buys") || !json.contains("money") || !json.contains("hand") || !json.contains("cardsInPlay") || !json.contains("shop") || !json.contains("players")) {
             return std::nullopt;
         }
         Hand hand;
@@ -612,6 +614,7 @@ struct GameStatePayload : public Payload {
             json["selfName"].toString(),
             json["activePlayerName"].toString(),
             fromString(json["currentPhase"].toString().toStdString()),
+            fromStringPendingInteractionPhase(json["pendingInteractionPhase"].toString().toStdString()),
             json["actions"].toInt(),
             json["buys"].toInt(),
             json["money"].toInt(),
@@ -717,6 +720,26 @@ struct GameStatePayload : public Payload {
             return CardBought(
                 Factory::get(json["card"].toString().toStdString())
             );
+        }
+    };
+
+    struct GainedMoneyPayload : public Payload {
+        int amount;
+
+        GainedMoneyPayload(int amount)
+            : amount(amount) {}
+
+        QJsonObject toJson() const {
+            QJsonObject json;
+            json["amount"] = amount;
+            return json;
+        }
+
+        static std::optional<GainedMoneyPayload> fromJson(const QJsonObject &json) {
+            if (!json.contains("amount")) {
+                return std::nullopt;
+            }
+            return GainedMoneyPayload(json["amount"].toInt());
         }
     };
 

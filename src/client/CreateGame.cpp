@@ -52,7 +52,7 @@ Network::CreateRoomPayload CreateGame::getRoomData() const {
 
     GameMode gameMode = PredefinedGameModes::getGameModes().front();
 
-    if(!(ui->GameModeList->currentRow() < 0) || !(ui->GameModeList->currentRow() >= PredefinedGameModes::getGameModes().size())) {
+    if(!(ui->GameModeList->currentRow() < 0) && !(ui->GameModeList->currentRow() >= PredefinedGameModes::getGameModes().size())) {
         gameMode = PredefinedGameModes::getGameModes()[ui->GameModeList->currentRow()];
     }
 

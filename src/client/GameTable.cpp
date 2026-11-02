@@ -50,6 +50,8 @@ GameTable::GameTable(QWidget *parent) : QWidget(parent), ui(new Ui::GameTable) {
 
     connect(ui->passReactionButton, &QPushButton::clicked, this, &GameTable::onPassReactionClicked);
 
+    connect(ui->sendSelectionButton, &QPushButton::clicked, this, &GameTable::onSendSelectionClicked);
+
     connect(ui->playAllTreasuresButton, &QPushButton::clicked, [this]() {
         if (!gameState.isLocalPlayerActive()) {
             displayMessage("It's not your turn.");
@@ -63,12 +65,26 @@ GameTable::GameTable(QWidget *parent) : QWidget(parent), ui(new Ui::GameTable) {
 
 }
 
+QTextEdit* GameTable::getPlayerLogs() const {
+    return ui->logs;
+}
+
+void GameTable::addLogMessage(const QString &playerName, const Qt::GlobalColor &color, const QString &action) {
+    QString logMessage = QString("%1: <span style=\"color: %2;\">%3</span>").arg(playerName, QColor(color).name(), action);
+    ui->logs->append(logMessage);
+}
+
+QString GameTable::getActivePlayerName(){
+    return gameState.activePlayerName;
+}
+
 void GameTable::mousePressEvent(QMouseEvent *event) {
     if (zoomedInCardItem) {
         clearZoomedInCard();
     }
     QWidget::mousePressEvent(event);
 }
+
 
 void GameTable::onPlayCardClicked() {
     if (reactionPending) {
@@ -83,21 +99,6 @@ void GameTable::onPlayCardClicked() {
     }
 
     if (cardToPlay == nullptr) {
-        if (selectionPending) {
-            std::vector<const Card*> selected;
-            for (VisualCard *visualCard : visualCardsInHand) {
-                if (visualCard->isSelected()) {
-                    selected.push_back(visualCard->getAssociatedCard());
-                }
-            }
-            for (VisualCard *visualCard : visualCardsInShop) {
-                if (visualCard->isSelected()) {
-                    selected.push_back(visualCard->getAssociatedCard());
-                }
-            }
-            emit selectionSubmitted(selected);
-            return;
-        }
         displayMessage("No card selected.");
         return;
     }
@@ -132,11 +133,6 @@ void GameTable::handleCardPlayed(const Card* card) {
     }
 
     cardPlayPending = false;
-    if (gameState.isLocalPlayerActive()) {
-        displayMessage(QString("You played: %1, %2").arg(QString::fromStdString(card->getName())).arg(QString::fromStdString(card->getDescription())));
-    } else {
-        displayMessage(QString("%1 played: %2").arg(gameState.activePlayerName, QString::fromStdString(card->getName())));
-    }
 }
 
 void GameTable::handleCardBought(const Card* card) {
@@ -154,11 +150,10 @@ void GameTable::handleCardBought(const Card* card) {
 
 void GameTable::handleGameEnded(const QString &winnerName) {
     cardPlayPending = false;
-    ui->PlayCardButton->setEnabled(false);
-    ui->playAllTreasuresButton->setEnabled(false);
-    ui->buyCardButton->setEnabled(false);
-    ui->nextPhaseButton->setEnabled(false);
-    ui->endTurnButton->setEnabled(false);
+    selectionPending = false;
+    reactionPending = false;
+    reactionResponsePending = false;
+    modifySelection(GamePhase::UNKNOWN, 0, 0, 0);
     displayMessage(QString("Game over. Winner: %1").arg(winnerName));
 
     // Pour le leaderboard, attribuer les points aux joueurs en fonction de leur position dans le classement.
@@ -181,10 +176,8 @@ void GameTable::handleCardPlayRejected(const QString &message) {
     cardPlayPending = false;
     selectionPending = false;
     reactionResponsePending = false;
-    if (reactionPending) {
-        ui->playReactionButton->setEnabled(true);
-        ui->passReactionButton->setEnabled(true);
-    }
+    modifySelection(gameState.currentPhase, gameState.currentPlayerActions,
+                    gameState.currentPlayerPurchasesLeft, gameState.currentPlayerMoney);
     displayMessage(message);
 }
 
@@ -230,18 +223,26 @@ void GameTable::handleReactionRequest(const std::vector<const Card*> &reactions)
     for (VisualCard *card : visualCardsInHand) {
         card->setSelected(false);
     }
-    ui->playReactionButton->setEnabled(!reactions.empty());
+    if (reactions.empty()) {
+        ui->playReactionButton->setToolTip("No reaction cards available to play. You must pass.");
+    } else {
+        ui->playReactionButton->setToolTip("Play the selected reaction card.");
+        ui->playReactionButton->setEnabled(true);
+    }
     ui->passReactionButton->setEnabled(true);
+    ui->passReactionButton->setToolTip("Pass the reaction.");
+    modifySelection(gameState.currentPhase, gameState.currentPlayerActions,
+                    gameState.currentPlayerPurchasesLeft, gameState.currentPlayerMoney);
     displayMessage("Choose a reaction or pass.");
-    drawTable();
 }
 
 void GameTable::handleReactionCompleted() {
+    qDebug() << "Reaction completed.";
     reactionPending = false;
     reactionResponsePending = false;
-    ui->playReactionButton->setEnabled(false);
-    ui->passReactionButton->setEnabled(false);
     setSelection(SelectionMode::NONE, SelectionConstraint::NONE, 0);
+    modifySelection(gameState.currentPhase, gameState.currentPlayerActions,
+                    gameState.currentPlayerPurchasesLeft, gameState.currentPlayerMoney);
     drawTable();
 }
 
@@ -261,7 +262,13 @@ void GameTable::onPlayReactionClicked() {
         return;
     }
 
-    if(!reactionPending || !isLocalPlayerActive() || !reactionCard->isA(CardType::REACTION)) {
+    const bool isAvailable = std::any_of(
+        gameState.selection.availableCards.begin(),
+        gameState.selection.availableCards.end(),
+        [reactionCard](const Card *card) {
+            return card && card->getName() == reactionCard->getName();
+        });
+    if(!reactionPending || !isAvailable || !reactionCard->isA(CardType::REACTION)) {
         displayMessage(QString("Cannot play reaction card: %1").arg(QString::fromStdString(reactionCard->getName())));
         return;
     }
@@ -328,18 +335,65 @@ void GameTable::onBuyCardClicked() {
 }
 
 void GameTable::modifySelection(GamePhase phase, int actions, int purchases, int money) {
-    ui->PlayCardButton->setEnabled(
-        !reactionPending && (selectionPending ||
-        (((phase == GamePhase::ACTION && actions > 0) || phase == GamePhase::BUY) &&
-        gameState.selection.mode == SelectionMode::PLAY_CARD &&
-        gameState.selection.constraint == SelectionConstraint::EXACTLY &&
-        gameState.selection.numberOfCards == 1)));
-    ui->playAllTreasuresButton->setEnabled(!reactionPending &&
-                                           (phase == GamePhase::BUY || phase == GamePhase::ACTION));
-    ui->endTurnButton->setEnabled(!reactionPending && phase == GamePhase::BUY && purchases > 0);
-    ui->nextPhaseButton->setEnabled(!reactionPending && phase == GamePhase::ACTION);
+    gameState.currentPhase = phase;
+    gameState.currentPlayerActions = actions;
+    gameState.currentPlayerPurchasesLeft = purchases;
+    gameState.currentPlayerMoney = money;
 
-    setPhaseText(phase);
+    const UiPermissions permissions = computePermissions(gameState);
+    ui->PlayCardButton->setVisible(permissions.showPlayCard);
+    ui->PlayCardButton->setEnabled(permissions.canPlayCard);
+    ui->playAllTreasuresButton->setVisible(permissions.showPlayAllTreasures);
+    ui->playAllTreasuresButton->setEnabled(permissions.canPlayAllTreasures);
+    ui->buyCardButton->setVisible(permissions.showBuyCard);
+    ui->buyCardButton->setEnabled(permissions.canBuyCard);
+    ui->nextPhaseButton->setVisible(permissions.showNextPhase);
+    ui->nextPhaseButton->setEnabled(permissions.canAdvancePhase);
+    ui->endTurnButton->setVisible(permissions.showEndTurn);
+    ui->endTurnButton->setEnabled(permissions.canEndTurn);
+    ui->sendSelectionButton->setVisible(permissions.showSendSelection);
+    ui->sendSelectionButton->setEnabled(permissions.canSendSelection);
+    ui->playReactionButton->setVisible(permissions.showPlayReaction);
+    ui->playReactionButton->setEnabled(permissions.canPlayReaction);
+    ui->passReactionButton->setVisible(permissions.showPassReaction);
+    ui->passReactionButton->setEnabled(permissions.canPassReaction);
+    ui->switchShopButton->setVisible(permissions.showSwitchShop);
+
+
+    if ((gameState.currentPhase != phase) && phase != GamePhase::UNKNOWN) {
+        setPhaseText(phase);
+    }
+}
+
+UiPermissions GameTable::computePermissions(const ClientGameState& state) const {
+    UiPermissions permissions;
+    const bool localTurn = state.isLocalPlayerActive();
+    const bool selecting = selectionPending && !reactionPending;
+    const bool reacting = reactionPending;
+    const bool waitingForResponse = reactionResponsePending;
+    const bool normalTurn = localTurn && !selecting && !reacting;
+    const bool actionPhase = state.currentPhase == GamePhase::ACTION;
+    const bool buyPhase = state.currentPhase == GamePhase::BUY;
+    const bool hasReactionCard = !state.selection.availableCards.empty();
+
+    permissions.showPlayCard = normalTurn && (actionPhase || buyPhase);
+    permissions.canPlayCard = normalTurn && ((actionPhase && state.currentPlayerActions > 0) || buyPhase);
+    permissions.showPlayAllTreasures = normalTurn && (actionPhase || buyPhase);
+    permissions.canPlayAllTreasures = permissions.showPlayAllTreasures;
+    permissions.showBuyCard = normalTurn && buyPhase;
+    permissions.canBuyCard = permissions.showBuyCard && state.currentPlayerPurchasesLeft > 0;
+    permissions.showNextPhase = normalTurn && actionPhase;
+    permissions.canAdvancePhase = permissions.showNextPhase;
+    permissions.showEndTurn = normalTurn && buyPhase;
+    permissions.canEndTurn = permissions.showEndTurn;
+    permissions.showSendSelection = selecting;
+    permissions.canSendSelection = selecting;
+    permissions.showPlayReaction = reacting && !waitingForResponse && hasReactionCard;
+    permissions.canPlayReaction = permissions.showPlayReaction;
+    permissions.showPassReaction = reacting;
+    permissions.canPassReaction = reacting && !waitingForResponse;
+    permissions.showSwitchShop = !selecting && !reacting;
+    return permissions;
 }
 
 void GameTable::setSelection(SelectionMode mode,
@@ -359,9 +413,20 @@ bool GameTable::isLocalPlayerActive() const {
 
 
 void GameTable::updateGameState(ClientGameState newGameState) {
-    gameState = newGameState;
-    selectionPending = false;
+    ClientSelectionState selection;
+    if (newGameState.currentPendingInteractionPhase != PendingInteractionPhase::NONE) {
+        selection = gameState.selection; 
+    } else {
+        selection = ClientSelectionState();
+        selection.isPending = false;
+    }
 
+    gameState = newGameState;
+
+    gameState.selection = selection;
+
+    modifySelection(gameState.currentPhase, gameState.currentPlayerActions,
+                    gameState.currentPlayerPurchasesLeft, gameState.currentPlayerMoney);
     drawTable();
 }
 
@@ -382,6 +447,10 @@ void GameTable::drawTable() {
         delete item;
     }
     messageTextItem = nullptr;
+    zoomedInCardItem = nullptr;
+    visualCardsInHand.clear();
+    visualCardsInPlay.clear();
+    visualCardsInShop.clear();
 
     const qreal sceneWidth = scene->sceneRect().width();
     const qreal sceneHeight = scene->sceneRect().height();
@@ -405,7 +474,7 @@ void GameTable::drawTable() {
     playerInfosTextItem = new QGraphicsTextItem();
     playerInfosTextItem->setDefaultTextColor(Qt::white);
     playerInfosTextItem->setZValue(1);
-    playerInfosTextItem->setPos(sceneWidth / 4, sceneHeight - 50);
+    playerInfosTextItem->setPos(sceneWidth / 2 - playerInfosTextItem->boundingRect().width() / 2, 2 * sceneHeight / 3 - playerInfosTextItem->boundingRect().height()/ 2);
     playerInfosTextItem->setPlainText(QString("Actions: %1, Purchases: %2, Money: %3")
                                       .arg(gameState.currentPlayerActions)
                                       .arg(gameState.currentPlayerPurchasesLeft)
@@ -416,7 +485,7 @@ void GameTable::drawTable() {
     drawPlayerHand(gameState.hand.getCards(), (sceneWidth - handWidth) / 2, sceneHeight - CardHeight - TableMargin);
     drawStacks(yourself->drawStackSize, yourself->discardStackSize, yourself->topDiscardCard);
     const qreal cardsInPlayWidth = gameState.cardsInPlay.empty() ? 0 : CardWidth + (gameState.cardsInPlay.size() - 1) * 90;
-    drawCardsInPlay(gameState.cardsInPlay, (sceneWidth - cardsInPlayWidth) / 2, TableMargin + CardHeight * 1.5);
+    drawCardsInPlay(gameState.cardsInPlay, (sceneWidth - cardsInPlayWidth) / 2, sceneHeight - TableMargin - CardHeight*2.5);
     
     drawOtherPlayersHands(opponents);
     drawOtherPlayersDrawAndDiscard(opponents);
@@ -441,6 +510,35 @@ void GameTable::onEndTurnClicked() {
     emit endTurnClicked();
 }
 
+void GameTable::onSendSelectionClicked() {
+    if (!selectionPending) {
+        displayMessage("No selection is pending.");
+        return;
+    }
+
+    std::vector<const Card*> selectedCards;
+    for (VisualCard *visualCard : visualCardsInHand) {
+        if (visualCard->isSelected()) {
+            selectedCards.push_back(visualCard->getAssociatedCard());
+        }
+    }
+    for (VisualCard *visualCard : visualCardsInShop) {
+        if (visualCard->isSelected()) {
+            selectedCards.push_back(visualCard->getAssociatedCard());
+        }
+    }
+
+    bool isValidSelection = gameState.isSelectionValid(selectedCards.size());
+
+    if (!isValidSelection) {
+        displayMessage(QString("You must select %1 %2 card(s).").arg(toString(gameState.selection.constraint).c_str()).arg(gameState.selection.numberOfCards));
+        return;
+    }
+    selectionPending = false;
+
+    emit selectionSubmitted(selectedCards);
+}
+
 void GameTable::drawZoomedInCard() {
     if (zoomedInCardItem) {
         scene->removeItem(zoomedInCardItem);
@@ -448,7 +546,7 @@ void GameTable::drawZoomedInCard() {
         zoomedInCardItem = nullptr;
     }
     if (cardBeingRightClicked) {
-        auto vCard = drawCard(scene, cardBeingRightClicked->getAssociatedCard(), 0, 0);
+        auto vCard = drawCard(scene, cardBeingRightClicked, 0, 0);
         zoomedInCardItem = vCard;
         zoomedInCardItem->setZValue(1);
         zoomedInCardItem->setScale(4.0);
@@ -469,19 +567,25 @@ void GameTable::drawPlayerHand(const std::vector<const Card*> hand, qreal x, qre
     for (VisualCard* visualCard : visualCards) {
         visualCardsInHand.push_back(visualCard);
         connect(visualCard, &VisualCard::clicked, visualCard, [this, visualCard](int cardId) {
-            if ((selectionPending || reactionPending) &&
-                std::find(gameState.selection.availableCards.begin(), gameState.selection.availableCards.end(),visualCard->getAssociatedCard()) == gameState.selection.availableCards.end()) {
-                displayMessage("This card is not part of the requested selection.");
-                return;
+            if (selectionPending || reactionPending) {
+                bool isAllowed = std::any_of(gameState.selection.availableCards.begin(),
+                                             gameState.selection.availableCards.end(),
+                                             [visualCard](const Card *card) {
+                                                return card && visualCard->getAssociatedCard() && card->getName() == visualCard->getAssociatedCard()->getName();
+                                            });
+                
+                if (!isAllowed) {
+                    displayMessage("This card is not part of the requested selection.");
+                    return;
+                }
             }
             int selectedCount = 0;
             for (VisualCard *card : visualCardsInHand) {
                 if (card && card->isSelected()) {
                     selectedCount++;
                 }
-                std::cout << "Card " << card->getId() << " selected: " << card->isSelected() << std::endl;
             }
-            if ((selectionPending || reactionPending) && !visualCard->isSelected() &&
+            if (!(selectionPending || reactionPending) && !visualCard->isSelected() &&
                 !gameState.canSelectAnotherCard(selectedCount)) {
                 displayMessage("Only one card can be selected.");
                 return;
@@ -490,7 +594,7 @@ void GameTable::drawPlayerHand(const std::vector<const Card*> hand, qreal x, qre
             visualCard->setSelected(!visualCard->isSelected());
         });
         connect(visualCard, &VisualCard::rightClicked, visualCard, [this, visualCard](int cardId) {
-            cardBeingRightClicked = visualCard;
+            cardBeingRightClicked = visualCard->getAssociatedCard();
             drawZoomedInCard();
         });
     }
@@ -597,7 +701,7 @@ void GameTable::drawOtherCardsInPlay(
                     QString(card->getPath().c_str()),
                     Location::OTHER_PLAYER_IN_PLAY);
                 connect(visualCard, &VisualCard::rightClicked, visualCard, [this, visualCard](int cardId) {
-                    cardBeingRightClicked = visualCard;
+                    cardBeingRightClicked = visualCard->getAssociatedCard();
                     drawZoomedInCard();
                 });
                 visualCard->setData(0, "other-player-in-play");
@@ -699,7 +803,7 @@ void GameTable::drawCardsInPlay(const std::vector<const Card*> cardsInPlay, qrea
     for (const Card* card : cardsInPlay) {
         VisualCard *visualCard = drawCard(scene, card, x, y);
         connect(visualCard, &VisualCard::rightClicked, visualCard, [this, visualCard](int cardId) {
-            cardBeingRightClicked = visualCard;
+            cardBeingRightClicked = visualCard->getAssociatedCard();
             drawZoomedInCard();
         });
         visualCardsInPlay.push_back(visualCard);
@@ -732,7 +836,7 @@ void GameTable::drawStacks(quint16 cardsInDraw, quint16 cardsInDiscard, const Ca
         VisualCard* visualCard = drawCard(scene,topDiscardCard, discardX, stackY);
         visualCard->setData(0, "top-discard-card");
         connect(visualCard, &VisualCard::rightClicked, visualCard, [this, visualCard](int cardId) {
-            cardBeingRightClicked = visualCard;
+            cardBeingRightClicked = visualCard->getAssociatedCard();
             drawZoomedInCard();
         });
     } else {
@@ -765,23 +869,23 @@ void GameTable::drawShop() {
         visualCard->setData(0, "shop-card");
         visualCardsInShop.push_back(visualCard);
         connect(visualCard, &VisualCard::clicked, visualCard, [this, visualCard]() {
-            if (selectionPending &&
-                std::find(gameState.selection.availableCards.begin(),
-                          gameState.selection.availableCards.end(),
-                          visualCard->getAssociatedCard()) ==
-                    gameState.selection.availableCards.end()) {
-                displayMessage("This card is not part of the requested selection.");
-                return;
+            if (selectionPending) {
+                bool isAllowed = std::find(gameState.selection.availableCards.begin(),
+                                            gameState.selection.availableCards.end(),
+                                            visualCard->getAssociatedCard()) != gameState.selection.availableCards.end();
+                if (!isAllowed) {
+                    displayMessage("This card is not part of the requested selection.");
+                    return;
+                }
             }
             int selectedCount = 0;
             for (VisualCard *card : visualCardsInShop) {
                 if (card && card->isSelected()) {
                     selectedCount++;
                 }
-                std::cout << "Card " << card->getId() << " selected: " << card->isSelected() << std::endl;
             }
             if (!visualCard->isSelected() &&
-                selectedCount > 1) {
+                selectedCount >= 1) {
                 displayMessage("Only one card can be selected.");
                 return;
             }
@@ -791,10 +895,13 @@ void GameTable::drawShop() {
             }
 
             visualCard->setSelected(!visualCard->isSelected());
+            displayMessage(visualCard->isSelected()
+                ? QString("Selected: %1").arg(QString::fromStdString(visualCard->getAssociatedCard()->getName()))
+                : QString("Unselected: %1").arg(QString::fromStdString(visualCard->getAssociatedCard()->getName())));
         });
 
         connect(visualCard, &VisualCard::rightClicked, visualCard, [this, visualCard](int cardId) {
-            cardBeingRightClicked = visualCard;
+            cardBeingRightClicked = visualCard->getAssociatedCard();
             drawZoomedInCard();
         });
 

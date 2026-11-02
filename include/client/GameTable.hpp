@@ -3,6 +3,7 @@
 #include <QWidget>
 #include <QGraphicsScene>
 #include <QString>
+#include <QTextEdit>
 
 #include "shared/abstract/Card.hpp"
 #include "shared/player/Player.hpp"
@@ -15,6 +16,27 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class GameTable; }
 QT_END_NAMESPACE
 
+struct UiPermissions {
+    bool showPlayCard{false};
+    bool showPlayAllTreasures{false};
+    bool showBuyCard{false};
+    bool showNextPhase{false};
+    bool showEndTurn{false};
+    bool showSendSelection{false};
+    bool showPlayReaction{false};
+    bool showPassReaction{false};
+    bool showSwitchShop{false};
+
+    bool canPlayCard{false};
+    bool canPlayAllTreasures{false};
+    bool canBuyCard{false};
+    bool canAdvancePhase{false};
+    bool canEndTurn{false};
+    bool canSendSelection{false};
+    bool canPlayReaction{false};
+    bool canPassReaction{false};
+};
+
 class GameTable : public QWidget {
     Q_OBJECT
 
@@ -26,7 +48,7 @@ private:
     QGraphicsScene *scene;
 
     ClientGameState gameState;
-
+    
     bool isShopVisible{false};
 
     QVector<VisualCard*> visualCardsInHand;
@@ -43,11 +65,10 @@ private:
     bool reactionPending{false};
     bool reactionResponsePending{false};
 
-    VisualCard* cardBeingRightClicked{nullptr};
+    const Card* cardBeingRightClicked{nullptr};
     VisualCard* zoomedInCardItem{nullptr};
-
+    
     void mousePressEvent(QMouseEvent *event) override;
-
 
 signals:
     void endTurnClicked();
@@ -70,6 +91,7 @@ private slots:
     void onNextPhaseClicked();
     void onPlayReactionClicked();
     void onPassReactionClicked();
+    void onSendSelectionClicked();
 
 public:
     explicit GameTable(QWidget *parent = nullptr);
@@ -85,10 +107,13 @@ public:
     void tryPlayCard(const Card* card);
 
     void modifySelection(GamePhase phase, int actions, int purchases, int money);
+    UiPermissions computePermissions(const ClientGameState& state) const;
     void setSelection(SelectionMode mode, SelectionConstraint constraint,
                       int numberOfCards,
                       const std::vector<const Card*> &availableCards = {});
     bool isLocalPlayerActive() const;
+
+    QString getActivePlayerName();
 
     /// @brief Handles the event when a card is played after being validated by the server. This function is called when the server confirms that a card has been played successfully.
     /// @param card The card that was played.
@@ -105,6 +130,9 @@ public:
                                 const std::vector<const Card*> &cards);
 
     void updatePhase(GamePhase newPhase);
+
+    void addLogMessage(const QString &playerName, const Qt::GlobalColor &color, const QString &action);
+    QTextEdit* getPlayerLogs() const;
 
 
     // UI Logic

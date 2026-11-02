@@ -9,6 +9,9 @@ void Mine::play(Game& g, Player& p) const {
             treasures.push_back(card);
         }
     }
+    if(treasures.empty()) {
+        return;
+    }
     g.requestSelection(&p, treasures, 1,
                        SelectionMode::TRASH, SelectionConstraint::EXACTLY,
                        Game::SelectionContext::MINE_TRASH);

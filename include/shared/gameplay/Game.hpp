@@ -43,6 +43,7 @@ private:
   Player *activePlayer = nullptr;
 
   GamePhase currentPhase;
+  PendingInteractionPhase pendingInteractionPhase{PendingInteractionPhase::NONE};
 
   std::map<const Card *, int> currentCardDistribution;
 
@@ -54,17 +55,23 @@ private:
 
   std::vector<const Card *> trash;
 
-  const Card* pendingCard = nullptr;
   Player* pendingActor = nullptr;
+  const Card* pendingCard = nullptr;
+  CardType currentType;
+
   EventType pendingEvent = EventType::INVALID_EVENT;
+
   std::vector<Player*> pendingPlayers;
   std::set<Player*> currentTargets;
-  CardType currentType;
+
   Player* selectionPlayer = nullptr;
   std::vector<const Card*> selectionCards;
+
   std::vector<const Card*> pendingThiefTreasures;
   std::vector<const Card*> pendingLibrarySkipped;
+
   Player *pendingSelectionTarget = nullptr;
+
   SelectionMode selectionMode = SelectionMode::NONE;
   SelectionConstraint selectionConstraint = SelectionConstraint::NONE;
   size_t selectionCount = 0;
@@ -86,6 +93,7 @@ public:
 
   const Player* getActivePlayer() const;
   GamePhase getCurrentPhase() const { return currentPhase; }
+  PendingInteractionPhase getCurrentPendingInteractionPhase() const { return pendingInteractionPhase; }
   int getCurrentPlayerMoney() const { return currentPlayerMoney; }
   int getCurrentPlayerActions() const { return currentPlayerActions; }
   int getCurrentPlayerPurchasesLeft() const { return currentPlayerPurchaseLeft; }
@@ -103,12 +111,6 @@ public:
   }
   void addCardToPlay(const Card *card) { CardsInPlay.push_back(card); }
 
-  void useTreasureCards();
-  void ActionPhase();
-
-  void BuyPhase();
-
-  void playTurn(Player* player);
 
   bool isPlayerTurn(Player *player) const { return player == activePlayer; }
 
@@ -120,8 +122,6 @@ public:
   void addPlayerPurchases(int amount) { currentPlayerPurchaseLeft += amount; }
 
   void discardCardsInPlay();
-
-  void launchGame();
 
   std::vector<std::string> parseLines(const std::string &) const;
 
@@ -136,27 +136,20 @@ public:
     return revealedCards;
   }
   void addRevealedCard(const Card *card) { revealedCards.push_back(card); }
-  void putCardsinDiscardStack(std::vector<const Card *> &cards);
 
 
   void clearRevealedCards();
   std::vector<const Card *> getBuyableCardsBelowCost(int cost) const;
-  void buyCard(const Card *card);
   bool isStackEmpty(std::string cardName) const;
 
   std::string HUDFormat() const;
 
   const Card *getCardFromCardDistrib(std::string cardName);
 
-  //void activateReactions(GameEvent *event);
-
   void playAttackCard(const Card *card);
 
   std::vector<Player *> getOtherPlayers();
 
-  void playAction(Player* p, const Card* card);
-
-  void playTreasure(Player* p, const Card* card);
 
   bool canPlayAction(Player* p, const Card* card) const;
   bool tryPlayAction(Player* p, const Card* card);
@@ -275,10 +268,6 @@ public:
     return nullptr;
   }
 
-  bool waitingForPlayers() const {
-    return !pendingPlayers.empty();
-  }
-
   const Card* getPendingCard() const {
     return pendingCard;
   }
@@ -290,4 +279,14 @@ public:
   std::map<const Card*, int> getCurrentCardDistrib() const {
     return currentCardDistribution;
   }
+ 
+  bool waitingForPlayers() const {
+    return !pendingPlayers.empty();
+  }
+
+  bool canExecuteTurnAction(Player* p) const;
+
+  void removeCardFromPlay(const Card* card);
+
+
 };
