@@ -348,20 +348,21 @@ void Game::BuyPhase() {
 
 void Game::hasGameEnded() {
   int emptyStacks = 0;
-  for (const TableStack &stack : KingdomStacks) {
-    if (stack.getQuantity() == 0) {
+  for (auto& data : currentCardDistribution) {
+    const Card* card = data.first;
+    const int quantity = data.second;
+    if (quantity == 0) {
       emptyStacks++;
     }
-  }
-  for (const TableStack &stack : BasicStacks) {
-    if (stack.getQuantity() == 0) {
-      emptyStacks++;
-    }
-    if (stack.getCard()->getName() == "Province" && stack.getQuantity() == 0) {
+    if (card->getName() == "Province" && quantity == 0) {
       std::cout << "Game over! The game has ended due to the Province stack "
                    "being empty."
                 << std::endl;
       std::cout << "The winner is: " << getWinner()->getString() << std::endl;
+      std::cout << "They took " << getWinner()->getTurnsPlayed() << " turns to win." << std::endl;
+      for (const auto& player : players) {
+        std::cout << player->getName() << " has " << player->getVictoryPoints() << " victory points." << std::endl;
+      }
       exit(0);
     }
   }
@@ -370,6 +371,10 @@ void Game::hasGameEnded() {
     std::cout << "Game over! The game has ended due to three empty stacks."
               << std::endl;
     std::cout << "The winner is: " << getWinner()->getString() << std::endl;
+    std::cout << "They took " << getWinner()->getTurnsPlayed() << " turns to win." << std::endl;
+    for (const auto& player : players) {
+      std::cout << player->getName() << " has " << player->getVictoryPoints() << " victory points." << std::endl;
+    }
     exit(0);
   }
 }

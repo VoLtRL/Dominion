@@ -44,8 +44,10 @@ class GameView {
         }
 
         int getSupplyCount(const Card* card) const {
+            if(supplies.find(card) == supplies.end()){
+                return 0;
+            }
             return supplies.at(card);
-            return 0;
         }
 
         int getOwnedCount(const Card* card) const {
