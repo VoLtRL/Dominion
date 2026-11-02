@@ -35,9 +35,10 @@ struct ClientSelectionState {
 
 struct ClientPlayerState {
     QString name;
+    Qt::GlobalColor color{Qt::white};
 
     bool isYourself{false};
-
+    
     int handSize{0};
     int drawStackSize{0};
     int discardStackSize{0};

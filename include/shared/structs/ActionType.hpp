@@ -27,6 +27,9 @@ enum class ActionType {
     SELECTION_REQUEST,
     BUY_CARD,
     PLAY_CARD,
+
+    GAINED_MONEY,
+
     PLAY_ALL_TREASURES,
     END_TURN,
     REACTION,
@@ -52,6 +55,7 @@ inline std::string actionTypeToString(ActionType actionType) {
         case ActionType::PLAYER_LEFT: return "PLAYER_LEFT";
         case ActionType::START_GAME: return "START_GAME";
         case ActionType::PLAY_CARD: return "PLAY_CARD";
+        case ActionType::GAINED_MONEY: return "GAINED_MONEY";
         case ActionType::PLAY_ALL_TREASURES: return "PLAY_ALL_TREASURES";
         case ActionType::TURN_STATE: return "TURN_STATE";
         case ActionType::GAME_STATE: return "GAME_STATE";
@@ -78,6 +82,7 @@ inline ActionType stringToActionType(const std::string &actionStr) {
     if (actionStr == "PLAYER_LEFT") return ActionType::PLAYER_LEFT;
     if (actionStr == "START_GAME") return ActionType::START_GAME;
     if (actionStr == "PLAY_CARD") return ActionType::PLAY_CARD;
+    if (actionStr == "GAINED_MONEY") return ActionType::GAINED_MONEY;
     if (actionStr == "PLAY_ALL_TREASURES") return ActionType::PLAY_ALL_TREASURES;
     if (actionStr == "TURN_STATE") return ActionType::TURN_STATE;
     if (actionStr == "GAME_STATE") return ActionType::GAME_STATE;

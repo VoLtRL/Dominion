@@ -117,6 +117,9 @@ void GameServer::receiveAction(const QString &action, const QJsonObject &data, Q
         case ActionType::SELECTION_REQUEST:
             handleSelection(data, client);
             break;
+        case ActionType::REACTION:
+            handleReaction(data, client);
+            break;
         default:
             qWarning() << "Received invalid action:" << action;
             break;
@@ -377,7 +380,7 @@ void GameServer::handlePlayCard(const QJsonObject &data, Client *client) {
                         std::vector<Player*> canReact;
                         for(Player* target : targets) {
                             if(target == client->getAssociatedPlayer()){
-                                if(target->canReactToEvent(EventType::ATTACK_PLAYED_SELF)) {
+                                if(target->canReactToEvent(EventType::ATTACK_PLAYED_SELF)) { // revoir pour la militia par exemple
                                     canReact.push_back(target);
                                 }
                             }
@@ -481,9 +484,7 @@ void GameServer::sendSelectionRequest(Room *room, Game *game) {
 
     for (Client *roomClient : room->getClients()) {
         if (roomClient->getAssociatedPlayer() == game->getSelectionPlayer()) {
-            sendAction(
-                QString::fromStdString(actionTypeToString(ActionType::SELECTION_REQUEST)),
-                Network::SelectionRequestPayload(
+            sendAction(QString::fromStdString(actionTypeToString(ActionType::SELECTION_REQUEST)),Network::SelectionRequestPayload(
                     game->getSelectionMode(),
                     game->getSelectionConstraint(),
                     static_cast<int>(game->getSelectionCount()),
@@ -689,9 +690,13 @@ void GameServer::handleSelection(const QJsonObject &data, Client *client) {
 }
 
 void GameServer::handlePlayAllTreasures(Client *client) {
+    int oldGold;
+    int newGold;
     if (Room *room = RoomManager::getInstance().getRoomByClient(client)) {
+        oldGold = room->getGame()->getCurrentPlayerMoney();
         if (Game *game = room->getGame()) {
             if(!game->tryPlayAllTreasures(client->getAssociatedPlayer())){
+                newGold = room->getGame()->getCurrentPlayerMoney();
                 const std::string message = "PLAY ALL TREASURES ERROR FROM PLAYER " + client->getAssociatedPlayer()->getName();
                 sendAction(
                     QString::fromStdString(actionTypeToString(ActionType::ERROR)),
@@ -700,6 +705,11 @@ void GameServer::handlePlayAllTreasures(Client *client) {
                 );
                 return;
             }
+            sendAction(
+                QString::fromStdString(actionTypeToString(ActionType::GAINED_MONEY)),
+                Network::GainedMoneyPayload(newGold - oldGold).toJson(),
+                client->getSocket()
+            );
             sendGameStateToRoom(room);
         }
     }
@@ -820,6 +830,7 @@ void GameServer::handleReaction(const QJsonObject &data, Client* client){
                         }
                         sendGameStateToRoom(room);
                         game->setCurrentTargets({});
+                        sendSelectionRequest(room, game);
                         return;
 
                     default:

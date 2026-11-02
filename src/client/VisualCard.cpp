@@ -18,7 +18,7 @@ void VisualCard::mousePressEvent(QGraphicsSceneMouseEvent *event) {
         emit rightClicked(m_id);
         return;
     } else {
-        event->ignore();
+        event->accept();
         emit clicked(m_id);
         return;
     }

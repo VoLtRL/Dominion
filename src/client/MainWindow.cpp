@@ -97,6 +97,7 @@ void MainWindow::connectGameTable() {
     connect(gameTable, &GameTable::phaseChanged, this, [this](GamePhase newPhase) {
         if (ensureConnected()) {
             ui->statusbar->showMessage(QString("Phase changed to: %1").arg(toString(newPhase).c_str()));
+            gameTable->addLogMessage(gameTable->getActivePlayerName(), Qt::darkBlue, QString("Phase changed to: %1").arg(toString(newPhase).c_str()));
         } else {
             gameTable->displayMessage("Not connected to server. Cannot change phase.");
         }
@@ -267,6 +268,9 @@ void MainWindow::handleAction(const ActionType &action, const QJsonObject &data)
         break;
     case ActionType::BUY_CARD:
         handleCardBought(data);
+        break;
+    case ActionType::GAINED_MONEY:
+        handleGainedMoney(data);
         break;
     case ActionType::END_TURN:
         handleTurnEnded(data);
@@ -458,6 +462,7 @@ void MainWindow::startTurnWhenReady() {
     if (gameStartReceived && initialGameStateReceived && !initialTurnStarted) {
         initialTurnStarted = true;
         gameTable->startTurn();
+        gameTable->addLogMessage("Server", Qt::yellow, "the game has started");
     }
 }
 
@@ -479,6 +484,17 @@ void MainWindow::handleCardPlayed(const QJsonObject &data) {
     }
 
     gameTable->handleCardPlayed(payload->card);
+    gameTable->addLogMessage(gameTable->getActivePlayerName(), Qt::green, QString("played %1").arg(payload->card->getName().c_str()));
+}
+
+void MainWindow::handleGainedMoney(const QJsonObject &data) {
+    const auto payload = Network::GainedMoneyPayload::fromJson(data);
+    if (!payload) {
+        qWarning() << "Invalid GAINED_MONEY payload:" << data;
+        return;
+    }
+
+    gameTable->addLogMessage(gameTable->getActivePlayerName(), Qt::yellow, QString("gained %1 money").arg(payload->amount));
 }
 
 void MainWindow::handleSelectionRequest(const QJsonObject &data) {
@@ -487,8 +503,7 @@ void MainWindow::handleSelectionRequest(const QJsonObject &data) {
         qWarning() << "Invalid SELECTION_REQUEST payload:" << data;
         return;
     }
-    gameTable->handleSelectionRequest(
-        payload->mode, payload->constraint, payload->numberOfCards, payload->cards);
+    gameTable->handleSelectionRequest(payload->mode, payload->constraint, payload->numberOfCards, payload->cards);
 }
 
 void MainWindow::handlePlayCard(const Card *card) {
@@ -519,12 +534,14 @@ void MainWindow::handleBuyCard(const Card *card) {
 }
 
 void MainWindow::handleCardBought(const QJsonObject &data) {
-    const auto payload = Network::BuyCardPayload::fromJson(data);
+    const auto payload = Network::CardBought::fromJson(data);
     if (!payload) {
         qWarning() << "Invalid BUY_CARD payload:" << data;
         return;
     }
-    gameTable->handleCardBought(payload->cardToBuy);
+    const Card *card = payload->card;
+    gameTable->handleCardBought(card);
+    gameTable->addLogMessage(gameTable->getActivePlayerName(), Qt::GlobalColor::green, QString("bought %1").arg(card->getName().c_str()));
 }
 
 void MainWindow::handleReaction(const QJsonObject &data){
@@ -549,6 +566,7 @@ void MainWindow::handleReaction(const QJsonObject &data){
     gameTable->displayMessage(payload->isReacting
         ? QString("%1 played a reaction.").arg(payload->playerName)
         : QString("%1 passed the reaction.").arg(payload->playerName));
+    gameTable->addLogMessage(payload->playerName, Qt::GlobalColor::magenta, payload->isReacting ? "played a reaction" : "passed the reaction");
 }
 
 void MainWindow::handleTurnEnded(const QJsonObject &data) {
@@ -558,6 +576,7 @@ void MainWindow::handleTurnEnded(const QJsonObject &data) {
         return;
     }
     gameTable->displayMessage(QString("Turn ended. Next player: %1").arg(payload->nextPlayerName));
+    gameTable->addLogMessage("Server", Qt::yellow, QString("Turn ended. Next player: %1").arg(payload->nextPlayerName));
     gameTable->updatePhase(GamePhase::ACTION);
     gameTable->clearCardsInPlay();
 }

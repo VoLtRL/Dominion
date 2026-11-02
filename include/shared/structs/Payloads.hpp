@@ -720,6 +720,26 @@ struct GameStatePayload : public Payload {
         }
     };
 
+    struct GainedMoneyPayload : public Payload {
+        int amount;
+
+        GainedMoneyPayload(int amount)
+            : amount(amount) {}
+
+        QJsonObject toJson() const {
+            QJsonObject json;
+            json["amount"] = amount;
+            return json;
+        }
+
+        static std::optional<GainedMoneyPayload> fromJson(const QJsonObject &json) {
+            if (!json.contains("amount")) {
+                return std::nullopt;
+            }
+            return GainedMoneyPayload(json["amount"].toInt());
+        }
+    };
+
     // Fired by the server when an attack card was successfully played.
     struct AttackPlayed : public Payload {
         std::set<QString> targets;

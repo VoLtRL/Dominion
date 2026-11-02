@@ -15,7 +15,44 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QGraphicsView" name="gameView"/>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <property name="spacing">
+      <number>6</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QGraphicsView" name="gameView"/>
+     </item>
+     <item>
+      <widget class="QDockWidget" name="logsContainer">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>200</width>
+         <height>524287</height>
+        </size>
+       </property>
+       <widget class="QWidget" name="dockWidgetContents">
+        <layout class="QVBoxLayout" name="verticalLayout_2">
+         <item>
+          <widget class="QTextEdit" name="logs">
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
@@ -74,6 +111,13 @@
       </spacer>
      </item>
      <item>
+      <widget class="QPushButton" name="sendSelectionButton">
+       <property name="text">
+        <string>Send Selection</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="PlayCardButton">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -86,7 +130,7 @@
        </property>
       </widget>
      </item>
-          <item>
+     <item>
       <widget class="QPushButton" name="playReactionButton">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -99,7 +143,7 @@
        </property>
       </widget>
      </item>
-    <item>
+     <item>
       <widget class="QPushButton" name="passReactionButton">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">

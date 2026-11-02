@@ -59,11 +59,7 @@ bool Game::initialize(const GameMode& gameMode,const std::vector<QString> &playe
   setCurrentCardDistribution(combinedDistribution);
 
   for (Player &player : players) {
-    CardStack drawStack = CardStack(
-        {Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
-         Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
-         Factory::get("Estate"), Factory::get("Estate"),
-         Factory::get("Estate")});
+    CardStack drawStack = CardStack({Factory::get("Militia"), Factory::get("Moat"), Factory::get("Moat"), Factory::get("Moat"), Factory::get("Militia")});
     drawStack.shuffle();
     Hand hand;
     CardStack discardStack = CardStack();

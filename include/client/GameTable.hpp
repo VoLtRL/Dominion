@@ -3,6 +3,7 @@
 #include <QWidget>
 #include <QGraphicsScene>
 #include <QString>
+#include <QTextEdit>
 
 #include "shared/abstract/Card.hpp"
 #include "shared/player/Player.hpp"
@@ -26,7 +27,7 @@ private:
     QGraphicsScene *scene;
 
     ClientGameState gameState;
-
+    
     bool isShopVisible{false};
 
     QVector<VisualCard*> visualCardsInHand;
@@ -45,9 +46,8 @@ private:
 
     VisualCard* cardBeingRightClicked{nullptr};
     VisualCard* zoomedInCardItem{nullptr};
-
+    
     void mousePressEvent(QMouseEvent *event) override;
-
 
 signals:
     void endTurnClicked();
@@ -90,6 +90,8 @@ public:
                       const std::vector<const Card*> &availableCards = {});
     bool isLocalPlayerActive() const;
 
+    QString getActivePlayerName();
+
     /// @brief Handles the event when a card is played after being validated by the server. This function is called when the server confirms that a card has been played successfully.
     /// @param card The card that was played.
     void handleCardPlayed(const Card* card);
@@ -105,6 +107,9 @@ public:
                                 const std::vector<const Card*> &cards);
 
     void updatePhase(GamePhase newPhase);
+
+    void addLogMessage(const QString &playerName, const Qt::GlobalColor &color, const QString &action);
+    QTextEdit* getPlayerLogs() const;
 
 
     // UI Logic
