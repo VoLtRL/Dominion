@@ -3,6 +3,9 @@
 #include "shared/player/Player.hpp"
 
 void Remodel::play(Game& g, Player& p) const {
+    if (p.getHand().getCards().empty()) {
+        return;
+    }
     g.requestSelection(&p, p.getHand().getCards(), 1,
                        SelectionMode::TRASH, SelectionConstraint::EXACTLY,
                        Game::SelectionContext::REMODEL_TRASH);

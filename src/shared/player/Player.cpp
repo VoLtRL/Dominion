@@ -117,3 +117,10 @@ bool Player::canReactToEvent(EventType t) const {
   EventTypeSet set = getReactionTypes();
   return isEventTriggered(set, t);
 }
+
+void Player::removeCardFromPlay(const Card* card) {
+  auto it = std::find(cardsInPlay.begin(), cardsInPlay.end(), card);
+  if (it != cardsInPlay.end()) {
+    cardsInPlay.erase(it);
+  }
+}

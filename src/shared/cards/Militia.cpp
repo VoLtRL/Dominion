@@ -13,6 +13,7 @@ void Militia::play(Game& g, Player& p) const {
 void Militia::attack(Game& g, Player& p, std::set<Player*> targets) const{
   for(auto it = targets.begin(); it != targets.end(); ++it){
       Player* player = *it;
+      if(player == &p) continue; // Skip the player who played the Militia
       const int nb = std::max(0, static_cast<int>(player->getHand().getSize()) - 3);
       if(nb > 0){
           std::vector<Player*> remaining;

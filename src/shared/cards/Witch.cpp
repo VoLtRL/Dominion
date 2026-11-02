@@ -9,14 +9,8 @@ void Witch::play(Game& g, Player& p) const {
 void Witch::attack(Game& g, Player& p, std::set<Player*> targets) const {
 
     for(Player* player : targets){
-        if(player!=&p){
-            if(g.isStackEmpty("Curse")){
-                // Do nothing, no curses left
-            }
-            else{
-                // Add a curse to the player's discard pile
-                player->addCardToDiscardStack(g.getCardFromCardDistrib("Curse"));
-            }
-        }
+        if(player==&p) continue;
+        const Card* curseCard = g.getCardFromCardDistrib("Curse");
+        if(curseCard != nullptr) player->addCardToDiscardStack(curseCard);
     }
 }

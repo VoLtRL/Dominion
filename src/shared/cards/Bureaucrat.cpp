@@ -20,6 +20,7 @@ void Bureaucrat::attack(Game& g, Player& p, std::set<Player*> targets) const{
     std::cout << "Every opponents must show and put on their draw pile a victory card from their hand." << std::endl;
     for(auto it = targets.begin(); it != targets.end(); ++it){
         Player* player = *it;
+        if(player == &p) continue; // Skip the player who played the Bureaucrat
         std::vector<const Card*> victories = player->getCardsInHandOfType(CardType::VICTORY);
         if(!victories.empty()){
             std::vector<Player*> remaining;

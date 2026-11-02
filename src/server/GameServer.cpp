@@ -184,8 +184,6 @@ void GameServer::handleJoinRoom(const QJsonObject &data, Client *client) {
         return;
     }
 
-    targetRoom->addPlayer(client);
-
     std::vector<QString> playerNames;
     for (const Client *roomClient : targetRoom->getClients()) {
         playerNames.push_back(roomClient->getName());
@@ -696,7 +694,7 @@ void GameServer::handlePlayAllTreasures(Client *client) {
         oldGold = room->getGame()->getCurrentPlayerMoney();
         if (Game *game = room->getGame()) {
             if(!game->tryPlayAllTreasures(client->getAssociatedPlayer())){
-                newGold = room->getGame()->getCurrentPlayerMoney();
+
                 const std::string message = "PLAY ALL TREASURES ERROR FROM PLAYER " + client->getAssociatedPlayer()->getName();
                 sendAction(
                     QString::fromStdString(actionTypeToString(ActionType::ERROR)),
@@ -705,11 +703,14 @@ void GameServer::handlePlayAllTreasures(Client *client) {
                 );
                 return;
             }
-            sendAction(
-                QString::fromStdString(actionTypeToString(ActionType::GAINED_MONEY)),
-                Network::GainedMoneyPayload(newGold - oldGold).toJson(),
-                client->getSocket()
-            );
+            newGold = room->getGame()->getCurrentPlayerMoney();
+            for (Client* cl : room->getClients()) {
+                sendAction(
+                    QString::fromStdString(actionTypeToString(ActionType::GAINED_MONEY)),
+                    Network::GainedMoneyPayload(newGold - oldGold).toJson(),
+                    cl->getSocket()
+                );
+            }
             sendGameStateToRoom(room);
         }
     }

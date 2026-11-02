@@ -423,6 +423,7 @@ void MainWindow::updateGameState(const Network::GameStatePayload &payload) {
     instance.selfName = payload.selfName;
     instance.activePlayerName = payload.activePlayerName;
     instance.currentPhase = payload.currentPhase;
+    instance.currentPendingInteractionPhase = payload.pendingInteractionPhase;
 
     instance.currentPlayerActions = payload.actions;
     instance.currentPlayerPurchasesLeft = payload.buys;
@@ -577,7 +578,6 @@ void MainWindow::handleTurnEnded(const QJsonObject &data) {
     }
     gameTable->displayMessage(QString("Turn ended. Next player: %1").arg(payload->nextPlayerName));
     gameTable->addLogMessage("Server", Qt::yellow, QString("Turn ended. Next player: %1").arg(payload->nextPlayerName));
-    gameTable->updatePhase(GamePhase::ACTION);
     gameTable->clearCardsInPlay();
 }
 

@@ -13,7 +13,7 @@ Room::Room(int id, const QString &name, Client *host)
 Network::GameStatePayload Room::getGameStatePayload(const Client *client) const {
     const Player *self = client ? client->getAssociatedPlayer() : nullptr;
     if (!m_game || !self) {
-        return Network::GameStatePayload("", "", GamePhase::UNKNOWN, 0, 0, 0, Hand(), {}, {}, {});
+        return Network::GameStatePayload("", "", GamePhase::UNKNOWN, PendingInteractionPhase::NONE, 0, 0, 0, Hand(), {}, {}, {});
     }
 
     std::vector<Network::PlayerState> players;
@@ -34,6 +34,7 @@ Network::GameStatePayload Room::getGameStatePayload(const Client *client) const 
         self->getName().c_str(), // selfName
         m_game->getActivePlayer().getName().c_str(), // activePlayerName
         m_game->getCurrentPhase(), // currentPhase
+        m_game->getCurrentPendingInteractionPhase(), // pendingInteractionPhase
         m_game->getCurrentPlayerActions(), // actions
         m_game->getCurrentPlayerPurchasesLeft(), // buys
         m_game->getCurrentPlayerMoney(), // money

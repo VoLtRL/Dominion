@@ -16,6 +16,27 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class GameTable; }
 QT_END_NAMESPACE
 
+struct UiPermissions {
+    bool showPlayCard{false};
+    bool showPlayAllTreasures{false};
+    bool showBuyCard{false};
+    bool showNextPhase{false};
+    bool showEndTurn{false};
+    bool showSendSelection{false};
+    bool showPlayReaction{false};
+    bool showPassReaction{false};
+    bool showSwitchShop{false};
+
+    bool canPlayCard{false};
+    bool canPlayAllTreasures{false};
+    bool canBuyCard{false};
+    bool canAdvancePhase{false};
+    bool canEndTurn{false};
+    bool canSendSelection{false};
+    bool canPlayReaction{false};
+    bool canPassReaction{false};
+};
+
 class GameTable : public QWidget {
     Q_OBJECT
 
@@ -44,7 +65,7 @@ private:
     bool reactionPending{false};
     bool reactionResponsePending{false};
 
-    VisualCard* cardBeingRightClicked{nullptr};
+    const Card* cardBeingRightClicked{nullptr};
     VisualCard* zoomedInCardItem{nullptr};
     
     void mousePressEvent(QMouseEvent *event) override;
@@ -70,6 +91,7 @@ private slots:
     void onNextPhaseClicked();
     void onPlayReactionClicked();
     void onPassReactionClicked();
+    void onSendSelectionClicked();
 
 public:
     explicit GameTable(QWidget *parent = nullptr);
@@ -85,6 +107,7 @@ public:
     void tryPlayCard(const Card* card);
 
     void modifySelection(GamePhase phase, int actions, int purchases, int money);
+    UiPermissions computePermissions(const ClientGameState& state) const;
     void setSelection(SelectionMode mode, SelectionConstraint constraint,
                       int numberOfCards,
                       const std::vector<const Card*> &availableCards = {});

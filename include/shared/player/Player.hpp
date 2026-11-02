@@ -175,4 +175,6 @@ public:
 
   std::set<EventType> getReactionTypes() const;
   bool canReactToEvent(EventType t) const;
+
+  void removeCardFromPlay(const Card* card);
 };

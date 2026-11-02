@@ -31,7 +31,10 @@ struct ClientSelectionState {
         }
         return false;
     }
+
 };
+
+
 
 struct ClientPlayerState {
     QString name;
@@ -53,6 +56,7 @@ struct ClientGameState {
     QString selfName;
     QString activePlayerName;
     GamePhase currentPhase;
+    PendingInteractionPhase currentPendingInteractionPhase{PendingInteractionPhase::NONE};
 
     int currentPlayerActions{0};
     int currentPlayerPurchasesLeft{0};
@@ -99,7 +103,7 @@ struct ClientGameState {
     }
 
     bool canReact(const Card* card) const {
-        if (isLocalPlayerActive() && currentPhase == GamePhase::REACTION && (card == nullptr || card->isA(CardType::REACTION))) {
+        if (isLocalPlayerActive() && currentPendingInteractionPhase == PendingInteractionPhase::REACTION && (card == nullptr || card->isA(CardType::REACTION))) {
             return true;
         }
 
