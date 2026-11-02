@@ -850,11 +850,11 @@ void GameServer::handleEndTurn(Client *client) {
                 return;
             }
             if(game->performCleanup()){
-                Player winner = game->getWinner();
+                Player* winner = game->getWinner();
                 for(Client* cl : room->getClients()) {
                     sendAction(
                         QString::fromStdString(actionTypeToString(ActionType::GAME_ENDED)),
-                        Network::GameEndedPayload(winner.getName().c_str()).toJson(),
+                        Network::GameEndedPayload(winner->getName().c_str()).toJson(),
                         cl->getSocket()
                     );
                 }
@@ -862,7 +862,7 @@ void GameServer::handleEndTurn(Client *client) {
                 for(Client* cl : room->getClients()) {
                     sendAction(
                         QString::fromStdString(actionTypeToString(ActionType::END_TURN)),
-                        Network::TurnEndedPayload(game->getActivePlayer().getName().c_str()).toJson(),
+                        Network::TurnEndedPayload(game->getActivePlayer()->getName().c_str()).toJson(),
                         cl->getSocket()
                     );
                     sendAction(
