@@ -58,17 +58,12 @@ bool Game::initialize(const GameMode& gameMode,const std::vector<QString> &playe
 
   setCurrentCardDistribution(combinedDistribution);
 
-<<<<<<< HEAD
-  for (const auto& player : players) {
+  for (const std::unique_ptr<Player>& player : players) {
     CardStack drawStack = CardStack(
-        {Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
-         Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
-         Factory::get("Estate"), Factory::get("Estate"),
-         Factory::get("Estate")});
-=======
-  for (Player &player : players) {
-    CardStack drawStack = CardStack({Factory::get("Militia"), Factory::get("Workshop"), Factory::get("Woodcutter"), Factory::get("Mine"), Factory::get("Village")});
->>>>>>> network
+      {Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
+        Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
+        Factory::get("Estate"), Factory::get("Estate"),
+        Factory::get("Estate")});
     drawStack.shuffle();
     Hand hand;
     CardStack discardStack = CardStack();
@@ -90,11 +85,10 @@ Player* Game::getPlayerByName(const std::string& name) {
   return nullptr;
 }
 
-const std::vector<std::unique_ptr<Player>>& Game::getPlayers() const { return players; }
 
 const std::vector<std::unique_ptr<Player>>& Game::getPlayers() const { return players; }
 
-const Player* Game::getActivePlayer() const { return activePlayer; }
+Player* Game::getActivePlayer() const { return activePlayer; }
 
 void Game::addPlayer(std::unique_ptr<Player> player) { players.push_back(std::move(player)); }
 
@@ -425,11 +419,6 @@ bool Game::canExecuteTurnAction(Player *p) const {
 
   return !hasPendingSelection() && !waitingForPlayers();
 }
-<<<<<<< HEAD
-*/
-
-=======
->>>>>>> network
 
 bool Game::canPlayAction(Player* p, const Card* card) const {
   if (!canExecuteTurnAction(p)) { return false; }
@@ -682,14 +671,17 @@ void Game::resetCurrentPlayerStats() {
 }
 
 void Game::passToNextPlayer() {
-  auto index = std::find(players.begin(), players.end(), activePlayer);
-  if(index == players.end()){
+  auto it = std::find_if(players.begin(), players.end(),
+    [this](const std::unique_ptr<Player>& p) {
+        return p.get() == activePlayer;
+    });
+  if(it == players.end()){
     // Pas normal
     return;
   }
-  index += 1;
-  if(index == players.end()){
-    index = players.begin();
+  ++it;
+  if(it == players.end()){
+    it = players.begin();
   }
-  activePlayer = index->get();
+  activePlayer = it->get();
 }

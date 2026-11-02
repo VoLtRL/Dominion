@@ -5,10 +5,13 @@
 #include <QTcpServer>
 #include <QJsonObject>
 #include <unordered_map>
+#include <chrono>
+#include <thread>
 
 #include "server/Client.hpp"
 #include "shared/structs/Payloads.hpp"
 #include "server/RoomManager.hpp"
+#include "server/ai/BotManager.hpp"
 
 class GameServer : public QObject {
     Q_OBJECT
@@ -43,5 +46,10 @@ public:
     void sendAction(const QString &action, const QJsonObject &data, QTcpSocket *clientSocket);
 
     Client* getClientById(int id);
+
+    void playBotTurn(Game* game, Bot* bot, Room* room);
+
+    bool botActionPhase(Game* game, Bot* bot, Room* room); // True if waiting for reactions
+    void botBuyPhase(Game* game, Bot* bot, Room* room);
 
 };

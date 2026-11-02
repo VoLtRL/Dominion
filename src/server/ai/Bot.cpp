@@ -1,12 +1,12 @@
 #include "../../../include/server/ai/Bot.hpp"
 
 void Bot::beginDecision(const GameView& view){
-    strat.resolvePhase(view, jitter);
     trace = DecisionTrace{};
     trace.phase = strat.getCurrentPhase().getName();
 }
 
 void Bot::showDecisionTrace() const {
+    if(!hasDecided()) { return; }
     std::cout << "Decision trace for " << getName() << ":" << std::endl;
     std::cout << "Phase: " << trace.phase << std::endl;
     std::cout << "Rule: " << trace.rule << std::endl;
@@ -55,7 +55,7 @@ std::vector<Rule> Bot::collect(const GameView& view, bool buy) const {
     append(strat.getCurrentPhase());                // Ensuite la phase actuelle
     if(strat.getFallback()){                        // Enfin le fallback si besoin
         Strategy& fallback = *strat.getFallback();
-        fallback.resolvePhase(view, jitter, 0);
+        fallback.resolvePhase(view, jitter);
         append(fallback.getCurrentPhase());
     }
 
@@ -124,6 +124,10 @@ const Card* Bot::chooseAction(const GameView& v){
         return finish(nullptr, "none");
     }
 
+    if (v.getActions() == 0) {
+        return finish(nullptr, "none");
+    }
+
     size_t i = 0;
     if(chance(profile.playErrorRate)){
         trace.noiseApplied = true;
@@ -136,7 +140,7 @@ const Card* Bot::chooseAction(const GameView& v){
     return finish(rules[i].getCard(), rules[i].getLabel());
 }
 
-std::vector<const Card*> Bot::chooseFromList(const GameView& v, DecisionType type, SelectionParameters params) {
+std::vector<const Card*> Bot::chooseFromList(const GameView& v, SelectionMode type, SelectionParameters params) {
     beginDecision(v);
     std::vector<const Card*>& pool = params.selection;
     if(pool.empty()){
@@ -146,17 +150,17 @@ std::vector<const Card*> Bot::chooseFromList(const GameView& v, DecisionType typ
     const size_t n = std::min(params.nbToSelect, pool.size());
     size_t lo = 0, hi = n;
     switch(params.mode){
-        case SelectionMode::EXACTLY:
+        case SelectionConstraint::EXACTLY:
             lo = n;
             hi = n;
             break;
         
-        case SelectionMode::AT_MOST:
+        case SelectionConstraint::AT_MOST:
             lo = 0;
             hi = n;
             break;
 
-        case SelectionMode::AT_LEAST:
+        case SelectionConstraint::AT_LEAST:
             lo = n;
             hi = n;
             break;

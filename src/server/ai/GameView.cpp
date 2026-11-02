@@ -1,14 +1,18 @@
 #include "../../../include/server/ai/GameView.hpp"
-#include "../../../include/shared/gameplay/Game.hpp"
 
-GameView::GameView(const Game& g, Player& p){
-    for(auto data : g.getCurrentCardDistrib()){
+GameView::GameView(std::optional<Network::GameStatePayload>& g, Player& p){
+    if(!g.has_value()) { 
+        std::cout << "ERROR : no payload given to initialize GameView" << std::endl;
+        return; 
+    }
+
+    for(auto data : g->cardsInShop){
         supplies[data.first] = data.second;
     }
 
-    for(const std::unique_ptr<Player>& player : g.getPlayers()){
-        PlayerView view = {(int)player->getHand().getSize(), (int)player->getDrawStack().getSize(), (int)player->getDiscardStack().getSize(), player->getVictoryPoints()};
-        otherPlayersStats[player.get()] = view;
+    for(Network::PlayerState ps : g->players){
+        PlayerView view = {ps.handSize, ps.drawStackSize, ps.discardStackSize, ps.victoryPoints};
+        otherPlayersStats[ps.playerName.toStdString()] = view;
     }
 
     for(const Card* c : p.getHand().getCards()){
@@ -23,8 +27,8 @@ GameView::GameView(const Game& g, Player& p){
         cardCount[data.first] += data.second;
     }
 
-    purchases = g.getCurrentPlayerPurchasesLeft();
-    actions = g.getCurrentPlayerActions();
-    coins = g.getCurrentPlayerMoney();
+    purchases = g->buys;
+    actions = g->actions;
+    coins = g->money;
     currentPlayer = &p;
 }

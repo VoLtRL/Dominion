@@ -25,14 +25,16 @@ Network::GameStatePayload Room::getGameStatePayload(const Client *client) const 
             static_cast<int>(player->getHand().getSize()),
             player->getDrawStack().getSize(),
             discardStack.getSize(),
+            player->getVictoryPoints(),
             discardStack.getStack().empty() ? nullptr : discardStack.getStack().top(),
             player->getCardsInPlay(),
-            player == &m_game->getActivePlayer()));
+            player == m_game->getActivePlayer()
+        ));
     }
 
     Network::GameStatePayload payload(
         self->getName().c_str(), // selfName
-        m_game->getActivePlayer().getName().c_str(), // activePlayerName
+        m_game->getActivePlayer()->getName().c_str(), // activePlayerName
         m_game->getCurrentPhase(), // currentPhase
         m_game->getCurrentPendingInteractionPhase(), // pendingInteractionPhase
         m_game->getCurrentPlayerActions(), // actions

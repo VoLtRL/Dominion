@@ -6,6 +6,7 @@
 
 #include "../../shared/abstract/Treasure.hpp"
 #include "../../shared/gameplay/Factory.hpp"
+#include "shared/structs/Payloads.hpp"
 
 struct PlayerView {
     int HandCount=0,DrawCount=0,DiscardCount = 0;
@@ -16,7 +17,7 @@ struct PlayerView {
 class GameView {
     private:
         std::map<const Card*, int> supplies ;
-        std::map<Player*, PlayerView> otherPlayersStats;
+        std::map<std::string, PlayerView> otherPlayersStats;
         std::map<const Card*, int> cardCount;
         int purchases;
         int actions;
@@ -25,7 +26,7 @@ class GameView {
 
     public:
 
-        GameView(const Game& g, Player& p);
+        GameView(std::optional<Network::GameStatePayload>& g, Player& p);
 
         bool isOwned(const Card* card) const {
             return cardCount.find(card) != cardCount.end();

@@ -15,6 +15,8 @@ class Phase {
         Phase(std::string n, Condition e, std::vector<Rule> b, std::vector<Rule> p, std::vector<DecisionRule> d)
         : name(n), enter(e), buyRules(b), playRules(p), decisionRules(d) {}
 
+        Phase() = default;
+
         void finalize() {
             auto byPriority = [](const Rule& a, const Rule& b) { return a.getPriority() > b.getPriority(); };
             std::stable_sort(buyRules.begin(), buyRules.end(), byPriority);

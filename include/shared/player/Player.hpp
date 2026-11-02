@@ -51,6 +51,8 @@ public:
   Player(std::string playerName) : name(playerName) {
   };
 
+  virtual ~Player() = default;
+
   bool isHuman() const { return human; }
 
   void setHand(const Hand &a_hand) { hand = a_hand; }

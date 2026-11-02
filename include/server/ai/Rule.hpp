@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Condition.hpp"
+#include "shared/structs/Selection.hpp"
 
 class Rule {
     private:
@@ -54,24 +55,16 @@ class Rule {
 
 };
 
-enum class DecisionType{
-    DISCARD,
-    SIDE,
-    GAIN,
-    REACTION,
-    TRASH,
-    PLAY
-};
 
 class DecisionRule {
     private:
         Condition valid;
         std::vector<const Card*> ranking;
         std::string label;
-        DecisionType type = DecisionType::DISCARD;
+        SelectionMode type = SelectionMode::DISCARD;
     public:
 
-        DecisionRule(DecisionType t, Condition v, std::vector<const Card*> r, std::string l) {
+        DecisionRule(SelectionMode t, Condition v, std::vector<const Card*> r, std::string l) {
             valid = v;
             ranking = r;
             label = l;
@@ -90,13 +83,13 @@ class DecisionRule {
             return label;
         }
 
-        DecisionType getType() const {
+        SelectionMode getType() const {
             return type;
         }
 
         static std::vector<DecisionRule> basicUrgencyDecisionRules(){
             std::vector<DecisionRule> urgencyRules;
-            urgencyRules.push_back(DecisionRule(DecisionType::DISCARD, cond::always(), {Factory::get("Curse")}, "discard_curse"));
+            urgencyRules.push_back(DecisionRule(SelectionMode::DISCARD, cond::always(), {Factory::get("Curse")}, "discard_curse"));
             return urgencyRules;
         }
 };

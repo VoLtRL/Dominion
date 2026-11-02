@@ -10,6 +10,8 @@
 #include "shared/gameplay/TableStack.hpp"
 #include "shared/structs/GamePhase.hpp"
 #include "shared/structs/Selection.hpp"
+#include "server/ai/GameView.hpp"
+#include "server/ai/Bot.hpp"
 
 class Game {
 public:
@@ -88,10 +90,9 @@ public:
   const std::vector<TableStack> &getBasicStacks();
 
   void addPlayer(std::unique_ptr<Player> player);
-  std::vector<std::unique_ptr<Player>> getPlayers();
   const std::vector<std::unique_ptr<Player>> &getPlayers() const;
 
-  const Player* getActivePlayer() const;
+  Player* getActivePlayer() const;
   GamePhase getCurrentPhase() const { return currentPhase; }
   PendingInteractionPhase getCurrentPendingInteractionPhase() const { return pendingInteractionPhase; }
   int getCurrentPlayerMoney() const { return currentPlayerMoney; }
@@ -287,6 +288,4 @@ public:
   bool canExecuteTurnAction(Player* p) const;
 
   void removeCardFromPlay(const Card* card);
-
-
 };

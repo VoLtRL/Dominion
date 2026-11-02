@@ -6,19 +6,21 @@
 
 class Strategy{
     private:
-        std::string name;
+        std::string name = "none";
         int tier = 1;
-        std::vector<Phase> phases;
+        std::vector<Phase> phases = {};
         size_t phaseIndex = 0;
         Phase urgency;
-        std::function<double(std::map<const Card*, int>)> viability;
-        Strategy* fallback;
+        std::function<double(std::map<const Card*, int>)> viability = 0;
+        Strategy* fallback = nullptr;
         bool isFinalized = false;
         std::map<std::string, int> params;
     public:
 
         Strategy(std::string n, int t, std::vector<Phase> p, Phase u, Strategy* f, std::function<double(std::map<const Card*, int>)> v, std::map<std::string, int> pa)
         : name(n), tier(t), phases(p), urgency(u), viability(v), fallback(f), params(pa) {}
+
+        Strategy() = default;
 
         size_t resolvePhase(const GameView& view, int i);
         size_t resolvePhase(const GameView& view, int i, size_t current);
@@ -76,8 +78,8 @@ class Strategy{
             };
             std::vector<Rule> playRules;
             std::vector<DecisionRule> decisionRules = {
-                DecisionRule(DecisionType::DISCARD, cond::always(), {Factory::get("Curse"), Factory::get("Estate"), Factory::get("Copper"), Factory::get("Silver")}, "discard"),
-                DecisionRule(DecisionType::GAIN, cond::always(), {Factory::get("Gold"), Factory::get("Silver"), Factory::get("Copper")}, "gain")
+                DecisionRule(SelectionMode::DISCARD, cond::always(), {Factory::get("Curse"), Factory::get("Estate"), Factory::get("Copper"), Factory::get("Silver")}, "discard"),
+                DecisionRule(SelectionMode::GAIN, cond::always(), {Factory::get("Gold"), Factory::get("Silver"), Factory::get("Copper")}, "gain")
             };
             Phase start("start", cond::always(), buyRules, playRules, decisionRules);
 
@@ -114,8 +116,8 @@ class Strategy{
             };
 
             decisionRules = {
-                DecisionRule(DecisionType::DISCARD, cond::always(), {Factory::get("Curse"),Factory::get("Copper"), Factory::get("Silver"), Factory::get("Estate")}, "discard"),
-                DecisionRule(DecisionType::GAIN, cond::always(), {Factory::get("Province"), Factory::get("Duchy"), Factory::get("Estate"), Factory::get("Gold"), Factory::get("Silver"), Factory::get("Copper")}, "gain")
+                DecisionRule(SelectionMode::DISCARD, cond::always(), {Factory::get("Curse"),Factory::get("Copper"), Factory::get("Silver"), Factory::get("Estate")}, "discard"),
+                DecisionRule(SelectionMode::GAIN, cond::always(), {Factory::get("Province"), Factory::get("Duchy"), Factory::get("Estate"), Factory::get("Gold"), Factory::get("Silver"), Factory::get("Copper")}, "gain")
             };
 
             Phase endgame("endgame", cond::provincesLeftAtMost(3), buyRules, playRules, decisionRules);
