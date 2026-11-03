@@ -59,7 +59,6 @@ void NetworkManager::sendAction(const ActionType &action, const Network::Payload
 
     QJsonDocument doc(message);
     QByteArray toSend = doc.toJson(QJsonDocument::Compact) + '\n';
-    qDebug() << "Sending JSON: " << toSend.toStdString();
     m_socket.write(toSend);
 
 }

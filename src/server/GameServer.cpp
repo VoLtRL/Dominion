@@ -914,6 +914,5 @@ void GameServer::sendAction(const QString &action, const QJsonObject &data, QTcp
 
     QJsonDocument doc(message);
     QByteArray toSend = doc.toJson(QJsonDocument::Compact) + '\n';
-    std::cout << "Sending JSON: " << toSend.toStdString() << std::endl;
     clientSocket->write(toSend);
 }

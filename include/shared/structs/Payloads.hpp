@@ -603,7 +603,6 @@ struct GameStatePayload : public Payload {
         QJsonObject shopJson;
         for (const auto &pair : cardsInShop) {
             shopJson.insert(pair.first->getName().c_str(), pair.second);
-            std::cout << "Adding card to shop JSON: " << pair.first->getName() << " with count: " << pair.second << std::endl;
         }
         json["shop"] = shopJson;
         json["cardsInPlay"] = cardsInPlayArray;
