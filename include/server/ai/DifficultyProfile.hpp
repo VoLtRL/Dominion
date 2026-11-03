@@ -25,4 +25,12 @@ struct DifficultyProfile{
     static DifficultyProfile Extreme() {
         return {"Extreme", 4, 0.0, 0.0, 0, 0.0, 0.0, 50};   // Bon lui pas sûr qu'il aura le système de calcul de coups à l'avance
     }
+
+    static DifficultyProfile fromName(std::string n) {
+        std::transform(n.begin(), n.end(), n.begin(), [](unsigned char c){ return std::tolower(c); });
+        if (n == "medium")  return Medium();
+        if (n == "hard")    return Hard();
+        if (n == "extreme") return Extreme();
+        return Easy(); // défaut
+    }
 };

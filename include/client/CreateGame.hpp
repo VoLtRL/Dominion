@@ -35,5 +35,7 @@ public:
 
     QString getNumBots() const ;
 
+    QString getBotDifficulty() const ;
+
     Network::CreateRoomPayload getRoomData() const;
 };

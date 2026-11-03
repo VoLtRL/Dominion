@@ -126,9 +126,10 @@ namespace Network {
         GameMode gameMode;
         int botCount;
         int playerMaxCount;
+        QString botDifficulty;
 
-        CreateRoomPayload(const QString &playerName, const QString &roomName, const GameMode &gameMode, int botCount, int playerMaxCount)
-            : playerName(playerName), roomName(roomName), gameMode(gameMode), botCount(botCount), playerMaxCount(playerMaxCount) {}
+        CreateRoomPayload(const QString &playerName, const QString &roomName, const GameMode &gameMode, int botCount, int playerMaxCount, const QString &difficulty="easy")
+            : playerName(playerName), roomName(roomName), gameMode(gameMode), botCount(botCount), playerMaxCount(playerMaxCount), botDifficulty(difficulty) {}
         
         QJsonObject toJson() const {
             QJsonObject json;
@@ -137,11 +138,12 @@ namespace Network {
             json["gameMode"] = gameMode.toJson();
             json["botCount"] = botCount;
             json["playerMaxCount"] = playerMaxCount;
+            json["botDifficulty"] = botDifficulty;
             return json;
         }
 
         static std::optional<CreateRoomPayload> fromJson(const QJsonObject &json) {
-            if (!json.contains("playerName") || !json.contains("roomName") || !json.contains("botCount") || !json.contains("playerMaxCount")) {
+            if (!json.contains("playerName") || !json.contains("roomName") || !json.contains("botCount") || !json.contains("playerMaxCount") || !json.contains("botDifficulty")) {
                 return std::nullopt;
             }
             auto gameModeOpt = GameMode::fromJson(json["gameMode"].toObject());
@@ -153,7 +155,8 @@ namespace Network {
                 json["roomName"].toString(),
                 gameModeOpt.value(),
                 json["botCount"].toInt(),
-                json["playerMaxCount"].toInt()
+                json["playerMaxCount"].toInt(),
+                json.value("botDifficulty").toString("easy")
             );
         }
     };

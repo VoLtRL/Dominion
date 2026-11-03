@@ -131,8 +131,8 @@ private:
             lastState = payload;
 
             if(!m_bot.hasStrategy()) {
-                DifficultyProfile profile = DifficultyProfile::Medium();
-                m_bot.setStrategy(Strategies::select(lastState->cardsInShop, profile.maxTier));
+                m_bot.setStrategy(Strategies::select(lastState->cardsInShop, m_bot.getProfile().maxTier));
+                std::cout << "Bot " << m_bot.getName() << " will play " << m_bot.getStrategyName() << std::endl;
             }
 
             // Si ce n'est pas le tour du bot, ou si une sélection/réaction est en attente, on attend !

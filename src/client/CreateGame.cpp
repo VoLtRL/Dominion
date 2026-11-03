@@ -48,6 +48,13 @@ QString CreateGame::getNumBots() const {
     return "";
 }
 
+QString CreateGame::getBotDifficulty() const {
+    if (ui->difficulty_medium->isChecked())  return "Medium";
+    if (ui->difficulty_hard->isChecked())    return "Hard";
+    if (ui->difficulty_extreme->isChecked()) return "Extreme";
+    return "Easy";
+}
+
 Network::CreateRoomPayload CreateGame::getRoomData() const {
 
     GameMode gameMode = PredefinedGameModes::getGameModes().front();
@@ -61,7 +68,8 @@ Network::CreateRoomPayload CreateGame::getRoomData() const {
         getRoomName(),
         gameMode,
         getNumBots().toInt(),
-        getNumPlayers().toInt()
+        getNumPlayers().toInt(),
+        getBotDifficulty()
     );
 }
 

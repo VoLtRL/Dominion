@@ -78,6 +78,7 @@ class Bot : public Player {
         void setStrategy(Strategy s){strat = s; strategized = true;};
         void setRng(std::mt19937 r){rng = r;}
         void setProfile(DifficultyProfile p){profile = p;}
+        const DifficultyProfile& getProfile() const { return profile; }
 
         const Card* chooseBuy(const GameView& v);
         const Card* chooseAction(const GameView& v);
@@ -89,5 +90,9 @@ class Bot : public Player {
         }
         bool hasStrategy() const {
             return strategized;
+        }
+
+        std::string getStrategyName() const {
+            return strat.getName();
         }
 };

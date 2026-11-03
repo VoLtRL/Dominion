@@ -165,10 +165,12 @@ void GameServer::handleCreateRoom(const QJsonObject &data, Client *client) {
         roomCreated.toJson(),
         client->getSocket());
 
+
+    DifficultyProfile profile = DifficultyProfile::fromName(payload->botDifficulty.toStdString());
     for (int i = 1; i <= payload->botCount; ++i) {
         QString botName = QString("Bot_%1").arg(i);
-        // Parenté à 'room' ou 'this' pour que la mémoire soit gérée automatiquement
-        auto *botManager = new BotManager(room->getId(), botName, room, DifficultyProfile::Easy(), this);
+
+        auto *botManager = new BotManager(room->getId(), botName, room, profile, this);
         botManager->start(4040);
     }
 }
