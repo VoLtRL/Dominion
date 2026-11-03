@@ -38,17 +38,22 @@ private:
 
   int turnsPlayed = 0;
 
+  bool human = true; // True if the player is a human, false if it's a bot
+
 public:
   Player(Hand a_hand, CardStack a_drawStack, CardStack a_discardStack,
-         std::string playerName)
+         std::string playerName, bool isHuman = true)
       : name(playerName), hand(std::move(a_hand)),
         drawStack(std::move(a_drawStack)),
-        discardStack(std::move(a_discardStack)) {
-
+        discardStack(std::move(a_discardStack)), human(isHuman) {
         };
 
   Player(std::string playerName) : name(playerName) {
   };
+
+  virtual ~Player() = default;
+
+  bool isHuman() const { return human; }
 
   void setHand(const Hand &a_hand) { hand = a_hand; }
 

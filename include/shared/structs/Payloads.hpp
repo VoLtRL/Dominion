@@ -24,20 +24,20 @@ namespace Network {
         const Card* topDiscardCard;
 
         int drawStackSize;
-
+        int victoryPoints;
         std::vector<const Card*> cardsInPlay;
-        int drawStack;
 
         bool isActive;
 
-        PlayerState(const QString &playerName, int handSize, int drawStackSize, int discardStackSize, const Card* topDiscardCard, std::vector<const Card*> cardsInPlay, bool isActive)
-            : playerName(playerName), handSize(handSize), drawStackSize(drawStackSize), discardStackSize(discardStackSize), topDiscardCard(topDiscardCard), cardsInPlay(cardsInPlay), isActive(isActive) {}
+        PlayerState(const QString &playerName, int handSize, int drawStackSize, int discardStackSize, int victoryPoints, const Card* topDiscardCard, std::vector<const Card*> cardsInPlay, bool isActive)
+            : playerName(playerName), handSize(handSize), drawStackSize(drawStackSize), discardStackSize(discardStackSize), victoryPoints(victoryPoints), topDiscardCard(topDiscardCard), cardsInPlay(cardsInPlay), isActive(isActive) {}
 
         QJsonObject toJson() const {
             QJsonObject json;
             json["playerName"] = playerName;
             json["handSize"] = handSize;
             json["drawStackSize"] = drawStackSize;
+            json["victoryPoints"] = victoryPoints;
             json["discardStackSize"] = discardStackSize;
             if (topDiscardCard) {
                 json["topDiscardCard"] = QString::fromStdString(topDiscardCard->getName());
@@ -73,6 +73,7 @@ namespace Network {
                 json["handSize"].toInt(),
                 json["drawStackSize"].toInt(),
                 json["discardStackSize"].toInt(),
+                json["victoryPoints"].toInt(),
                 topDiscardCard,
                 cardsInPlay,
                 json["isActive"].toBool()
@@ -578,6 +579,31 @@ struct GameStatePayload : public Payload {
     std::map<const Card*, int> cardsInShop;
 
     std::vector<PlayerState> players;
+
+    GameStatePayload() {
+        selfName = "None",
+        activePlayerName = "None",
+        currentPhase = GamePhase::UNKNOWN,
+        pendingInteractionPhase = PendingInteractionPhase::NONE,
+        actions = 0;
+        buys = 0;
+        money = 0;
+        hand = {};
+    }
+
+    GameStatePayload(const GameStatePayload& other)
+    : Payload(other),
+      selfName(other.selfName),
+      activePlayerName(other.activePlayerName),
+      currentPhase(other.currentPhase),
+      pendingInteractionPhase(other.pendingInteractionPhase),
+      actions(other.actions),
+      buys(other.buys),
+      money(other.money),
+      hand(other.hand),
+      cardsInPlay(other.cardsInPlay),
+      cardsInShop(other.cardsInShop),
+      players(other.players) {}
 
     GameStatePayload(const QString &selfName, const QString &activePlayerName,GamePhase currentPhase,PendingInteractionPhase pendingInteractionPhase, int actions, int buys, int money, const Hand &hand, const std::vector<const Card*> &cardsInPlay, std::map<const Card*, int> cardsInShop, const std::vector<PlayerState> &players)
         : selfName(selfName), activePlayerName(activePlayerName), currentPhase(currentPhase), pendingInteractionPhase(pendingInteractionPhase), actions(actions), buys(buys), money(money), hand(hand), cardsInPlay(cardsInPlay), cardsInShop(cardsInShop), players(players) {}

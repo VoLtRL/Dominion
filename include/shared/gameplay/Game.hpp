@@ -10,6 +10,8 @@
 #include "shared/gameplay/TableStack.hpp"
 #include "shared/structs/GamePhase.hpp"
 #include "shared/structs/Selection.hpp"
+#include "server/ai/GameView.hpp"
+#include "server/ai/Bot.hpp"
 
 class Game {
 public:
@@ -35,7 +37,7 @@ public:
   };
 
 private:
-  std::vector<Player> players;
+  std::vector<std::unique_ptr<Player>> players;
   
   std::vector<TableStack> KingdomStacks;
   std::vector<TableStack> BasicStacks;
@@ -87,11 +89,10 @@ public:
   const std::vector<TableStack> &getKingdomStacks();
   const std::vector<TableStack> &getBasicStacks();
 
-  void addPlayer(Player player);
-  std::vector<Player> &getPlayers();
-  const std::vector<Player> &getPlayers() const;
+  void addPlayer(std::unique_ptr<Player> player);
+  const std::vector<std::unique_ptr<Player>> &getPlayers() const;
 
-  const Player &getActivePlayer() const;
+  Player* getActivePlayer() const;
   GamePhase getCurrentPhase() const { return currentPhase; }
   PendingInteractionPhase getCurrentPendingInteractionPhase() const { return pendingInteractionPhase; }
   int getCurrentPlayerMoney() const { return currentPlayerMoney; }
@@ -110,6 +111,7 @@ public:
     return CardsInPlay;
   }
   void addCardToPlay(const Card *card) { CardsInPlay.push_back(card); }
+
 
   bool isPlayerTurn(Player *player) const { return player == activePlayer; }
 
@@ -148,6 +150,7 @@ public:
   void playAttackCard(const Card *card);
 
   std::vector<Player *> getOtherPlayers();
+
 
   bool canPlayAction(Player* p, const Card* card) const;
   bool tryPlayAction(Player* p, const Card* card);
@@ -199,7 +202,7 @@ public:
   void resetCurrentPlayerStats(); 
 
   bool hasGameEnded() const;
-  Player getWinner() const;
+  Player* getWinner() const;
 
   void setCurrentTargets(std::set<Player*> targets){
     currentTargets = targets;
@@ -260,8 +263,8 @@ public:
   }
 
   Player* getPlayerFromName(std::string name) const {
-    for(const Player& p : players) {
-      if(p.getName() == name) { return const_cast<Player*>(&p);}
+    for(const std::unique_ptr<Player>& p : players) {
+      if(p->getName() == name) { return p.get(); }
     }
     return nullptr;
   }
@@ -273,6 +276,10 @@ public:
   std::set<Player*> getCurrentTargets() const {
     return currentTargets;
   }
+
+  std::map<const Card*, int> getCurrentCardDistrib() const {
+    return currentCardDistribution;
+  }
  
   bool waitingForPlayers() const {
     return !pendingPlayers.empty();
@@ -281,6 +288,4 @@ public:
   bool canExecuteTurnAction(Player* p) const;
 
   void removeCardFromPlay(const Card* card);
-
-
 };

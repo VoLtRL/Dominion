@@ -1,0 +1,49 @@
+#pragma once
+
+#include "Condition.hpp"
+#include "Rule.hpp"
+
+class Phase {
+    private:
+        std::string name;
+        Condition enter;
+        std::vector<Rule> buyRules;
+        std::vector<Rule> playRules;
+        std::vector<DecisionRule> decisionRules;
+    public:
+
+        Phase(std::string n, Condition e, std::vector<Rule> b, std::vector<Rule> p, std::vector<DecisionRule> d)
+        : name(n), enter(e), buyRules(b), playRules(p), decisionRules(d) {}
+
+        Phase() = default;
+
+        void finalize() {
+            auto byPriority = [](const Rule& a, const Rule& b) { return a.getPriority() > b.getPriority(); };
+            std::stable_sort(buyRules.begin(), buyRules.end(), byPriority);
+            std::stable_sort(playRules.begin(), playRules.end(), byPriority);
+        }
+
+        void setName(std::string s) { name = s; }
+
+        void setBuyRules(std::vector<Rule> r) { buyRules = r; }
+
+        bool canEnter(const GameView& view, int i) const {
+            return enter(view, i);
+        }
+
+        std::vector<Rule> getBuyRules() const {
+            return buyRules;
+        }
+
+        std::vector<Rule> getPlayRules() const {
+            return playRules;
+        }
+
+        std::vector<DecisionRule> getDecisionRules() const {
+            return decisionRules;
+        }
+
+        std::string getName() const{
+            return name;
+        }
+    };

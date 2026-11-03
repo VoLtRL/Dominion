@@ -164,6 +164,13 @@ void GameServer::handleCreateRoom(const QJsonObject &data, Client *client) {
         QString::fromStdString(actionTypeToString(ActionType::ROOM_CREATED)),
         roomCreated.toJson(),
         client->getSocket());
+
+    for (int i = 1; i <= payload->botCount; ++i) {
+        QString botName = QString("Bot_%1").arg(i);
+        // Parenté à 'room' ou 'this' pour que la mémoire soit gérée automatiquement
+        auto *botManager = new BotManager(room->getId(), botName, room, DifficultyProfile::Easy(), this);
+        botManager->start(4040);
+    }
 }
 
 void GameServer::handleJoinRoom(const QJsonObject &data, Client *client) {
@@ -366,8 +373,8 @@ void GameServer::handlePlayCard(const QJsonObject &data, Client *client) {
                             return;
                         }
                         std::set<Player*> targets;
-                        for(Player &p : game->getPlayers()) {
-                            targets.insert(&p);
+                        for(const auto &p : game->getPlayers()) {
+                            targets.insert(p.get());
                         }
                         game->setCurrentTargets(targets);
                         game->setPendingCard(cardToPlay);
@@ -878,11 +885,11 @@ void GameServer::handleEndTurn(Client *client) {
                 return;
             }
             if(game->performCleanup()){
-                Player winner = game->getWinner();
+                Player* winner = game->getWinner();
                 for(Client* cl : room->getClients()) {
                     sendAction(
                         QString::fromStdString(actionTypeToString(ActionType::GAME_ENDED)),
-                        Network::GameEndedPayload(winner.getName().c_str()).toJson(),
+                        Network::GameEndedPayload(winner->getName().c_str()).toJson(),
                         cl->getSocket()
                     );
                 }
@@ -890,7 +897,7 @@ void GameServer::handleEndTurn(Client *client) {
                 for(Client* cl : room->getClients()) {
                     sendAction(
                         QString::fromStdString(actionTypeToString(ActionType::END_TURN)),
-                        Network::TurnEndedPayload(game->getActivePlayer().getName().c_str()).toJson(),
+                        Network::TurnEndedPayload(game->getActivePlayer()->getName().c_str()).toJson(),
                         cl->getSocket()
                     );
                     sendAction(

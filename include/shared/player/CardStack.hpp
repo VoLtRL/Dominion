@@ -3,6 +3,7 @@
 #include "shared/abstract/Card.hpp"
 #include <memory>
 #include <stack>
+#include <map>
 
 /**
  * @brief Represents a stack of cards.
@@ -26,5 +27,7 @@ public:
   void putCard(const Card* card);
 
   void shuffle();
+
+  std::map<const Card*, int> getCardCount() const;
 
 };

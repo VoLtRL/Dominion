@@ -24,3 +24,14 @@ void CardStack::shuffle() {
     stack.push(card);
   }
 }
+
+std::map<const Card*, int> CardStack::getCardCount() const {
+  std::map<const Card*, int> cardCount;
+  std::stack<const Card*> tempStack = stack; // Create a copy of the stack to iterate through
+  while (!tempStack.empty()) {
+    const Card* card = tempStack.top();
+    tempStack.pop();
+    cardCount[card]++;
+  }
+  return cardCount;
+}

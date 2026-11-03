@@ -17,9 +17,10 @@ private:
     std::vector<Client*> m_players;
     std::unique_ptr<Game> m_game{nullptr};
     std::optional<GameMode> chosenGameMode;
+    int botCount;
 
 public:
-    Room(int id, const QString &name, Client *host);
+    Room(int id, const QString &name, Client *host, int botCount=0);
     ~Room() = default;
 
     Network::GameStatePayload getGameStatePayload(const Client *client) const;
