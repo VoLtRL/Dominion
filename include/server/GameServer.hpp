@@ -49,9 +49,5 @@ public:
 
     Client* getClientById(int id);
 
-    void playBotTurn(Game* game, Bot* bot, Room* room);
-
-    bool botActionPhase(Game* game, Bot* bot, Room* room); // True if waiting for reactions
-    void botBuyPhase(Game* game, Bot* bot, Room* room);
 
 };
