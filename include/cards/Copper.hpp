@@ -6,6 +6,6 @@
 class Copper : public Card, public Treasure {
 private:
 public:
-  Copper() : Card("Copper", 0, "+1 gold", {CardType::TREASURE}) {}
+  Copper() : Card("Copper", 0, "+1 coin", {CardType::TREASURE}) {}
   int getCoins() const;
 };

@@ -46,7 +46,8 @@ std::vector<std::string> Game::parseLines(const std::string &str) const {
   return lines;
 }
 
-void Game::displaySelection(const std::vector<const Card *> &selection) const {
+void Game::displaySelection(const std::vector<const Card *> &selection,
+                            const std::map<const Card *, int> &quantities) const {
   const std::string gap = "  ";
   const size_t cardsPerRow = 5;
 
@@ -54,6 +55,7 @@ void Game::displaySelection(const std::vector<const Card *> &selection) const {
     const size_t end = std::min(start + cardsPerRow, selection.size());
 
     std::vector<std::vector<std::string>> cards;
+    std::vector<const Card *> shown;   // carte correspondant à cards[i]
     std::vector<size_t> widths;
     size_t maxHeight = 0;
 
@@ -66,6 +68,7 @@ void Game::displaySelection(const std::vector<const Card *> &selection) const {
       widths.push_back(lines.empty() ? 0 : lines[0].size());
       maxHeight = std::max(maxHeight, lines.size());
       cards.push_back(std::move(lines));
+      shown.push_back(selection[i]);
     }
 
     // Étirer les cartes trop courtes : lignes vides avant la bordure basse
@@ -75,11 +78,27 @@ void Game::displaySelection(const std::vector<const Card *> &selection) const {
         continue;
 
       const size_t w = widths[c];
-      // ligne vide : "|" + espaces + "|"
       const std::string emptyRow = "|" + std::string(w - 2, ' ') + "|";
 
       const size_t missing = maxHeight - lines.size();
       lines.insert(lines.end() - 1, missing, emptyRow);
+    }
+
+    // Écrire le nombre d'exemplaires au centre de la bordure basse
+    for (size_t c = 0; c < cards.size(); ++c) {
+      auto it = quantities.find(shown[c]);
+      if (it == quantities.end() || cards[c].empty())
+        continue;
+
+      std::string &border = cards[c].back();
+      const std::string label = " x" + std::to_string(it->second) + " ";
+
+      // il faut garder les deux coins '+' de la bordure
+      if (border.size() < label.size() + 2)
+        continue;
+
+      const size_t pos = (border.size() - label.size()) / 2;
+      border.replace(pos, label.size(), label);
     }
 
     // Affichage ligne par ligne
@@ -304,8 +323,8 @@ void Game::BuyPhase() {
     }
 
     for (auto pair : display) {
-      std::cout << pair.first;
-      displaySelection(pair.second);
+      std::cout << pair.first << " coins :" << std::endl;
+      displaySelection(pair.second, currentCardDistribution);
     }
 
     std::string card_name;
@@ -360,8 +379,13 @@ void Game::hasGameEnded() {
                 << std::endl;
       std::cout << "The winner is: " << getWinner()->getString() << std::endl;
       std::cout << "They took " << getWinner()->getTurnsPlayed() << " turns to win." << std::endl;
-      for (const auto& player : players) {
-        std::cout << player->getName() << " has " << player->getVictoryPoints() << " victory points." << std::endl;
+      for (const std::unique_ptr<Player>& player : players) {
+        std::cout << player->getName() << " has " << player->getVictoryPoints() << " victory points. ";
+        if(!player->isHuman()) {
+          Bot* bot = dynamic_cast<Bot*>(player.get());
+          std::cout << "Their strategy was " << bot->getStrategyName() << " in " << bot->getDifficultyName() << " diffciculty.";
+        }
+        std::cout << std::endl;
       }
       exit(0);
     }
@@ -497,7 +521,7 @@ void Game::launchGame() {
     std::cin >> isBotInput;
     std::cin.ignore();
     CardStack drawStack = CardStack(
-        {Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
+        {Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
          Factory::get("Copper"), Factory::get("Copper"), Factory::get("Copper"),
          Factory::get("Estate"), Factory::get("Estate"),
          Factory::get("Estate")});
@@ -507,7 +531,9 @@ void Game::launchGame() {
     CardStack discardStack = CardStack();
     hand.refillHandFromDrawStack(drawStack, discardStack);
     if (isBotInput == "y" || isBotInput == "Y") {
-      auto bot = std::make_unique<Bot>(hand, drawStack, discardStack, playerName, Strategy::bigMoney(currentCardDistribution), DifficultyProfile::Easy(), (std::uint32_t)0);
+      DifficultyProfile profile = DifficultyProfile::Medium();
+      Strategy s = Strategies::select(currentCardDistribution, profile.maxTier);
+      auto bot = std::make_unique<Bot>(hand, drawStack, discardStack, playerName, s, profile, (std::uint32_t)0);
       addPlayer(std::move(bot));
       std::cout << "Bot " << playerName << " has been added to the game." << std::endl;
     }
@@ -550,12 +576,13 @@ std::vector<const Card *> Game::getBuyableCardsBelowCost(int cost) const {
 }
 
 const Card *Game::getCardFromCardDistrib(std::string cardName) {
-  for (const auto &pair : currentCardDistribution) {
+  for (auto &pair : currentCardDistribution) {
     const Card *card = pair.first;
     int quantity = pair.second;
     if (card->getName() == cardName) {
       if (quantity > 0) {
-        return Factory::get(card->getName());
+        pair.second--;
+        return card;
       }
       return nullptr;
     }

@@ -5,6 +5,7 @@
 #include "../player/Player.hpp"
 #include "Strategy.hpp"
 #include "DifficultyProfile.hpp"
+#include "Strategies.hpp"
 
 enum class SelectionMode{
     EXACTLY,
@@ -72,4 +73,6 @@ class Bot : public Player {
         void ResolvePhase(const GameView& v) {
             strat.resolvePhase(v, jitter);
         }
+        std::string getStrategyName() const { return strat.getName(); }
+        std::string getDifficultyName() const { return profile.name; }
 };

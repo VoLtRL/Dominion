@@ -18,6 +18,7 @@ void Bureaucrat::play(Game &g, Player &p) const
 void Bureaucrat::attack(Game& g, Player& p, std::set<Player*> targets) const{
     std::cout << "Every opponents must show and put on their draw pile a victory card from their hand." << std::endl;
     for (Player* player : targets){
+        if(*player == p) { continue; }
         std::cout << "Player " << player->getName() << " : show a victory card in your hand to put on top of your draw pile." << std::endl;
         std::vector<const Card *> selection = g.chooseCardsFromSelection(player->getHand().getCards(), 1, "display and put on your draw pile", "exact", {CardType::VICTORY}, player, DecisionType::DISCARD);
         if(!selection.empty()){

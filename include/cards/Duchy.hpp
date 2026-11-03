@@ -5,6 +5,6 @@
 
 class Duchy : public Card, public Victory  {
     public: 
-        Duchy() : Card("Duchy", 5, "", {CardType::VICTORY}) {}
+        Duchy() : Card("Duchy", 5, "+3 victory point", {CardType::VICTORY}) {}
         int getVictoryPoints(const Player& p) const;
 };

@@ -89,7 +89,7 @@ class Strategy{
                 Rule(cond::always(), Factory::get("Copper"), 0, "buy(Copper)"),
             };
 
-            Phase build("build", cond::turnAtLeast(2), buyRules, playRules, decisionRules);
+            Phase build("build", cond::turnAtLeast(3), buyRules, playRules, decisionRules);
 
             // Phase 3 : On achète des provinces et du gold
 

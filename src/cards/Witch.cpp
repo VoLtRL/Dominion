@@ -17,7 +17,7 @@ void Witch::attack(Game& g, Player& p, std::set<Player*> targets) const {
             }
             else{
                 std::cout << "Player " << player->getName() << " gets cursed!" << std::endl;
-                p.addCardToDiscardStack(g.getCardFromCardDistrib("Curse"));
+                player->addCardToDiscardStack(g.getCardFromCardDistrib("Curse"));
             }
         }
     }

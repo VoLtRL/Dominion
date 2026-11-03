@@ -4,6 +4,10 @@
 
 void Remodel::play(Game& g, Player& p) const {
     std::cout << "Trash a card from your hand and gain a card costing up to 2 more than it." << std::endl;
+    if(p.getHand().getCards().empty()) {
+        std::cout << "Votre main est vide..." << std::endl;
+        return;
+    }
     std::vector<const Card*> selection = g.chooseCardsFromSelection(p.getHand().getCards(), 1, "trash", "exact", {CardType::ALL}, &p, DecisionType::TRASH);
     if(!selection.empty()){
         std::vector<const Card*> gained = g.chooseCardsFromSelection(g.getBuyableCardsBelowCost(selection[0]->getCost()+2), 1, "gain", "exact", {CardType::ALL}, &p, DecisionType::GAIN);

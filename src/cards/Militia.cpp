@@ -11,6 +11,7 @@ void Militia::play(Game& g, Player& p) const {
 
 void Militia::attack(Game& g, Player& p, std::set<Player*> targets) const{
   for(Player* player : targets){
+      if(*player == p) { continue; }
       std::cout << "Player " << player->getName() << ", discard until you hold 3 cards!" << std::endl;
       Hand h = player->getHand();
       int nb = std::max(0,static_cast<int>(h.getSize())-3);

@@ -5,13 +5,14 @@
 void Adventurer::play(Game &g, Player &p) const {
     int treasures = 0;
     while (treasures < 2 && p.getDiscardStack().getSize() + p.getDrawStack().getSize() > 0) {
-        auto drawnCard = p.getDrawStack().getStack().top();
+        const Card* drawnCard = p.drawCard();
+        if (!drawnCard) { break; }
         drawnCard->display();
         if (drawnCard->isA(CardType::TREASURE)) {
-            p.drawCardToHand();
+            p.addCardToHand(drawnCard);
             treasures++;
         } else {
-            g.addRevealedCard(p.drawCard());
+            g.addRevealedCard(drawnCard);
         }
     }
     for (const Card* card : g.getRevealedCards()) {

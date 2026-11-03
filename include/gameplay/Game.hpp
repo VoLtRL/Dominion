@@ -81,7 +81,19 @@ private:
                 {Factory::get("Market"), 10},
                 {Factory::get("Remodel"), 10},
                 {Factory::get("ThroneRoom"), 10},
-                {Factory::get("Village"), 10}})};
+                {Factory::get("Village"), 10}}),
+        GameMode("Speedrun any%",
+                 "Sub 15'' fr fr",
+                 {{Factory::get("Workshop"), 1},
+                {Factory::get("Woodcutter"), 1},
+                {Factory::get("Cellar"), 1},
+                {Factory::get("Moat"), 1},
+                {Factory::get("Smithy"), 1},
+                {Factory::get("Market"), 1},
+                {Factory::get("Militia"), 1},
+                {Factory::get("Mine"), 1},
+                {Factory::get("Remodel"), 1},
+                {Factory::get("Village"), 1}})};
 
   std::vector<TableStack> KingdomStacks;
   std::vector<TableStack> BasicStacks;
@@ -151,7 +163,7 @@ public:
                            size_t numberOfCardsToChoose,
                            const std::string &action, std::string mode,
                            const std::set<CardType> &allowedTypes, Player* target = nullptr, DecisionType decisionType = DecisionType::GAIN) const;
-  void displaySelection(const std::vector<const Card *> &selection) const;
+  void displaySelection(const std::vector<const Card *> &selection, const std::map<const Card*, int> &map = {}) const;
 
   const std::vector<const Card *> &getRevealedCards() const {
     return revealedCards;
