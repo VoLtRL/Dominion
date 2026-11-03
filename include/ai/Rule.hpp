@@ -82,7 +82,7 @@ class DecisionRule {
             return valid(v,i);
         }
 
-        std::vector<const Card*> getCards() const {
+        const std::vector<const Card*>& getCards() const {
             return ranking;
         }
 
