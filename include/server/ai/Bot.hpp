@@ -6,6 +6,7 @@
 #include "Strategy.hpp"
 #include "DifficultyProfile.hpp"
 #include "shared/structs/Selection.hpp"
+#include "server/ai/Strategies.hpp"
 
 struct SelectionParameters{
     size_t nbToSelect;

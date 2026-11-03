@@ -876,15 +876,15 @@ void GameTable::drawOtherPlayersDrawAndDiscard(const std::vector<ClientPlayerSta
             rotation = 180;
         } else if (playerIndex == 1) {
             drawX = TableMargin + CardHeight / 2;
-            drawY = TableMargin + CardWidth / 2 + sceneHeight / 6;
+            drawY = TableMargin + CardWidth / 2 + sceneHeight / 21;
             discardX = TableMargin + CardHeight / 2;
-            discardY = sceneHeight - TableMargin - CardWidth / 2 - sceneHeight / 6;
+            discardY = sceneHeight - TableMargin - CardWidth / 2 - sceneHeight / 12;
             rotation = 90;
         } else {
             drawX = sceneWidth - TableMargin - CardHeight / 2;
-            drawY = TableMargin + CardWidth / 2 + sceneHeight / 6;
+            drawY = TableMargin + CardWidth / 2 + sceneHeight / 21;
             discardX = sceneWidth - TableMargin - CardHeight / 2;
-            discardY = sceneHeight - TableMargin - CardWidth / 2 - sceneHeight / 6;
+            discardY = sceneHeight - TableMargin - CardWidth / 2 - sceneHeight / 21;
             rotation = -90;
         }
 

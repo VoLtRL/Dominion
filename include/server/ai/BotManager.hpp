@@ -131,7 +131,8 @@ private:
             lastState = payload;
 
             if(!m_bot.hasStrategy()) {
-                m_bot.setStrategy(Strategy::bigMoney(lastState->cardsInShop));
+                DifficultyProfile profile = DifficultyProfile::Medium();
+                m_bot.setStrategy(Strategies::select(lastState->cardsInShop, profile.maxTier));
             }
 
             // Si ce n'est pas le tour du bot, ou si une sélection/réaction est en attente, on attend !
