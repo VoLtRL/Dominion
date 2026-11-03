@@ -10,7 +10,6 @@ MainMenu::MainMenu(QWidget *parent) : QWidget(parent), ui(new Ui::MainMenu) {
 
     connect(ui->createGameButton, &QPushButton::clicked, this, &MainMenu::onCreateGameClicked);
     connect(ui->joinRoomButton, &QPushButton::clicked, this, &MainMenu::onJoinRoomClicked);
-    connect(ui->leaderboardButton, &QPushButton::clicked, this, &MainMenu::onLeaderboardClicked);
     connect(ui->quitButton, &QPushButton::clicked, this, &MainMenu::onQuitClicked);
 
     connect(ui->settingsButton, &QPushButton::clicked, this, &MainMenu::onSettingsButtonClicked);
@@ -36,10 +35,6 @@ void MainMenu::onCreateGameClicked() {
 
 void MainMenu::onJoinRoomClicked() {
     emit joinRoomClicked();
-}
-
-void MainMenu::onLeaderboardClicked() {
-    emit leaderboardClicked();
 }
 
 void MainMenu::onQuitClicked() {

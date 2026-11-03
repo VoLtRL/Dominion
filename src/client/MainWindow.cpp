@@ -95,12 +95,7 @@ void MainWindow::connectGameTable() {
         }
     });
     connect(gameTable, &GameTable::phaseChanged, this, [this](GamePhase newPhase) {
-        if (ensureConnected()) {
-            ui->statusbar->showMessage(QString("Phase changed to: %1").arg(toString(newPhase).c_str()));
-            gameTable->addLogMessage(gameTable->getActivePlayerName(), Qt::darkBlue, QString("Phase changed to: %1").arg(toString(newPhase).c_str()));
-        } else {
-            gameTable->displayMessage("Not connected to server. Cannot change phase.");
-        }
+
     });
 
     connect(gameTable, &GameTable::cardPlayed, this, &MainWindow::handlePlayCard);
@@ -289,6 +284,9 @@ void MainWindow::handleAction(const ActionType &action, const QJsonObject &data)
     }
     case ActionType::SELECTION_REQUEST:
         handleSelectionRequest(data);
+        break;
+    case ActionType::SELECTION_MADE:
+        handleSelectionMade(data);
         break;
     case ActionType::REACTION:
         handleReaction(data);
@@ -485,7 +483,12 @@ void MainWindow::handleCardPlayed(const QJsonObject &data) {
     }
 
     gameTable->handleCardPlayed(payload->card);
-    gameTable->addLogMessage(gameTable->getActivePlayerName(), Qt::green, QString("played %1").arg(payload->card->getName().c_str()));
+    if (gameTable->isLocalPlayerActive()) {
+        gameTable->addLogMessage("You", Qt::green, QString("played %1").arg(payload->card->getName().c_str()));
+    }
+    else {
+        gameTable->addLogMessage(gameTable->getActivePlayerName(), Qt::green, QString("played %1").arg(payload->card->getName().c_str()));
+    }
 }
 
 void MainWindow::handleGainedMoney(const QJsonObject &data) {
@@ -495,7 +498,11 @@ void MainWindow::handleGainedMoney(const QJsonObject &data) {
         return;
     }
 
-    gameTable->addLogMessage(gameTable->getActivePlayerName(), Qt::yellow, QString("gained %1 money").arg(payload->amount));
+    if (gameTable->isLocalPlayerActive()) {
+        gameTable->addLogMessage("You", Qt::yellow, QString("gained %1 money").arg(payload->amount));
+    } else {
+        gameTable->addLogMessage(gameTable->getActivePlayerName(), Qt::yellow, QString("gained %1 money").arg(payload->amount));
+    }
 }
 
 void MainWindow::handleSelectionRequest(const QJsonObject &data) {
@@ -505,6 +512,25 @@ void MainWindow::handleSelectionRequest(const QJsonObject &data) {
         return;
     }
     gameTable->handleSelectionRequest(payload->mode, payload->constraint, payload->numberOfCards, payload->cards);
+}
+
+void MainWindow::handleSelectionMade(const QJsonObject &data) {
+    const auto payload = Network::SelectionMadePayload::fromJson(data);
+    if (!payload) {
+        qWarning() << "Invalid SELECTION_MADE payload:" << data;
+        return;
+    }
+
+    QStringList selectedCards;
+    for (const Card *card : payload->cards) {
+        selectedCards.append(QString::fromStdString(card->getName()));
+    }
+    const QString selection = selectedCards.isEmpty() ? "nothing" : selectedCards.join(", ");
+    if (payload->playerName == clientPreferences->getPlayerName()) {
+        gameTable->addLogMessage("You", Qt::cyan, QString("selected %1").arg(selection));
+    } else {
+        gameTable->addLogMessage(payload->playerName, Qt::cyan,QString("selected %1").arg(selection));
+    }
 }
 
 void MainWindow::handlePlayCard(const Card *card) {
@@ -542,7 +568,11 @@ void MainWindow::handleCardBought(const QJsonObject &data) {
     }
     const Card *card = payload->card;
     gameTable->handleCardBought(card);
-    gameTable->addLogMessage(gameTable->getActivePlayerName(), Qt::GlobalColor::green, QString("bought %1").arg(card->getName().c_str()));
+    if (gameTable->isLocalPlayerActive()) {
+        gameTable->addLogMessage("You", Qt::GlobalColor::green, QString("bought %1").arg(card->getName().c_str()));
+    } else {
+        gameTable->addLogMessage(gameTable->getActivePlayerName(), Qt::GlobalColor::green, QString("bought %1").arg(card->getName().c_str()));
+    }
 }
 
 void MainWindow::handleReaction(const QJsonObject &data){
@@ -567,7 +597,11 @@ void MainWindow::handleReaction(const QJsonObject &data){
     gameTable->displayMessage(payload->isReacting
         ? QString("%1 played a reaction.").arg(payload->playerName)
         : QString("%1 passed the reaction.").arg(payload->playerName));
-    gameTable->addLogMessage(payload->playerName, Qt::GlobalColor::magenta, payload->isReacting ? "played a reaction" : "passed the reaction");
+    if(gameTable->isLocalPlayerActive()) {
+        gameTable->addLogMessage("You", Qt::GlobalColor::magenta, payload->isReacting ? "played a reaction" : "passed the reaction");
+    } else {
+        gameTable->addLogMessage(payload->playerName, Qt::GlobalColor::magenta, payload->isReacting ? "played a reaction" : "passed the reaction");
+    }
 }
 
 void MainWindow::handleTurnEnded(const QJsonObject &data) {

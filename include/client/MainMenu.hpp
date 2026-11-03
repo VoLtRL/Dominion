@@ -16,14 +16,12 @@ class MainMenu : public QWidget {
 signals:
     void createGameClicked();
     void joinRoomClicked();
-    void leaderboardClicked();
     void quitClicked();
     void settingsChanged(const QString &playerName, const QString &hostAddress, quint16 hostPort);
 
 private slots:
     void onCreateGameClicked();
     void onJoinRoomClicked();
-    void onLeaderboardClicked();
     void onQuitClicked();
     void onSettingsButtonClicked();
 

@@ -492,6 +492,42 @@ namespace Network {
         }
     };
 
+    struct SelectionMadePayload : public Payload {
+        QString playerName;
+        std::vector<const Card*> cards;
+
+        SelectionMadePayload(const QString &playerName,
+                             const std::vector<const Card*> &cards)
+            : playerName(playerName), cards(cards) {}
+
+        QJsonObject toJson() const {
+            QJsonObject json;
+            json["playerName"] = playerName;
+            QJsonArray cardsJson;
+            for (const Card *card : cards) {
+                cardsJson.append(card->getName().c_str());
+            }
+            json["cards"] = cardsJson;
+            return json;
+        }
+
+        static std::optional<SelectionMadePayload> fromJson(const QJsonObject &json) {
+            if (!json.contains("playerName") || !json.contains("cards")) {
+                return std::nullopt;
+            }
+
+            std::vector<const Card*> cards;
+            for (const auto &value : json["cards"].toArray()) {
+                const Card *card = Factory::get(value.toString().toStdString());
+                if (!card) {
+                    return std::nullopt;
+                }
+                cards.push_back(card);
+            }
+            return SelectionMadePayload(json["playerName"].toString(), cards);
+        }
+    };
+
     struct TurnStatePayload : public Payload {
         QString activePlayerName;
         QString phase;

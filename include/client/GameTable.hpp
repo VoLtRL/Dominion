@@ -55,11 +55,16 @@ private:
     QVector<VisualCard*> visualCardsInPlay;
     QVector<VisualCard*> visualCardsInShop;
 
+    QVector<VisualCard*> visualCardsToSelect;
+
+    QVector<QGraphicsItem*> otherPlayersHandItems;
+    QVector<VisualCard*> otherPlayersInPlayItems;
+    QVector<QGraphicsItem*> otherPlayersStackItems;
+
     QTimer* messageTimer{nullptr};
     QString messageText;
     QGraphicsTextItem* messageTextItem{nullptr};
 
-    QGraphicsTextItem* playerInfosTextItem{nullptr};
     bool cardPlayPending{false};
     bool selectionPending{false};
     bool reactionPending{false};
@@ -139,12 +144,19 @@ public:
 
     void drawTable();
 
-    void drawPlayerHand(const std::vector<const Card*> hand, qreal x, qreal y);
+    void drawPlayerHand(const std::vector<const Card*> hand);
+
     void drawOtherPlayersHands(const std::vector<ClientPlayerState>& players);
     void drawOtherCardsInPlay(const std::vector<ClientPlayerState>& players);
     void drawOtherPlayersDrawAndDiscard(const std::vector<ClientPlayerState>& players);
-    void drawCardsInPlay(const std::vector<const Card*> cardsInPlay, qreal x, qreal y);
+
+    void drawOtherPlayers(const std::vector<ClientPlayerState>& players);
+
+    void drawCardsInPlay(const std::vector<const Card*> cardsInPlay);
     void drawStacks(quint16 cardsInDraw, quint16 cardsInDiscard, const Card* topDiscardCard);
+
+    void drawCardsToSelect();
+    void updateSelectionVisibility();
 
     void drawZoomedInCard();
     void clearZoomedInCard();
@@ -154,6 +166,7 @@ public:
     void drawShop();
 
     void setPhaseText(GamePhase phase);
+    void updateTurnInfos();
         
     void displayMessage(QString message);
     

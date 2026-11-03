@@ -25,6 +25,7 @@ enum class ActionType {
 
     // client actions
     SELECTION_REQUEST,
+    SELECTION_MADE,
     BUY_CARD,
     PLAY_CARD,
 
@@ -64,6 +65,7 @@ inline std::string actionTypeToString(ActionType actionType) {
         case ActionType::GAME_ENDED: return "GAME_ENDED";
         case ActionType::BUY_CARD: return "BUY_CARD";
         case ActionType::SELECTION_REQUEST: return "SELECTION_REQUEST";
+        case ActionType::SELECTION_MADE: return "SELECTION_MADE";
         case ActionType::ERROR: return "ERROR";
         case ActionType::REACTION: return "REACTION";
         default: return "INVALID_ACTION";
@@ -91,6 +93,7 @@ inline ActionType stringToActionType(const std::string &actionStr) {
     if (actionStr == "GAME_ENDED") return ActionType::GAME_ENDED;
     if (actionStr == "BUY_CARD") return ActionType::BUY_CARD;
     if (actionStr == "SELECTION_REQUEST") return ActionType::SELECTION_REQUEST;
+    if (actionStr == "SELECTION_MADE") return ActionType::SELECTION_MADE;
     if (actionStr == "ERROR") return ActionType::ERROR;
     if (actionStr == "REACTION") return ActionType::REACTION;
     return ActionType::INVALID_ACTION;

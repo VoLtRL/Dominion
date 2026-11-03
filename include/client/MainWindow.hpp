@@ -110,6 +110,7 @@ private:
     void handlePhaseChanged(const QJsonObject &data);
     void handleTurnEnded(const QJsonObject &data);
     void handleSelectionRequest(const QJsonObject &data);
+    void handleSelectionMade(const QJsonObject &data);
     
     void updateGameState(const Network::GameStatePayload &payload);
     void startTurnWhenReady();

@@ -43,6 +43,29 @@
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
           <widget class="QTextEdit" name="logs">
+           <property name="font">
+            <font>
+             <pointsize>14</pointsize>
+            </font>
+           </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QTextEdit" name="turnInfos">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>200</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>14</pointsize>
+            </font>
+           </property>
            <property name="readOnly">
             <bool>true</bool>
            </property>

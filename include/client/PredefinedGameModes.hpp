@@ -73,7 +73,21 @@ namespace PredefinedGameModes{
                       {Factory::get("Market"), 10},
                       {Factory::get("Remodel"), 10},
                       {Factory::get("Throne Room"), 10},
-                      {Factory::get("Village"), 10}})};
+                      {Factory::get("Village"), 10}}),
+
+                GameMode("Make it Fast",
+                     "ça dure pas longtemps",
+                     {{Factory::get("Workshop"), 1},
+                      {Factory::get("Woodcutter"), 1},
+                      {Factory::get("Cellar"), 1},
+                      {Factory::get("Moat"), 1},
+                      {Factory::get("Smithy"), 1},
+                      {Factory::get("Market"), 1},
+                      {Factory::get("Militia"), 1},
+                      {Factory::get("Mine"), 1},
+                      {Factory::get("Remodel"), 1},
+                      {Factory::get("Village"), 1}}),
+                    };
 
         return gameModes;
     }

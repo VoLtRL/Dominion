@@ -32,6 +32,18 @@ struct ClientSelectionState {
         return false;
     }
 
+    bool operator==(const ClientSelectionState& other) const {
+        return mode == other.mode
+                && constraint == other.constraint
+                && numberOfCards == other.numberOfCards
+                && isPending == other.isPending
+                && availableCards == other.availableCards;
+    }
+
+    bool operator!=(const ClientSelectionState& other) const {
+        return !(*this == other);
+    }
+
 };
 
 
@@ -50,6 +62,23 @@ struct ClientPlayerState {
     std::vector<const Card*> cardsInPlay;
 
     bool isActive{false};
+
+    bool operator==(const ClientPlayerState& other) const {
+        return name == other.name
+                && color == other.color
+                && isYourself == other.isYourself
+                && handSize == other.handSize
+                && drawStackSize == other.drawStackSize
+                && discardStackSize == other.discardStackSize
+                && topDiscardCard == other.topDiscardCard
+                && cardsInPlay == other.cardsInPlay
+                && isActive == other.isActive;
+    }
+
+    bool operator!=(const ClientPlayerState& other) const {
+        return !(*this == other);
+    }
+
 };
 
 struct ClientGameState {
@@ -117,4 +146,24 @@ struct ClientGameState {
     bool isSelectionValid(int selectedCount) const {
         return selection.isValid(selectedCount);
     }
+
+    bool operator==(const ClientGameState& other) const {
+        return selfName == other.selfName
+                && activePlayerName == other.activePlayerName
+                && currentPhase == other.currentPhase
+                && currentPendingInteractionPhase == other.currentPendingInteractionPhase
+                && currentPlayerActions == other.currentPlayerActions
+                && currentPlayerPurchasesLeft == other.currentPlayerPurchasesLeft
+                && currentPlayerMoney == other.currentPlayerMoney
+                && hand.getCards() == other.hand.getCards()
+                && cardsInPlay == other.cardsInPlay
+                && shop == other.shop
+                && players == other.players
+                && selection == other.selection;
+    }
+
+    bool operator!=(const ClientGameState& other) const {
+        return !(*this == other);
+    }
+
 };

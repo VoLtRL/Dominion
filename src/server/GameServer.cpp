@@ -493,6 +493,21 @@ void GameServer::sendSelectionRequest(Room *room, Game *game) {
     }
 }
 
+void GameServer::sendSelectionMade(Room *room, Player *player,
+                                   const std::vector<const Card*> &cards) {
+    if (!room || !player) {
+        return;
+    }
+
+    const QString action =
+        QString::fromStdString(actionTypeToString(ActionType::SELECTION_MADE));
+    const QJsonObject payload =
+        Network::SelectionMadePayload(QString::fromStdString(player->getName()), cards).toJson();
+    for (Client *roomClient : room->getClients()) {
+        sendAction(action, payload, roomClient->getSocket());
+    }
+}
+
 void GameServer::handleSelection(const QJsonObject &data, Client *client) {
     Room *room = RoomManager::getInstance().getRoomByClient(client);
     if (!room || !room->getGame()) {
@@ -510,6 +525,7 @@ void GameServer::handleSelection(const QJsonObject &data, Client *client) {
     const auto offered = game->getSelectionCards();
     const auto context = game->getSelectionContext();
     Player *player = game->getSelectionPlayer();
+    sendSelectionMade(room, player, selected);
     game->clearSelection();
 
     switch (context) {

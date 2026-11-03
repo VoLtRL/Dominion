@@ -4,6 +4,8 @@
 
 #include "ui_GameTable.h"
 
+#include <utility>
+
 #include <QResizeEvent>
 #include <QGraphicsTextItem>
 #include <QTimer>
@@ -67,6 +69,20 @@ GameTable::GameTable(QWidget *parent) : QWidget(parent), ui(new Ui::GameTable) {
 
 QTextEdit* GameTable::getPlayerLogs() const {
     return ui->logs;
+}
+
+void GameTable::updateTurnInfos() {
+    QTextEdit *playerInfos = ui->turnInfos;
+    playerInfos->clear();
+    playerInfos->setTextColor(Qt::white);
+    playerInfos->append(QString("You: %1").arg(gameState.getYourself()
+        ? gameState.getYourself()->name
+        : "Unknown"));
+    playerInfos->append(QString("Phase: %1").arg(toString(gameState.currentPhase).c_str()));
+    playerInfos->append(QString("Player: %1").arg(gameState.activePlayerName));
+    playerInfos->append(QString("Actions: %1").arg(gameState.currentPlayerActions));
+    playerInfos->append(QString("Purchases: %1").arg(gameState.currentPlayerPurchasesLeft));
+    playerInfos->append(QString("Money: %1").arg(gameState.currentPlayerMoney));
 }
 
 void GameTable::addLogMessage(const QString &playerName, const Qt::GlobalColor &color, const QString &action) {
@@ -155,8 +171,8 @@ void GameTable::handleGameEnded(const QString &winnerName) {
     reactionResponsePending = false;
     modifySelection(GamePhase::UNKNOWN, 0, 0, 0);
     displayMessage(QString("Game over. Winner: %1").arg(winnerName));
+    addLogMessage("Game", Qt::yellow, QString("Game over. Winner: %1").arg(winnerName));
 
-    // Pour le leaderboard, attribuer les points aux joueurs en fonction de leur position dans le classement.
 }
 
 void GameTable::handleSelectionRequest(SelectionMode mode, SelectionConstraint constraint,
@@ -164,7 +180,7 @@ void GameTable::handleSelectionRequest(SelectionMode mode, SelectionConstraint c
                                        const std::vector<const Card*> &cards) {
     selectionPending = true;
     setSelection(mode, constraint, numberOfCards, cards);
-    displayMessage("Select the requested cards, then press Play Card.");
+    displayMessage("Select the requested cards in the center, then send your selection.");
     if (!isShopVisible && mode == SelectionMode::GAIN) {
         switchShop();
     }
@@ -203,10 +219,13 @@ void GameTable::startTurn() {
 
 void GameTable::updatePhase(GamePhase newPhase) {
     changePhase(newPhase);
+    auto phaseName = QString::fromStdString(toString(newPhase));
     if(gameState.isLocalPlayerActive()) {
         displayMessage(QString("Phase changed to: %1").arg(QString::fromStdString(toString(newPhase))));
+        addLogMessage("You", Qt::cyan, QString("moved to phase: %1").arg(phaseName));
     } else {
         displayMessage(QString("%1's phase changed to: %2").arg(gameState.activePlayerName, QString::fromStdString(toString(newPhase))));
+        addLogMessage(gameState.activePlayerName, Qt::cyan, QString("moved to phase: %1").arg(phaseName));
     }
 }
 
@@ -243,7 +262,7 @@ void GameTable::handleReactionCompleted() {
     setSelection(SelectionMode::NONE, SelectionConstraint::NONE, 0);
     modifySelection(gameState.currentPhase, gameState.currentPlayerActions,
                     gameState.currentPlayerPurchasesLeft, gameState.currentPlayerMoney);
-    drawTable();
+    updateSelectionVisibility();
 }
 
 void GameTable::onPlayReactionClicked() {
@@ -251,7 +270,7 @@ void GameTable::onPlayReactionClicked() {
         return;
     }
     const Card* reactionCard = nullptr;
-    for (VisualCard* visualCard : visualCardsInHand) {
+    for (VisualCard* visualCard : visualCardsToSelect) {
         if (visualCard->isSelected()) {
             reactionCard = visualCard->getAssociatedCard();
         }
@@ -292,6 +311,7 @@ void GameTable::onPassReactionClicked() {
 }
 
 void GameTable::switchShop() {
+    const bool showShop = !isShopVisible;
     if (isShopVisible) {
         const QList<QGraphicsItem*> items = scene->items();
         for (QGraphicsItem *item : items) {
@@ -301,11 +321,12 @@ void GameTable::switchShop() {
             }
         }
     }
-    else drawShop();
+    else {
+        drawShop();
+    }
 
-
-
-    isShopVisible = !isShopVisible;
+    isShopVisible = showShop;
+    updateSelectionVisibility();
 }
 
 
@@ -334,6 +355,11 @@ void GameTable::onBuyCardClicked() {
     emit cardBought(cardToBuy);
 }
 
+/// @brief Modifies the selection state of the game table based on the current game phase, actions, purchases, and money.
+/// @param phase The current game phase (e.g., ACTION, BUY, UNKNOWN).
+/// @param actions The number of actions the player has left.
+/// @param purchases The number of purchases the player has left.
+/// @param money The amount of money the player has available for purchases.
 void GameTable::modifySelection(GamePhase phase, int actions, int purchases, int money) {
     gameState.currentPhase = phase;
     gameState.currentPlayerActions = actions;
@@ -365,6 +391,12 @@ void GameTable::modifySelection(GamePhase phase, int actions, int purchases, int
     }
 }
 
+
+/// @brief It computes the UI permissions based on the current client game state. It determines which actions are available to the player,
+/// such as playing cards, buying cards, advancing phases, and sending selections. The permissions are computed based on the player's turn, selection state, reaction state, and the current game phase.
+/// I hate this function. :(
+/// @param state The current client game state.
+/// @return The computed UI permissions based on the game state.
 UiPermissions GameTable::computePermissions(const ClientGameState& state) const {
     UiPermissions permissions;
     const bool localTurn = state.isLocalPlayerActive();
@@ -396,6 +428,11 @@ UiPermissions GameTable::computePermissions(const ClientGameState& state) const 
     return permissions;
 }
 
+/// @brief Sets the selection state of the game table, including the selection mode, constraint, number of cards to select, and available cards for selection.
+/// @param mode The selection mode (e.g., NONE, GAIN, REACTION).
+/// @param constraint The selection constraint (e.g., NONE, AT_MOST, EXACTLY).
+/// @param numberOfCards The number of cards to select (must be non-negative).
+/// @param availableCards The list of available cards for selection (default is an empty vector).
 void GameTable::setSelection(SelectionMode mode,
                              SelectionConstraint constraint,
                              int numberOfCards,
@@ -405,6 +442,76 @@ void GameTable::setSelection(SelectionMode mode,
     gameState.selection.numberOfCards = std::max(0, numberOfCards);
     gameState.selection.availableCards = availableCards;
     gameState.selection.isPending = mode != SelectionMode::NONE;
+
+    // The idea is to store the available cards into the visualCardsToSelect vector, which will be used to determine which cards can be selected by the player.
+    // It will be used to display the available cards in the UI and to check if the player's selection is valid.
+    drawCardsToSelect();
+    updateSelectionVisibility();
+}
+
+void GameTable::drawCardsToSelect() {
+    const qreal sceneWidth = scene->sceneRect().width();
+    const qreal sceneHeight = scene->sceneRect().height();
+
+    visualCardsToSelect.clear();
+
+    for (QGraphicsItem *item : scene->items()) {
+        if (item->data(0).toString() == "selection-card") {
+            scene->removeItem(item);
+            delete item;
+        }
+    }
+
+    const size_t numCards = gameState.selection.availableCards.size();
+    if (numCards == 0) return;
+
+    const int columns = (numCards + 1) / 2;
+    const int rows = std::min<int>(numCards, 2);
+
+    const qreal spacingX = 110.0;
+    const qreal spacingY = CardHeight + 20.0;
+
+    const qreal totalWidth = CardWidth + (columns - 1) * spacingX;
+    const qreal totalHeight = CardHeight + (rows - 1) * spacingY;
+
+    const qreal startX = (sceneWidth - totalWidth) / 2.0;
+    const qreal startY = (sceneHeight - totalHeight) / 2.0;
+
+    for (size_t index = 0; index < numCards; ++index) {
+        const Card *card = gameState.selection.availableCards[index];
+        if (!card) continue;
+
+        auto visualCard = drawCard(scene, card, startX + index / 2 * spacingX, startY + index % 2 * spacingY, Location::IN_SELECTION);
+
+        connect(visualCard, &VisualCard::clicked, [this, visualCard]() {
+            if (visualCard->isSelected()) {
+                visualCard->setSelected(false);
+            } else {
+                int selectedCount = 0;
+                for (VisualCard *vCard : visualCardsToSelect) {
+                    if (vCard->isSelected()) {
+                        ++selectedCount;
+                    }
+                }
+                if (gameState.selection.constraint != SelectionConstraint::NONE &&
+                    selectedCount >= gameState.selection.numberOfCards) {
+                    displayMessage(QString("You need to select %1 %2 card(s).")
+                                    .arg(toString(gameState.selection.constraint).c_str())
+                                    .arg(gameState.selection.numberOfCards));
+                    return;
+                }
+                visualCard->setSelected(true);
+            }
+        });
+        connect(visualCard, &VisualCard::rightClicked, visualCard, [this, visualCard](int cardId) {
+            cardBeingRightClicked = visualCard->getAssociatedCard();
+            drawZoomedInCard();
+        });
+
+        visualCard->setZValue(2);
+        visualCard->setData(0, "selection-card");
+        visualCardsToSelect.push_back(visualCard);
+    }
 }
 
 bool GameTable::isLocalPlayerActive() const {
@@ -412,31 +519,65 @@ bool GameTable::isLocalPlayerActive() const {
 }
 
 
+/// @brief Updates the game state of the GameTable with a new ClientGameState. It checks for changes in the player's hand, cards in play, shop, and other players' states, and updates the UI.
+/// I love this function.
+/// @param newGameState 
 void GameTable::updateGameState(ClientGameState newGameState) {
-    ClientSelectionState selection;
-    if (newGameState.currentPendingInteractionPhase != PendingInteractionPhase::NONE) {
-        selection = gameState.selection; 
-    } else {
-        selection = ClientSelectionState();
-        selection.isPending = false;
+    const bool isFirstLoad = gameState.players.empty();
+    const ClientPlayerState* oldYourself = gameState.getYourself();
+    const ClientPlayerState* newYourself = newGameState.getYourself();
+
+    const bool handChanged = !oldYourself || !newYourself || (gameState.hand.getCards() != newGameState.hand.getCards());
+    const bool playChanged = (gameState.cardsInPlay != newGameState.cardsInPlay);
+    const bool shopChanged = (gameState.shop != newGameState.shop);
+    const bool playersChanged = (gameState.players != newGameState.players);
+    const bool stacksChanged = !oldYourself || !newYourself || 
+                               (oldYourself->drawStackSize != newYourself->drawStackSize) ||
+                               (oldYourself->discardStackSize != newYourself->discardStackSize) ||
+                               (oldYourself->topDiscardCard != newYourself->topDiscardCard);
+
+    const ClientSelectionState previousSelection = gameState.selection;
+    
+    gameState = newGameState;
+    
+    if (newGameState.currentPendingInteractionPhase == PendingInteractionPhase::NONE) {
+        gameState.selection = ClientSelectionState();
+    } 
+    else {
+        gameState.selection = previousSelection;
     }
 
-    gameState = newGameState;
+    const bool selectionChanged = (previousSelection != gameState.selection);
 
-    gameState.selection = selection;
-
+    updateTurnInfos();
     modifySelection(gameState.currentPhase, gameState.currentPlayerActions,
                     gameState.currentPlayerPurchasesLeft, gameState.currentPlayerMoney);
-    drawTable();
+
+    if (isFirstLoad || !newYourself) {
+        drawTable();
+        return;
+    }
+
+    if (handChanged)    drawPlayerHand(gameState.hand.getCards());
+    if (stacksChanged)  drawStacks(newYourself->drawStackSize, newYourself->discardStackSize, newYourself->topDiscardCard);
+    if (playChanged)    drawCardsInPlay(gameState.cardsInPlay);
+    if (playersChanged) {
+        std::vector<ClientPlayerState> opponents;
+        for (const ClientPlayerState &player : gameState.players) {
+            if (!player.isYourself) {
+                opponents.push_back(player);
+            }
+        }
+        drawOtherPlayers(opponents);
+    }
+    if (shopChanged && isShopVisible) drawShop();
+    if (selectionChanged) drawCardsToSelect();
+    
+    updateSelectionVisibility();
 }
 
 void GameTable::drawTable() {
     // Clear the scene
-    if (playerInfosTextItem) {
-        scene->removeItem(playerInfosTextItem);
-        delete playerInfosTextItem;
-        playerInfosTextItem = nullptr;
-    }
     const bool shouldRestoreMessage =
         messageTextItem != nullptr && messageTimer->isActive() && !messageText.isEmpty();
     const QString messageToRestore = messageText;
@@ -446,11 +587,16 @@ void GameTable::drawTable() {
         scene->removeItem(item);
         delete item;
     }
+
+    // clear every containers
     messageTextItem = nullptr;
     zoomedInCardItem = nullptr;
     visualCardsInHand.clear();
     visualCardsInPlay.clear();
     visualCardsInShop.clear();
+    otherPlayersHandItems.clear();
+    otherPlayersInPlayItems.clear();
+    otherPlayersStackItems.clear();
 
     const qreal sceneWidth = scene->sceneRect().width();
     const qreal sceneHeight = scene->sceneRect().height();
@@ -470,26 +616,16 @@ void GameTable::drawTable() {
         }
     }
 
-
-    playerInfosTextItem = new QGraphicsTextItem();
-    playerInfosTextItem->setDefaultTextColor(Qt::white);
-    playerInfosTextItem->setZValue(1);
-    playerInfosTextItem->setPos(sceneWidth / 2 - playerInfosTextItem->boundingRect().width() / 2, 2 * sceneHeight / 3 - playerInfosTextItem->boundingRect().height()/ 2);
-    playerInfosTextItem->setPlainText(QString("Actions: %1, Purchases: %2, Money: %3")
-                                      .arg(gameState.currentPlayerActions)
-                                      .arg(gameState.currentPlayerPurchasesLeft)
-                                      .arg(gameState.currentPlayerMoney));
-    scene->addItem(playerInfosTextItem);
+    updateTurnInfos();
 
     // Draw the table
-    drawPlayerHand(gameState.hand.getCards(), (sceneWidth - handWidth) / 2, sceneHeight - CardHeight - TableMargin);
+    drawPlayerHand(gameState.hand.getCards());
     drawStacks(yourself->drawStackSize, yourself->discardStackSize, yourself->topDiscardCard);
     const qreal cardsInPlayWidth = gameState.cardsInPlay.empty() ? 0 : CardWidth + (gameState.cardsInPlay.size() - 1) * 90;
-    drawCardsInPlay(gameState.cardsInPlay, (sceneWidth - cardsInPlayWidth) / 2, sceneHeight - TableMargin - CardHeight*2.5);
-    
-    drawOtherPlayersHands(opponents);
-    drawOtherPlayersDrawAndDiscard(opponents);
-    drawOtherCardsInPlay(opponents);
+    drawCardsInPlay(gameState.cardsInPlay);
+    drawCardsToSelect();
+    drawOtherPlayers(opponents);
+
 
     if(isShopVisible) drawShop();
 
@@ -504,6 +640,7 @@ void GameTable::drawTable() {
             (sceneWidth - messageTextItem->boundingRect().width()) / 2,
             sceneHeight / 4 - messageTextItem->boundingRect().height() / 2);
     }
+    updateSelectionVisibility();
 }
 
 void GameTable::onEndTurnClicked() {
@@ -517,12 +654,7 @@ void GameTable::onSendSelectionClicked() {
     }
 
     std::vector<const Card*> selectedCards;
-    for (VisualCard *visualCard : visualCardsInHand) {
-        if (visualCard->isSelected()) {
-            selectedCards.push_back(visualCard->getAssociatedCard());
-        }
-    }
-    for (VisualCard *visualCard : visualCardsInShop) {
+    for (VisualCard *visualCard : visualCardsToSelect) {
         if (visualCard->isSelected()) {
             selectedCards.push_back(visualCard->getAssociatedCard());
         }
@@ -535,6 +667,7 @@ void GameTable::onSendSelectionClicked() {
         return;
     }
     selectionPending = false;
+    updateSelectionVisibility();
 
     emit selectionSubmitted(selectedCards);
 }
@@ -548,7 +681,7 @@ void GameTable::drawZoomedInCard() {
     if (cardBeingRightClicked) {
         auto vCard = drawCard(scene, cardBeingRightClicked, 0, 0);
         zoomedInCardItem = vCard;
-        zoomedInCardItem->setZValue(1);
+        zoomedInCardItem->setZValue(10);
         zoomedInCardItem->setScale(4.0);
         zoomedInCardItem->setPos((scene->sceneRect().width() - CardWidth * 4.0) / 2, (scene->sceneRect().height() - CardHeight * 4.0) / 2);
     }
@@ -561,29 +694,31 @@ void GameTable::resizeEvent(QResizeEvent *event) {
     emit widgetResized(event->size());
 }
 
-void GameTable::drawPlayerHand(const std::vector<const Card*> hand, qreal x, qreal y) {
+void GameTable::drawPlayerHand(const std::vector<const Card*> hand) {
+
+    qreal sceneWidth = scene->sceneRect().width();
+    qreal sceneHeight = scene->sceneRect().height();
+
+    qreal handWidth = hand.empty() ? 0 : CardWidth + (hand.size() - 1) * CardSpacing;
+
+    qreal x = (sceneWidth - handWidth) / 2;
+    qreal y = sceneHeight - CardHeight - TableMargin;
+
     visualCardsInHand.clear();
     std::vector<VisualCard*> visualCards = ::drawPlayerHand(scene, hand, x, y);
     for (VisualCard* visualCard : visualCards) {
         visualCardsInHand.push_back(visualCard);
         connect(visualCard, &VisualCard::clicked, visualCard, [this, visualCard](int cardId) {
             if (selectionPending || reactionPending) {
-                bool isAllowed = std::any_of(gameState.selection.availableCards.begin(),
-                                             gameState.selection.availableCards.end(),
-                                             [visualCard](const Card *card) {
-                                                return card && visualCard->getAssociatedCard() && card->getName() == visualCard->getAssociatedCard()->getName();
-                                            });
-                
-                if (!isAllowed) {
-                    displayMessage("This card is not part of the requested selection.");
-                    return;
-                }
+                displayMessage("Select a card from the cards shown in the center.");
+                return;
             }
             int selectedCount = 0;
             for (VisualCard *card : visualCardsInHand) {
                 if (card && card->isSelected()) {
                     selectedCount++;
                 }
+                updateSelectionVisibility();
             }
             if (!(selectionPending || reactionPending) && !visualCard->isSelected() &&
                 !gameState.canSelectAnotherCard(selectedCount)) {
@@ -601,195 +736,169 @@ void GameTable::drawPlayerHand(const std::vector<const Card*> hand, qreal x, qre
 }
 
 void GameTable::drawOtherPlayersHands(const std::vector<ClientPlayerState>& players) {
-        const qreal sceneWidth = scene->sceneRect().width();
-        const qreal sceneHeight = scene->sceneRect().height();
+    const qreal sceneWidth = scene->sceneRect().width();
+    const qreal sceneHeight = scene->sceneRect().height();
 
-        const QList<QGraphicsItem*> items = scene->items();
-        for (QGraphicsItem *item : items) {
-            if (item->data(0).toString() == "other-player-hand") {
-                scene->removeItem(item);
-                delete item;
-            }
+    for (QGraphicsItem *item : otherPlayersHandItems) {
+        scene->removeItem(item);
+        delete item;
+    }
+    otherPlayersHandItems.clear();
+
+    const auto drawOtherHand = [&](int numberOfCards, qreal centerX, qreal centerY, bool vertical, qreal rotation) {
+        if (numberOfCards <= 0) return;
+
+        const qreal handLength = CardWidth + (numberOfCards - 1) * CardSpacing;
+        for (size_t cardIndex = 0; cardIndex < numberOfCards; ++cardIndex) {
+            const qreal offset = cardIndex * CardSpacing - handLength / 2 + CardWidth / 2;
+            const qreal cardCenterX = vertical ? centerX : centerX + offset;
+            const qreal cardCenterY = vertical ? centerY + offset : centerY;
+            QGraphicsPixmapItem *backCard = drawBackCard(
+                scene, cardCenterX - CardWidth / 2, cardCenterY - CardHeight / 2);
+            backCard->setData(0, "other-player-hand");
+            setRotatedItemGeometry(backCard, cardCenterX, cardCenterY, rotation);
+            
+            otherPlayersHandItems.push_back(backCard);
         }
+    };
 
-        const auto drawOtherHand = [&](int numberOfCards, qreal centerX, qreal centerY, bool vertical,qreal rotation) {
-            if (numberOfCards <= 0) {
-                return;
-            }
+    for (size_t playerIndex = 0; playerIndex < players.size(); ++playerIndex) {
+        const ClientPlayerState *player = &players[playerIndex];
+        if (!player) continue;
 
-            const qreal handLength = CardWidth + (numberOfCards - 1) * CardSpacing;
-            for (size_t cardIndex = 0; cardIndex < numberOfCards; ++cardIndex) {
-                const qreal offset = cardIndex * CardSpacing - handLength / 2 + CardWidth / 2;
-                const qreal cardCenterX = vertical ? centerX : centerX + offset;
-                const qreal cardCenterY = vertical ? centerY + offset : centerY;
-                QGraphicsPixmapItem *backCard = drawBackCard(
-                    scene, cardCenterX - CardWidth / 2, cardCenterY - CardHeight / 2);
-                backCard->setData(0, "other-player-hand");
-                setRotatedItemGeometry(backCard, cardCenterX, cardCenterY, rotation);
-            }
-        };
-
-        for (size_t playerIndex = 0; playerIndex < players.size(); ++playerIndex) {
-            const ClientPlayerState *player = &players[playerIndex];
-            if (!player) {
-                continue;
-            }
-
-            if (playerIndex == 0) {
-                drawOtherHand(player->handSize, sceneWidth / 2,
-                              TableMargin + CardHeight / 2, false, 180);
-            } else if (playerIndex == 1) {
-                drawOtherHand(player->handSize, TableMargin + CardHeight / 2,
-                              sceneHeight / 2, true, 90);
-            } else if (playerIndex == 2) {
-                drawOtherHand(player->handSize,
-                              sceneWidth - TableMargin - CardHeight / 2,
-                              sceneHeight / 2, true, -90);
-            }
+        if (playerIndex == 0) {
+            drawOtherHand(player->handSize, sceneWidth / 2, TableMargin + CardHeight / 2, false, 180);
+        } else if (playerIndex == 1) {
+            drawOtherHand(player->handSize, TableMargin + CardHeight / 2, sceneHeight / 2, true, 90);
+        } else if (playerIndex == 2) {
+            drawOtherHand(player->handSize, sceneWidth - TableMargin - CardHeight / 2, sceneHeight / 2, true, -90);
         }
+    }
 }
 
-void GameTable::drawOtherCardsInPlay(
-        const std::vector<ClientPlayerState>& players) {
-        constexpr qreal cardSpacing = 90;
-        const qreal sceneWidth = scene->sceneRect().width();
-        const qreal sceneHeight = scene->sceneRect().height();
+void GameTable::drawOtherCardsInPlay(const std::vector<ClientPlayerState>& players) {
+    constexpr qreal cardSpacing = 90;
+    const qreal sceneWidth = scene->sceneRect().width();
+    const qreal sceneHeight = scene->sceneRect().height();
 
-        const QList<QGraphicsItem*> items = scene->items();
-        for (QGraphicsItem *item : items) {
-            VisualCard *visualCard = dynamic_cast<VisualCard*>(item);
-            if (visualCard && visualCard->data(0).toString() == "other-player-in-play") {
-                scene->removeItem(visualCard);
-                delete visualCard;
-            }
+    for (VisualCard *visualCard : otherPlayersInPlayItems) {
+        scene->removeItem(visualCard);
+        delete visualCard;
+    }
+    otherPlayersInPlayItems.clear();
+
+    for (size_t playerIndex = 0; playerIndex < players.size(); ++playerIndex) {
+        const auto &cards = players[playerIndex].cardsInPlay;
+        const qreal cardsLength = CardWidth + (cards.size() > 0 ? (cards.size() - 1) * cardSpacing : 0);
+
+        qreal centerX = 0; qreal centerY = 0; qreal rotation = 0; bool vertical = false;
+        
+        if (playerIndex == 0) {
+            centerX = sceneWidth / 2;
+            centerY = TableMargin + CardHeight * 1.5;
+            rotation = 180;
+        } else if (playerIndex == 1) {
+            centerX = TableMargin + CardHeight * 1.5;
+            centerY = sceneHeight / 2;
+            rotation = 90;
+            vertical = true;
+        } else if (playerIndex == 2) {
+            centerX = sceneWidth - TableMargin - CardHeight * 1.5;
+            centerY = sceneHeight / 2;
+            rotation = -90;
+            vertical = true;
+        } else continue;
+
+        for (size_t cardIndex = 0; cardIndex < cards.size(); ++cardIndex) {
+            const Card *card = cards[cardIndex];
+            VisualCard *visualCard = new VisualCard(
+                VisualCard::getNewId(), card, QString::fromStdString(card->getName()),
+                card->getCost(), QString(card->getPath().c_str()), Location::OTHER_PLAYER_IN_PLAY);
+                
+            connect(visualCard, &VisualCard::rightClicked, visualCard, [this, visualCard](int cardId) {
+                cardBeingRightClicked = visualCard->getAssociatedCard();
+                drawZoomedInCard();
+            });
+            visualCard->setData(0, "other-player-in-play");
+            const qreal offset = cardIndex * cardSpacing - cardsLength / 2 + CardWidth / 2;
+            const qreal cardCenterX = vertical ? centerX : centerX + offset;
+            const qreal cardCenterY = vertical ? centerY + offset : centerY;
+            setRotatedItemGeometry(visualCard, cardCenterX, cardCenterY, rotation);
+            scene->addItem(visualCard);
+            
+            otherPlayersInPlayItems.push_back(visualCard);
         }
-
-        for (size_t playerIndex = 0; playerIndex < players.size(); ++playerIndex) {
-            const auto &cards = players[playerIndex].cardsInPlay;
-            const qreal cardsLength =
-                CardWidth + (cards.size() > 0 ? (cards.size() - 1) * cardSpacing : 0);
-
-            qreal centerX = 0;
-            qreal centerY = 0;
-            qreal rotation;
-            bool vertical = false;
-            if (playerIndex == 0) {
-                centerX = sceneWidth / 2;
-                centerY = TableMargin + CardHeight * 1.5;
-                rotation = 180;
-            } else if (playerIndex == 1) {
-                centerX = TableMargin + CardHeight * 1.5;
-                centerY = sceneHeight / 2;
-                rotation = 90;
-                vertical = true;
-            } else if (playerIndex == 2) {
-                centerX = sceneWidth - TableMargin - CardHeight * 1.5;
-                centerY = sceneHeight / 2;
-                rotation = -90;
-                vertical = true;
-            } else {
-                continue;
-            }
-
-            for (size_t cardIndex = 0; cardIndex < cards.size(); ++cardIndex) {
-                const Card *card = cards[cardIndex];
-                VisualCard *visualCard = new VisualCard(
-                    VisualCard::getNewId(),
-                    card,
-                    QString::fromStdString(card->getName()),
-                    card->getCost(),
-                    QString(card->getPath().c_str()),
-                    Location::OTHER_PLAYER_IN_PLAY);
-                connect(visualCard, &VisualCard::rightClicked, visualCard, [this, visualCard](int cardId) {
-                    cardBeingRightClicked = visualCard->getAssociatedCard();
-                    drawZoomedInCard();
-                });
-                visualCard->setData(0, "other-player-in-play");
-                const qreal offset = cardIndex * cardSpacing - cardsLength / 2 + CardWidth / 2;
-                const qreal cardCenterX = vertical ? centerX : centerX + offset;
-                const qreal cardCenterY = vertical ? centerY + offset : centerY;
-                setRotatedItemGeometry(visualCard, cardCenterX, cardCenterY, rotation);
-                scene->addItem(visualCard);
-            }
-        }
+    }
 }
 
-void GameTable::drawOtherPlayersDrawAndDiscard(
-        const std::vector<ClientPlayerState>& players) {
-        const qreal sceneWidth = scene->sceneRect().width();
-        const qreal sceneHeight = scene->sceneRect().height();
+void GameTable::drawOtherPlayersDrawAndDiscard(const std::vector<ClientPlayerState>& players) {
+    const qreal sceneWidth = scene->sceneRect().width();
+    const qreal sceneHeight = scene->sceneRect().height();
 
-        const QList<QGraphicsItem*> items = scene->items();
-        for (QGraphicsItem *item : items) {
-            if (item->data(0).toString() == "other-player-stack") {
-                scene->removeItem(item);
-                delete item;
-            }
+    for (QGraphicsItem *item : otherPlayersStackItems) {
+        scene->removeItem(item);
+        delete item;
+    }
+    otherPlayersStackItems.clear();
+
+    const auto drawOtherStack = [&](qreal centerX, qreal centerY, qreal rotation, int count, const Card *topCard) {
+        QGraphicsItem *stackItem = nullptr;
+        if (topCard && count > 0) {
+            VisualCard *card = drawCard(scene, topCard, centerX - CardWidth / 2, centerY - CardHeight / 2, Location::DISCARD_PILE);
+            setRotatedItemGeometry(card, centerX, centerY, rotation);
+            stackItem = card;
+        } else {
+            QGraphicsPixmapItem *backCard = drawBackCard(scene, centerX - CardWidth / 2, centerY - CardHeight / 2);
+            setRotatedItemGeometry(backCard, centerX, centerY, rotation);
+            stackItem = backCard;
+        }
+        stackItem->setData(0, "other-player-stack");
+        otherPlayersStackItems.push_back(stackItem);
+
+        QGraphicsTextItem *countText = scene->addText(QString::number(count));
+        countText->setDefaultTextColor(Qt::white);
+        countText->setData(0, "other-player-stack");
+        countText->setPos(centerX - countText->boundingRect().width() / 2, centerY + CardHeight / 2 + 2);
+        otherPlayersStackItems.push_back(countText);
+    };
+
+    for (size_t playerIndex = 0; playerIndex < players.size(); ++playerIndex) {
+        const ClientPlayerState *player = &players[playerIndex];
+        if (!player || playerIndex > 2) continue;
+
+        qreal drawX = 0; qreal drawY = 0; qreal discardX = 0; qreal discardY = 0; qreal rotation = 0;
+        
+        if (playerIndex == 0) {
+            drawX = TableMargin + CardWidth / 2 + sceneWidth / 6;
+            drawY = TableMargin + CardHeight / 2;
+            discardX = sceneWidth - TableMargin - CardWidth / 2 - sceneWidth / 6;
+            discardY = TableMargin + CardHeight / 2;
+            rotation = 180;
+        } else if (playerIndex == 1) {
+            drawX = TableMargin + CardHeight / 2;
+            drawY = TableMargin + CardWidth / 2 + sceneHeight / 6;
+            discardX = TableMargin + CardHeight / 2;
+            discardY = sceneHeight - TableMargin - CardWidth / 2 - sceneHeight / 6;
+            rotation = 90;
+        } else {
+            drawX = sceneWidth - TableMargin - CardHeight / 2;
+            drawY = TableMargin + CardWidth / 2 + sceneHeight / 6;
+            discardX = sceneWidth - TableMargin - CardHeight / 2;
+            discardY = sceneHeight - TableMargin - CardWidth / 2 - sceneHeight / 6;
+            rotation = -90;
         }
 
-        const auto drawOtherStack = [&](qreal centerX, qreal centerY, qreal rotation,
-                                        int count, const Card *topCard) {
-            QGraphicsItem *stackItem = nullptr;
-            if (topCard && count > 0) {
-                VisualCard *card = drawCard(scene, topCard,
-                    centerX - CardWidth / 2, centerY - CardHeight / 2,
-                    Location::DISCARD_PILE);
-                setRotatedItemGeometry(card, centerX, centerY, rotation);
-                stackItem = card;
-            } else {
-                QGraphicsPixmapItem *backCard = drawBackCard(
-                    scene, centerX - CardWidth / 2, centerY - CardHeight / 2);
-                setRotatedItemGeometry(backCard, centerX, centerY, rotation);
-                stackItem = backCard;
-            }
-            stackItem->setData(0, "other-player-stack");
-
-            QGraphicsTextItem *countText =
-                scene->addText(QString::number(count));
-            countText->setDefaultTextColor(Qt::white);
-            countText->setData(0, "other-player-stack");
-            countText->setPos(centerX - countText->boundingRect().width() / 2,
-                              centerY + CardHeight / 2 + 2);
-        };
-
-        for (size_t playerIndex = 0; playerIndex < players.size(); ++playerIndex) {
-            const ClientPlayerState *player = &players[playerIndex];
-            if (!player || playerIndex > 2) {
-                continue;
-            }
-
-            qreal drawX = 0;
-            qreal drawY = 0;
-            qreal discardX = 0;
-            qreal discardY = 0;
-            qreal rotation;
-            if (playerIndex == 0) {
-                drawX = TableMargin + CardWidth / 2 + sceneWidth / 6;
-                drawY = TableMargin + CardHeight / 2;
-                discardX = sceneWidth - TableMargin - CardWidth / 2 - sceneWidth / 6;
-                discardY = TableMargin + CardHeight / 2;
-                rotation = 180;
-            } else if (playerIndex == 1) {
-                drawX = TableMargin + CardHeight / 2;
-                drawY = TableMargin + CardWidth / 2 + sceneHeight / 6;
-                discardX = TableMargin + CardHeight / 2;
-                discardY = sceneHeight - TableMargin - CardWidth / 2 - sceneHeight / 6;
-                rotation = 90;
-            } else {
-                drawX = sceneWidth - TableMargin - CardHeight / 2;
-                drawY = TableMargin + CardWidth / 2 + sceneHeight / 6;
-                discardX = sceneWidth - TableMargin - CardHeight / 2;
-                discardY = sceneHeight - TableMargin - CardWidth / 2 - sceneHeight / 6;
-                rotation = -90;
-            }
-
-            drawOtherStack(drawX, drawY, rotation, player->drawStackSize, nullptr);
-            drawOtherStack(discardX, discardY, rotation, player->discardStackSize,
-                           player->topDiscardCard);
-        }
+        drawOtherStack(drawX, drawY, rotation, player->drawStackSize, nullptr);
+        drawOtherStack(discardX, discardY, rotation, player->discardStackSize, player->topDiscardCard);
+    }
 }
 
-void GameTable::drawCardsInPlay(const std::vector<const Card*> cardsInPlay, qreal x, qreal y) {
+void GameTable::drawCardsInPlay(const std::vector<const Card*> cardsInPlay) {
+    qreal sceneWidth = scene->sceneRect().width();
+    qreal sceneHeight = scene->sceneRect().height();
+    qreal cardsInPlayWidth = cardsInPlay.empty() ? 0 : CardWidth + (cardsInPlay.size() - 1) * CardSpacing;
+    qreal x = (sceneWidth - cardsInPlayWidth) / 2;
+    qreal y = sceneHeight - TableMargin - CardHeight*2.5;
     visualCardsInPlay.clear();
     const QList<QGraphicsItem*> items = scene->items();
     for (QGraphicsItem *item : items) {
@@ -813,45 +922,69 @@ void GameTable::drawCardsInPlay(const std::vector<const Card*> cardsInPlay, qrea
 }
 
 void GameTable::clearCardsInPlay() {
-    const QList<QGraphicsItem*> items = scene->items();
-    for (QGraphicsItem *item : items) {
-        VisualCard *visualCard = dynamic_cast<VisualCard*>(item);
-        if (visualCard && (visualCard->data(0).toString() == "in-play-card" || visualCard->data(0).toString() == "other-player-in-play")) {
-            scene->removeItem(visualCard);
-            delete visualCard;
-        }
+    for (VisualCard *visualCard : visualCardsInPlay) {
+        scene->removeItem(visualCard);
+        delete visualCard;
     }
     visualCardsInPlay.clear();
+    
+    for (VisualCard *visualCard : otherPlayersInPlayItems) {
+        scene->removeItem(visualCard);
+        delete visualCard;
+    }
+    otherPlayersInPlayItems.clear();
 }
 
 void GameTable::drawStacks(quint16 cardsInDraw, quint16 cardsInDiscard, const Card* topDiscardCard) {
     constexpr qreal cardWidth = 100;
     constexpr qreal cardHeight = 150;
-    const qreal drawX = scene->sceneRect().width()/8 - cardWidth;
-    const qreal discardX = scene->sceneRect().width() - scene->sceneRect().width()/8 - cardWidth;
-    const qreal stackY = scene->sceneRect().height() - cardHeight - 20;
+    const QList<QGraphicsItem*> items = scene->items();
+    for (QGraphicsItem *item : items) {
+        if (item->data(0).toString() == "local-stack") {
+            scene->removeItem(item);
+            delete item;
+        }
+    }
 
-    drawBackCard(scene, drawX, stackY);
+    const qreal sceneWidth = scene->sceneRect().width();
+    const qreal sceneHeight = scene->sceneRect().height();
+
+    const qreal drawX = TableMargin + sceneWidth / 6; 
+    const qreal discardX = sceneWidth - TableMargin - sceneWidth / 6 - cardWidth; 
+    const qreal stackY = sceneHeight - cardHeight - 20;
+
+    QGraphicsPixmapItem *drawCardItem = drawBackCard(scene, drawX, stackY);
+    drawCardItem->setData(0, "local-stack");
     if (topDiscardCard) {
-        VisualCard* visualCard = drawCard(scene,topDiscardCard, discardX, stackY);
-        visualCard->setData(0, "top-discard-card");
+        VisualCard* visualCard = drawCard(scene, topDiscardCard, discardX, stackY);
+        visualCard->setData(0, "local-stack");
         connect(visualCard, &VisualCard::rightClicked, visualCard, [this, visualCard](int cardId) {
             cardBeingRightClicked = visualCard->getAssociatedCard();
             drawZoomedInCard();
         });
     } else {
-        drawBackCard(scene, discardX, stackY);
+        QGraphicsPixmapItem *discardCardItem = drawBackCard(scene, discardX, stackY);
+        discardCardItem->setData(0, "local-stack");
     }
 
     QGraphicsTextItem* drawText = scene->addText(QString::number(cardsInDraw));
+    drawText->setData(0, "local-stack");
     drawText->setPos(drawX, stackY + cardHeight + 2);
     QGraphicsTextItem* discardText = scene->addText(QString::number(cardsInDiscard));
+    discardText->setData(0, "local-stack");
     discardText->setPos(discardX, stackY + cardHeight + 2);
     drawText->setDefaultTextColor(Qt::white);
     discardText->setDefaultTextColor(Qt::white);
 }
 
 void GameTable::drawShop() {
+    const QList<QGraphicsItem*> items = scene->items();
+    for (QGraphicsItem *item : items) {
+        if (item->data(0).toString() == "shop-card") {
+            scene->removeItem(item);
+            delete item;
+        }
+    }
     visualCardsInShop.clear();
 
     const qreal shopWidth = ((gameState.shop.size() + 1) / 2) == 0 ? 0 : (CardWidth + (((gameState.shop.size() + 1) / 2) - 1) * CardSpacing);
@@ -861,11 +994,16 @@ void GameTable::drawShop() {
     qreal startY = (scene->sceneRect().height() - shopHeight) / 2.0;
 
     int index = 0;
-    for (auto pair : gameState.shop) {
+    std::vector<std::pair<const Card*, int>> sortedShopCards(gameState.shop.begin(), gameState.shop.end());
+    std::sort(sortedShopCards.begin(), sortedShopCards.end(), [](const std::pair<const Card*, int>& a, const std::pair<const Card*, int>& b) {
+        return a.first->getCost() < b.first->getCost();
+    });
+    for (auto pair : sortedShopCards) {
         const Card* card = pair.first;
         const qreal offsetX = index / 2 * CardSpacing;
         const qreal offsetY = index % 2 * (CardHeight + CardSpacing);
         VisualCard* visualCard = drawCard(scene, card, startX + offsetX, startY + offsetY);
+        visualCard->setZValue(4);
         visualCard->setData(0, "shop-card");
         visualCardsInShop.push_back(visualCard);
         connect(visualCard, &VisualCard::clicked, visualCard, [this, visualCard]() {
@@ -878,6 +1016,7 @@ void GameTable::drawShop() {
                     return;
                 }
             }
+
             int selectedCount = 0;
             for (VisualCard *card : visualCardsInShop) {
                 if (card && card->isSelected()) {
@@ -913,6 +1052,25 @@ void GameTable::drawShop() {
     }
 }
 
+void GameTable::updateSelectionVisibility() {
+    const bool hideCards = selectionPending || reactionPending;
+    for (VisualCard *card : visualCardsInHand) {
+        if (card) {
+            card->setVisible(!hideCards);
+        }
+    }
+    for (VisualCard *card : visualCardsInShop) {
+        if (card) {
+            card->setVisible(isShopVisible && !hideCards);
+        }
+    }
+    for (QGraphicsItem *item : scene->items()) {
+        if (item->data(0).toString() == "shop-card") {
+            item->setVisible(isShopVisible && !hideCards);
+        }
+    }
+}
+
 void GameTable::setPhaseText(GamePhase phase) {
     emit phaseChanged(phase);
 }
@@ -943,4 +1101,10 @@ void GameTable::clearZoomedInCard() {
 
 GameTable::~GameTable() {
     delete ui;
+}
+
+void GameTable::drawOtherPlayers(const std::vector<ClientPlayerState>& players) {
+    drawOtherPlayersHands(players);
+    drawOtherCardsInPlay(players);
+    drawOtherPlayersDrawAndDiscard(players);
 }

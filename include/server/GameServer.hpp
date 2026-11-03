@@ -29,6 +29,8 @@ private:
     void handleSelection(const QJsonObject &data, Client *client);
     void handleReaction(const QJsonObject &data, Client *client);
     void sendSelectionRequest(Room *room, Game *game);
+    void sendSelectionMade(Room *room, Player *player,
+                           const std::vector<const Card*> &cards);
 
 public:
     explicit GameServer(QObject *parent = nullptr);
